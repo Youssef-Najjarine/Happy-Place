@@ -1,4 +1,7 @@
 {
   "name": "HappyPlace",
-  "displayName": "HappyPlace"
+  "displayName": "HappyPlace",
+  "plugins": [
+    "expo-font"
+  ]
 }
