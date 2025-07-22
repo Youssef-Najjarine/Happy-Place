@@ -5,7 +5,7 @@ import SadEmoji from 'assets/images/sad-emoji.svg';
 import Logo from 'assets/images/Logo.png';
 
 const HappyColor = '#ED5370';
-const White = '#fff';
+const White = '#FFFFFF';
 const Dark = '#222';
 
 export default function HomeScreen() {
@@ -63,12 +63,11 @@ const styles = StyleSheet.create({
     backgroundColor: HappyColor,
   },
   topSection: {
-    flex: 1.2,
-    justifyContent: 'center',
-    alignItems: 'center',
+    height: '40%',
+    width: '100%'
   },
   logoBox: {
-    flex: 1.3,
+      height: '100%',
       width: '100%',
       alignItems: 'center',
       justifyContent: 'center',
@@ -78,7 +77,7 @@ const styles = StyleSheet.create({
     height: 188
   },
   card: {
-    flex: 2,
+    height:'60%',
     backgroundColor: White,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
