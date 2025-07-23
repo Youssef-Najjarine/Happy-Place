@@ -25,33 +25,42 @@ export default function HomeScreen() {
 
       {/* Bottom Section: Card */}
       <View style={styles.card}>
-        <Text style={styles.heading}>What's your issue?</Text>
-        <Text style={styles.subhead}>Someone is here to help.</Text>
 
-        <TouchableOpacity style={styles.helpMeBtn}>
-          <SadEmoji width={32} height={32} />
-          <Text style={styles.helpMeBtnText}>HELP ME</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.iCanHelpBtn}>
-          <HappyEmoji width={32} height={32} />
-          <Text style={styles.iCanHelpBtnText}>I CAN HELP</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.signUpBtn}>
-          <Text style={styles.signUpBtnText}>Sign Up</Text>
-        </TouchableOpacity>
-
-        <View style={styles.divider}>
-          <View style={styles.line} />
-          <Text style={styles.or}>or</Text>
-          <View style={styles.line} />
+        <View style={styles.header}>
+          <Text style={styles.heading}>What's your issue?</Text>
+          <Text style={styles.subhead}>Someone is here to help.</Text>
         </View>
 
-        <Text style={styles.loginText}>
-          Already have an account?{' '}
-          <Text style={styles.loginLink}>Login</Text>
-        </Text>
+        <View style={styles.helpButtons}>
+          <TouchableOpacity style={styles.helpMeBtn}>
+            <SadEmoji width={32} height={32} />
+            <Text style={styles.helpMeBtnText}>HELP ME</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iCanHelpBtn}>
+            <HappyEmoji width={32} height={32} />
+            <Text style={styles.iCanHelpBtnText}>I CAN HELP</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.signUpLogIn}>
+          <View>
+            <TouchableOpacity style={styles.signUpBtn}>
+              <Text style={styles.signUpBtnText}>Sign Up</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.divider}>
+            <View style={styles.line} />
+            <Text style={styles.or}>or</Text>
+            <View style={styles.line} />
+          </View>
+          <View>
+            <Text style={styles.loginText}>
+              Already have an account?{' '}
+              <Text style={styles.loginLink}>Login</Text>
+            </Text>
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -61,6 +70,8 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: HappyColor,
+      height: '100%',
+      width: '100%'
   },
   topSection: {
     height: '40%',
@@ -74,20 +85,26 @@ const styles = StyleSheet.create({
   },
   logoImg: {
     width: '50%',
-    height: 188
+    height: '59%'
   },
   card: {
     height:'60%',
     backgroundColor: White,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     alignItems: 'center',
-    paddingTop: 30,
-    paddingHorizontal: 18,
-    shadowColor: Dark,
-    shadowOpacity: 0.08,
-    shadowRadius: 15,
-    elevation: 12,
+    justifyContent: 'space-between',
+    paddingTop: 24,
+    paddingBottom: 34
+  },
+  header: {
+    height: '15%'
+  },
+  helpButtons: {
+    height: '34.2%'
+  },
+  signUpLogIn: {
+    height: '19%'
   },
   heading: {
     fontSize: 26,
@@ -143,11 +160,11 @@ const styles = StyleSheet.create({
   signUpBtn: {
     backgroundColor: Dark,
     borderRadius: 20,
-    paddingHorizontal: 32,
-    paddingVertical: 8,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 10,
+    marginTop: 0,
+    marginBottom: 0,
   },
   signUpBtnText: {
     color: White,
@@ -165,7 +182,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 1,
     backgroundColor: '#ccc',
-    marginHorizontal: 10,
+    marginHorizontal: 10
   },
   or: {
     fontSize: 16,

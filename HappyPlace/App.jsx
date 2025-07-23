@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBar, useColorScheme, StyleSheet, View } from 'react-native';
-import HomeScreen from './src/screens/HomeScreen';
+import HomeScreen from './src/screens/Home';
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
