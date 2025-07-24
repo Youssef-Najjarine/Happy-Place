@@ -1,14 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, LogBox } from 'react-native';
+import CustomText from 'src/components/FontFamilyText';
 import HappyEmoji from 'assets/images/happy-emoji.svg';
 import SadEmoji from 'assets/images/sad-emoji.svg';
 import Logo from 'assets/images/Logo.png';
 
-const HappyColor = '#ED5370';
-const White = '#FFFFFF';
-const Dark = '#222';
-
-export default function HomeScreen() {
+export default function Home() {
   return (
     <View style={styles.root}>
       <View style={styles.topSection}>
@@ -23,42 +20,41 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Bottom Section: Card */}
       <View style={styles.card}>
 
         <View style={styles.header}>
-          <Text style={styles.heading}>What's your issue?</Text>
-          <Text style={styles.subhead}>Someone is here to help.</Text>
+          <CustomText style={styles.heading}>What's your issue?</CustomText>
+          <CustomText style={styles.subhead}>Someone is here to help.</CustomText>
         </View>
 
         <View style={styles.helpButtons}>
           <TouchableOpacity style={styles.helpMeBtn}>
-            <SadEmoji width={32} height={32} />
-            <Text style={styles.helpMeBtnText}>HELP ME</Text>
+            <SadEmoji style={styles.emojis}/>
+            <CustomText style={styles.helpMeBtnText}>HELP ME</CustomText>
           </TouchableOpacity>
           <TouchableOpacity style={styles.iCanHelpBtn}>
-            <HappyEmoji width={32} height={32} />
-            <Text style={styles.iCanHelpBtnText}>I CAN HELP</Text>
+            <HappyEmoji style={styles.emojis}/>
+            <CustomText style={styles.iCanHelpBtnText}>I CAN HELP</CustomText>
           </TouchableOpacity>
         </View>
 
         <View style={styles.signUpLogIn}>
-          <View>
+          <View style={styles.signUp}>
             <TouchableOpacity style={styles.signUpBtn}>
-              <Text style={styles.signUpBtnText}>Sign Up</Text>
+              <CustomText style={styles.signUpBtnText}>Sign Up</CustomText>
             </TouchableOpacity>
           </View>
 
           <View style={styles.divider}>
             <View style={styles.line} />
-            <Text style={styles.or}>or</Text>
+            <CustomText style={styles.or}>or</CustomText>
             <View style={styles.line} />
           </View>
-          <View>
-            <Text style={styles.loginText}>
-              Already have an account?{' '}
-              <Text style={styles.loginLink}>Login</Text>
-            </Text>
+          <View style={styles.alreadyHaveAccount}>
+            <CustomText style={styles.loginText}>
+              Already have an account?
+            </CustomText>
+            <CustomText style={styles.loginLink}>Login</CustomText>
           </View>
         </View>
       </View>
@@ -66,22 +62,24 @@ export default function HomeScreen() {
   );
 }
 
+const HappyColor = '#ED5370';
+const White = '#FFFFFF';
+const Black = '#232323';
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
     backgroundColor: HappyColor,
-      height: '100%',
-      width: '100%'
+    height: '100%',
+    width: '100%'
   },
   topSection: {
     height: '40%',
     width: '100%'
   },
   logoBox: {
-      height: '100%',
-      width: '100%',
-      alignItems: 'center',
-      justifyContent: 'center',
+    height: '100%',
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logoImg: {
     width: '50%',
@@ -98,108 +96,136 @@ const styles = StyleSheet.create({
     paddingBottom: 34
   },
   header: {
-    height: '15%'
+    height: '15%',
+    justifyContent: 'space-between'
   },
   helpButtons: {
-    height: '34.2%'
+    height: '35%',
+    width: '83%',
+    justifyContent: 'space-between',
   },
   signUpLogIn: {
-    height: '19%'
+    width: '73%',
+    height: '19%',
+    justifyContent: 'space-between'
   },
   heading: {
-    fontSize: 26,
     color: HappyColor,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 6,
+    fontSize: 32,
+    fontWeight: 800,
+    lineHeight: 38.4,
+    letterSpacing: -0.32
   },
   subhead: {
-    fontSize: 16,
-    color: Dark,
+    color: Black,
     textAlign: 'center',
-    marginBottom: 25,
+    fontSize: 18,
+    fontWeight: 600,
+    lineHeight: 27,
+    letterSpacing: -0.18
   },
   helpMeBtn: {
-    justifyContent: "center",
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: HappyColor,
-    borderRadius: 40,
-    paddingVertical: 16,
-    paddingHorizontal: 40,
-    width: '83%',
-    backgroundColor: White,
-    marginBottom: 14,
+    justifyContent: 'center',
+    gap: 10,
+    borderWidth: 1.5,
+    borderColor: Black,
+    borderRadius: 99,
+    height: 76,
+    backgroundColor: White
+  },
+  emojis: {
+    width: 32,
+    height: 32
   },
   helpMeBtnText: {
-    color: Dark,
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 9,
-    letterSpacing: 1,
+    color: Black,
+    fontSize: 24,
+    fontWeight: 700,
+    lineHeight: 36,
+    letterSpacing: -0.48
   },
   iCanHelpBtn: {
-    justifyContent: "center",
+   width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 40,
-    paddingVertical: 16,
-    paddingHorizontal: 40,
-    width: '83%',
-    backgroundColor: HappyColor,
-    marginBottom: 16,
+    justifyContent: 'center',
+    gap: 10,
+    borderWidth: 0,
+    borderRadius: 99,
+    height: 76,
+    backgroundColor: HappyColor
   },
   iCanHelpBtnText: {
     color: White,
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 9,
-    letterSpacing: 1,
+    fontSize: 24,
+    fontWeight: 700,
+    lineHeight: 36,
+  },
+  signUp: {
+    width: '100%',
+    height: 31,
+    alignItems: 'center'
   },
   signUpBtn: {
-    backgroundColor: Dark,
-    borderRadius: 20,
-    paddingHorizontal: 0,
-    paddingVertical: 0,
+    backgroundColor: Black,
+    borderRadius: 99,
+    width: '41.3%',
+    height: '100%',
     alignItems: 'center',
-    marginTop: 0,
-    marginBottom: 0,
+    justifyContent: 'center'
   },
   signUpBtnText: {
     color: White,
-    fontSize: 16,
-    fontWeight: 'bold',
-    letterSpacing: 1,
+    fontSize: 18,
+    fontWeight: 800,
+    lineHeight: 27,
+    letterSpacing: -0.18
   },
   divider: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    width: '80%',
-    marginVertical: 8,
+    gap: 8,
+    height: 21
+
   },
   line: {
-    flex: 1,
+    width: '45%',
     height: 1,
-    backgroundColor: '#ccc',
-    marginHorizontal: 10
+    backgroundColor: Black,
+    opacity: 0.6
   },
   or: {
-    fontSize: 16,
-    color: Dark,
-    marginVertical: 0,
-    fontWeight: '500',
+    color: Black,
+    fontSize: 14,
+    fontWeight: 600,
+    lineHeight: 21,
+    letterSpacing: -0.14,
+    opacity: 0.8
+  },
+  alreadyHaveAccount: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 24,
+    gap: 5
   },
   loginText: {
-    color: Dark,
-    fontSize: 15,
-    textAlign: 'center',
-    marginTop: 5,
-    marginBottom: 8,
-    letterSpacing: 0.2,
+    color: Black,
+    fontSize: 16,
+    fontWeight: 600,
+    lineHeight: 24,
+    letterSpacing: -0.16
   },
   loginLink: {
     color: HappyColor,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: 600,
+    lineHeight: 24,
+    letterSpacing: -0.16
   },
 });
