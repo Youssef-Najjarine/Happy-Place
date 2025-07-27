@@ -4,7 +4,7 @@ import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import CustomText from 'src/components/FontFamilyText';
 import HappyEmoji from 'assets/images/happy-emoji.svg';
 import SadEmoji from 'assets/images/sad-emoji.svg';
-import Logo from 'assets/images/Logo.png';
+import Logo from 'assets/images/logo.png';
 
 const HappyColor = '#ED5370';
 const White = '#FFFFFF';
