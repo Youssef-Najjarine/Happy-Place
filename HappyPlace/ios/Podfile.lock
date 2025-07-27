@@ -1127,6 +1127,8 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
+  - react-native-safe-area-context (5.5.2):
+    - React-Core
   - React-NativeModulesApple (0.80.1):
     - hermes-engine
     - React-callinvoker
@@ -1434,6 +1436,29 @@ PODS:
     - React-utils (= 0.80.1)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.80.1)
+  - RNScreens (4.13.1):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-RCTImage
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - RNSVG (15.12.0):
     - React-Core
   - Yoga (0.0.0)
@@ -1474,6 +1499,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-oscompat (from `../node_modules/react-native/ReactCommon/oscompat`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
@@ -1506,6 +1532,7 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
+  - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -1579,6 +1606,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-safe-area-context:
+    :path: "../node_modules/react-native-safe-area-context"
   React-NativeModulesApple:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios"
   React-oscompat:
@@ -1643,6 +1672,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   ReactNativeDependencies:
     :podspec: "../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec"
+  RNScreens:
+    :path: "../node_modules/react-native-screens"
   RNSVG:
     :path: "../node_modules/react-native-svg"
   Yoga:
@@ -1683,6 +1714,7 @@ SPEC CHECKSUMS:
   React-logger: da576d32077dde6daee6cab24c43bd616741834e
   React-Mapbuffer: 2467932e089cac0f84b3b38d056eeb8da0729df3
   React-microtasksnativemodule: 5f5ad9b726eb7bee0ef82812c759e04c169e57d1
+  react-native-safe-area-context: 0f7bf11598f9a61b7ceac8dc3f59ef98697e99e1
   React-NativeModulesApple: 1dfdc4971f1df490ee5aa3c7722c8fda02d2d607
   React-oscompat: 114036cd8f064558c9c1a0c04fc9ae5e1453706a
   React-perflogger: d259ceb5d23bba7e4f2e45fb012760cf86f7dfd2
@@ -1715,6 +1747,7 @@ SPEC CHECKSUMS:
   ReactCodegen: a73a14e0db56eef8a8fc38e856cda1525bcb55db
   ReactCommon: 37e498fed55cb64dc73a7484036fd9258980692c
   ReactNativeDependencies: c20b9b8a518b8288beba6fa4b4f8b838c7c8c02d
+  RNScreens: 71249d8fa26c3036e07bee23a40baef66b7fad63
   RNSVG: e17f99a7d2774ef99018dfed91e812e058fdbcdf
   Yoga: daa1e4de4b971b977b23bc842aaa3e135324f1f3
 

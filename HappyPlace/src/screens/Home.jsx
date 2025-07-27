@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, LogBox } from 'react-native';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
+import { useNavigation } from '@react-navigation/native';
 import CustomText from 'src/components/FontFamilyText';
 import HappyEmoji from 'assets/images/happy-emoji.svg';
 import SadEmoji from 'assets/images/sad-emoji.svg';
@@ -339,6 +340,7 @@ root: {
 });
 export default function Home() {
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
+  const navigation = useNavigation();
   return (
     <View style={styles.root}>
       <View style={styles.topSection}>
@@ -361,11 +363,11 @@ export default function Home() {
         </View>
 
         <View style={styles.helpButtons}>
-          <TouchableOpacity style={styles.helpMeBtn}>
+          <TouchableOpacity style={styles.helpMeBtn} onPress={() => navigation.navigate('ChatGroups')}>
             <SadEmoji style={styles.emojis}/>
             <CustomText style={styles.helpMeBtnText}>HELP ME</CustomText>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iCanHelpBtn}>
+          <TouchableOpacity style={styles.iCanHelpBtn} onPress={() => navigation.navigate('ChatGroups')}>
             <HappyEmoji style={styles.emojis}/>
             <CustomText style={styles.iCanHelpBtnText}>I CAN HELP</CustomText>
           </TouchableOpacity>

@@ -1,16 +1,23 @@
 import React from 'react';
-import { StatusBar, useColorScheme, StyleSheet, View } from 'react-native';
+import { StatusBar, useColorScheme, StyleSheet } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Home from 'screens/Home';
-import ChatGroups from 'screens/chatGroups';
+import ChatGroups from 'screens/ChatGroups';
+
+const Stack = createNativeStackNavigator();
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
 
   return (
-    <View style={styles.container}>
+    <NavigationContainer>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <Home />
-    </View>
+      <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Home" component={Home} />
+        <Stack.Screen name="ChatGroups" component={ChatGroups} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 };
 
