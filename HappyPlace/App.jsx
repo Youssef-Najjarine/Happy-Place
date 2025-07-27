@@ -1,6 +1,7 @@
 import React from 'react';
 import { StatusBar, useColorScheme, StyleSheet, View } from 'react-native';
-import HomeScreen from './src/screens/Home';
+import Home from 'screens/Home';
+import ChatGroups from 'screens/chatGroups';
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
@@ -8,7 +9,7 @@ const App = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <HomeScreen />
+      <Home />
     </View>
   );
 };
