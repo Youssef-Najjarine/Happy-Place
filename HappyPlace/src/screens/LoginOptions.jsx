@@ -8,7 +8,7 @@ import SadEmoji from 'assets/images/sad-emoji.svg';
 import Logo from 'assets/images/logo.png';
 
 const HappyColor = '#ED5370';
-const White = '#FFFFFF';
+const White = '#FFF';
 const Black = '#232323';
 const phoneStyles = StyleSheet.create({
   root: {
@@ -17,7 +17,7 @@ const phoneStyles = StyleSheet.create({
     width: '100%'
   },
   topSection: {
-    height: '40%',
+    height: '27%',
     width: '100%'
   },
   logoBox: {
@@ -27,12 +27,13 @@ const phoneStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoImg: {
-    width: '50%',
-    height: '59%'
+    width: '29%',
+    height: '50%'
   },
   card: {
-    height:'60%',
+    height:'73%',
     backgroundColor: White,
+    boxShadow: '0 8px 30px 0 rgba(9, 65, 115, 0.10)',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     alignItems: 'center',
@@ -340,7 +341,7 @@ root: {
     letterSpacing: -0.2
   }
 });
-export default function Home() {
+export default function LoginOptions() {
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
   return (
@@ -360,8 +361,8 @@ export default function Home() {
       <View style={styles.card}>
 
         <View style={styles.header}>
-          <CustomText style={styles.heading}>What's your issue?</CustomText>
-          <CustomText style={styles.subhead}>Someone is here to help.</CustomText>
+          <CustomText style={styles.heading}>Welcome Back!</CustomText>
+          <CustomText style={styles.subhead}>Choose a way to Login to your account</CustomText>
         </View>
 
         <View style={styles.helpButtons}>
@@ -391,7 +392,7 @@ export default function Home() {
             <CustomText style={styles.loginText}>
               Already have an account?
             </CustomText>
-            <CustomText style={styles.loginLink} onPress={() => navigation.navigate('LoginOptions')}>Login</CustomText>
+            <CustomText style={styles.loginLink}>Login</CustomText>
           </View>
         </View>
       </View>
