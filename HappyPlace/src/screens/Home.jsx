@@ -1,13 +1,12 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { HappyColor, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { useNavigation } from '@react-navigation/native';
 import CustomText from 'src/components/FontFamilyText';
-import HappyEmoji from 'assets/images/happy-emoji.svg';
-import SadEmoji from 'assets/images/sad-emoji.svg';
+import HappyEmoji from 'assets/images/home/happy-emoji.svg';
+import SadEmoji from 'assets/images/home/sad-emoji.svg';
 import Logo from 'assets/images/logo.png';
 
 const phoneStyles = StyleSheet.create({
@@ -342,7 +341,6 @@ export default function Home() {
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
   const rootStyle = {
     ...styles.root,
     paddingTop: statusBarHeight

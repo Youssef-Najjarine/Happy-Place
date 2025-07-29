@@ -1,15 +1,17 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, LogBox } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
+import { HappyColor, HappyColorFade, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { useNavigation } from '@react-navigation/native';
 import CustomText from 'src/components/FontFamilyText';
-import HappyEmoji from 'assets/images/happy-emoji.svg';
-import SadEmoji from 'assets/images/sad-emoji.svg';
+import FacebookIcon from 'assets/images/loginOptions/facebook-icon.png';
+import AppleIcon from 'assets/images/loginOptions/apple-icon.png';
+import GoogleIcon from 'assets/images/loginOptions/google-icon.png';
+import HappyEmailIcon from 'assets/images/loginOptions/happy-email-icon.svg';
+import EmailIcon from 'assets/images/loginOptions/email-icon.svg';
 import Logo from 'assets/images/logo.png';
 
-const HappyColor = '#ED5370';
-const White = '#FFF';
-const Black = '#232323';
 const phoneStyles = StyleSheet.create({
   root: {
     backgroundColor: HappyColor,
@@ -17,7 +19,7 @@ const phoneStyles = StyleSheet.create({
     width: '100%'
   },
   topSection: {
-    height: '27%',
+    height: '21.4%',
     width: '100%'
   },
   logoBox: {
@@ -28,32 +30,42 @@ const phoneStyles = StyleSheet.create({
   },
   logoImg: {
     width: '29%',
-    height: '50%'
+    height: '62.1%'
   },
   card: {
-    height:'73%',
+    height:'78.6%',
     backgroundColor: White,
     boxShadow: '0 8px 30px 0 rgba(9, 65, 115, 0.10)',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 24,
-    paddingBottom: 34
+    paddingTop: 20
   },
   header: {
-    height: '15%',
+    height: '11.1%',
     justifyContent: 'space-between'
   },
-  helpButtons: {
-    height: '35%',
-    width: '83%',
+  loginOptions1: {
+    height: '40%',
+    width: '89%',
     justifyContent: 'space-between',
   },
-  signUpLogIn: {
-    width: '73%',
-    height: '19%',
-    justifyContent: 'space-between'
+  divider: {
+    width: '89%',
+    height: '4%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
+  loginOptions2: {
+    width: '89%',
+    height: '10%'
+  },
+  termsPolicy: {
+    width: '89%',
+    height: '9%',
+    flexDirection: 'row'
   },
   heading: {
     color: HappyColor,
@@ -70,30 +82,30 @@ const phoneStyles = StyleSheet.create({
     lineHeight: 27,
     letterSpacing: -0.18
   },
-  helpMeBtn: {
+  loginOption1Btn: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
     borderWidth: 1.5,
-    borderColor: Black,
+    borderColor: 'rgba(237, 83, 112, 0.20)',
     borderRadius: 99,
-    height: 76,
-    backgroundColor: White
+    height: '22%',
+    backgroundColor: HappyColorFade
   },
-  emojis: {
-    width: 32,
-    height: 32
+  icons: {
+    width: 24,
+    height: 24
   },
-  helpMeBtnText: {
+  signUpBtnText: {
     color: Black,
     fontSize: 24,
     fontWeight: 700,
     lineHeight: 36,
     letterSpacing: -0.48
   },
-  iCanHelpBtn: {
+  signUpBtn: {
    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
@@ -103,41 +115,6 @@ const phoneStyles = StyleSheet.create({
     borderRadius: 99,
     height: 76,
     backgroundColor: HappyColor
-  },
-  iCanHelpBtnText: {
-    color: White,
-    fontSize: 24,
-    fontWeight: 700,
-    lineHeight: 36,
-    letterSpacing: -0.48
-  },
-  signUp: {
-    width: '100%',
-    height: 31,
-    alignItems: 'center'
-  },
-  signUpBtn: {
-    backgroundColor: Black,
-    borderRadius: 99,
-    width: '41.3%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  signUpBtnText: {
-    color: White,
-    fontSize: 18,
-    fontWeight: 800,
-    lineHeight: 27,
-    letterSpacing: -0.18
-  },
-  divider: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    height: 21
-
   },
   line: {
     width: '45%',
@@ -152,28 +129,6 @@ const phoneStyles = StyleSheet.create({
     lineHeight: 21,
     letterSpacing: -0.14,
     opacity: 0.8
-  },
-  alreadyHaveAccount: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 24,
-    gap: 5
-  },
-  loginText: {
-    color: Black,
-    fontSize: 16,
-    fontWeight: 600,
-    lineHeight: 24,
-    letterSpacing: -0.16
-  },
-  loginLink: {
-    color: HappyColor,
-    fontSize: 16,
-    fontWeight: 600,
-    lineHeight: 24,
-    letterSpacing: -0.16
   }
 });
 const tabletStyles = StyleSheet.create({
@@ -342,10 +297,19 @@ root: {
   }
 });
 export default function LoginOptions() {
+  const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
+  const rootStyle = {
+    ...styles.root,
+    paddingTop: statusBarHeight
+  };
+  const cardStyle = {
+    ...styles.card,
+    paddingBottom: bottomSafeHeight
+  }
   return (
-    <View style={styles.root}>
+    <View style={rootStyle}>
       <View style={styles.topSection}>
         <View style={styles.logoBox}>
           <Image
@@ -358,42 +322,55 @@ export default function LoginOptions() {
         </View>
       </View>
 
-      <View style={styles.card}>
+      <View style={cardStyle}>
 
         <View style={styles.header}>
           <CustomText style={styles.heading}>Welcome Back!</CustomText>
           <CustomText style={styles.subhead}>Choose a way to Login to your account</CustomText>
         </View>
 
-        <View style={styles.helpButtons}>
-          <TouchableOpacity style={styles.helpMeBtn} onPress={() => navigation.navigate('ChatGroups')}>
-            <SadEmoji {...styles.emojis}/>
-            <CustomText style={styles.helpMeBtnText}>HELP ME</CustomText>
+        <View style={styles.loginOptions1}>
+          <TouchableOpacity style={styles.loginOption1Btn}>
+            <Image source={FacebookIcon} style={styles.icons}/>
+            <CustomText style={styles.loginOption1BtnText}>Sign in with Facebook</CustomText>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iCanHelpBtn} onPress={() => navigation.navigate('ChatGroups')}>
-            <HappyEmoji {...styles.emojis}/>
-            <CustomText style={styles.iCanHelpBtnText}>I CAN HELP</CustomText>
+          <TouchableOpacity style={styles.loginOption1Btn}>
+            <Image source={AppleIcon} style={styles.icons}/>
+            <CustomText style={styles.loginOption1BtnText}>Sign in with Apple</CustomText>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.loginOption1Btn}>
+            <Image source={GoogleIcon} style={styles.icons}/>
+            <CustomText style={styles.loginOption1BtnText}>Sign in with Google</CustomText>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.loginOption1Btn}>
+            <HappyEmailIcon {...styles.icons}/>
+            <CustomText style={styles.loginOption1BtnText}>Sign in with Email</CustomText>
           </TouchableOpacity>
         </View>
-
-        <View style={styles.signUpLogIn}>
-          <View style={styles.signUp}>
-            <TouchableOpacity style={styles.signUpBtn}>
-              <CustomText style={styles.signUpBtnText}>Sign Up</CustomText>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.divider}>
-            <View style={styles.line} />
-            <CustomText style={styles.or}>or</CustomText>
-            <View style={styles.line} />
-          </View>
-          <View style={styles.alreadyHaveAccount}>
-            <CustomText style={styles.loginText}>
-              Already have an account?
-            </CustomText>
-            <CustomText style={styles.loginLink}>Login</CustomText>
-          </View>
+        <View style={styles.divider}>
+          <View style={styles.line} />
+          <CustomText style={styles.or}>or</CustomText>
+          <View style={styles.line} />
+        </View>
+        <View style={styles.loginOptions2}>
+          <TouchableOpacity style={styles.signUpBtn}>
+            <EmailIcon {...styles.icons}/>
+            <CustomText style={styles.sign}>Sign up</CustomText>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.termsPolicy}>
+          <CustomText>
+            By continuing, you agree to our 
+          </CustomText>
+          <CustomText>
+            Terms of service 
+          </CustomText>
+          <CustomText>
+            and
+          </CustomText>
+          <CustomText>
+              Privacy Policy.
+          </CustomText>
         </View>
       </View>
     </View>

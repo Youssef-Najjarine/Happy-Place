@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, LogBox } from 'react-native';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import CustomText from 'src/components/FontFamilyText';
-import HappyEmoji from 'assets/images/happy-emoji.svg';
-import SadEmoji from 'assets/images/sad-emoji.svg';
+import HappyEmoji from 'assets/images/home/happy-emoji.svg';
+import SadEmoji from 'assets/images/home/sad-emoji.svg';
 import Logo from 'assets/images/logo.png';
 
 const HappyColor = '#ED5370';
@@ -36,8 +36,7 @@ const phoneStyles = StyleSheet.create({
     borderTopRightRadius: 24,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 24,
-    paddingBottom: 34
+    paddingTop: 24
   },
   header: {
     height: '15%',
