@@ -1,5 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, LogBox } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
+import { HappyColor, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { useNavigation } from '@react-navigation/native';
 import CustomText from 'src/components/FontFamilyText';
@@ -7,9 +10,6 @@ import HappyEmoji from 'assets/images/happy-emoji.svg';
 import SadEmoji from 'assets/images/sad-emoji.svg';
 import Logo from 'assets/images/logo.png';
 
-const HappyColor = '#ED5370';
-const White = '#FFFFFF';
-const Black = '#232323';
 const phoneStyles = StyleSheet.create({
   root: {
     backgroundColor: HappyColor,
@@ -17,7 +17,7 @@ const phoneStyles = StyleSheet.create({
     width: '100%'
   },
   topSection: {
-    height: '40%',
+    height: '35%',
     width: '100%'
   },
   logoBox: {
@@ -28,30 +28,29 @@ const phoneStyles = StyleSheet.create({
   },
   logoImg: {
     width: '50%',
-    height: '59%'
+    height: '67.2%'
   },
   card: {
-    height:'60%',
+    height:'65%',
     backgroundColor: White,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 24,
-    paddingBottom: 34
+    paddingTop: 24
   },
   header: {
-    height: '15%',
+    height: '16.3%',
     justifyContent: 'space-between'
   },
   helpButtons: {
-    height: '35%',
+    height: '37.4%',
     width: '83%',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between'
   },
   signUpLogIn: {
     width: '73%',
-    height: '19%',
+    height: '20.5%',
     justifyContent: 'space-between'
   },
   heading: {
@@ -182,7 +181,7 @@ root: {
     width: '100%'
   },
   topSection: {
-    height: '39%',
+    height: '35.4%',
     width: '100%'
   },
   logoBox: {
@@ -193,30 +192,29 @@ root: {
   },
   logoImg: {
     width: '34%',
-    height: '58%'
+    height: '63%'
   },
   card: {
-    height:'61%',
+    height:'64.6%',
     backgroundColor: White,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 32,
-    paddingBottom: 50
+    paddingTop: 32
   },
   header: {
-    height: '13.3%',
+    height: '14%',
     justifyContent: 'space-between'
   },
   helpButtons: {
     width: '94%',
-    height: '29.6%',
+    height: '34%',
     justifyContent: 'space-between'
   },
   signUpLogIn: {
     width: '79%',
-    height: '16.5%',
+    height: '16%',
     justifyContent: 'space-between'
   },
   heading: {
@@ -341,10 +339,20 @@ root: {
   }
 });
 export default function Home() {
+  const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+  const rootStyle = {
+    ...styles.root,
+    paddingTop: statusBarHeight
+  };
+  const cardStyle = {
+    ...styles.card,
+    paddingBottom: bottomSafeHeight
+  }
   return (
-    <View style={styles.root}>
+    <View style={rootStyle}>
       <View style={styles.topSection}>
         <View style={styles.logoBox}>
           <Image
@@ -357,7 +365,7 @@ export default function Home() {
         </View>
       </View>
 
-      <View style={styles.card}>
+      <View style={cardStyle}>
 
         <View style={styles.header}>
           <CustomText style={styles.heading}>What's your issue?</CustomText>
