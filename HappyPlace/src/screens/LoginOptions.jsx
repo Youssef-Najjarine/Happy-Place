@@ -64,30 +64,31 @@ const phoneStyles = StyleSheet.create({
   },
   termsPolicy: {
     width: '89%',
+    flexWrap: 'wrap',
+    gap: 5,
     height: '9%',
-    flexDirection: 'row'
+    flexDirection: 'row',
+    lineHeight: 24
   },
   heading: {
-    color: HappyColor,
-    fontSize: 32,
-    fontWeight: 800,
-    lineHeight: 38.4,
-    letterSpacing: -0.32
+    textAlign: 'center',
+    color: Black,
+    fontSize: 24,
+    fontWeight: 700,
+    lineHeight: 36
   },
   subhead: {
-    color: Black,
-    textAlign: 'center',
-    fontSize: 18,
-    fontWeight: 600,
-    lineHeight: 27,
-    letterSpacing: -0.18
+    color: 'rgba(35, 35, 35, 0.50)',
+    fontSize: 16,
+    fontWeight: 500,
+    lineHeight: 24
   },
   loginOption1Btn: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: 8,
     borderWidth: 1.5,
     borderColor: 'rgba(237, 83, 112, 0.20)',
     borderRadius: 99,
@@ -98,28 +99,17 @@ const phoneStyles = StyleSheet.create({
     width: 24,
     height: 24
   },
-  signUpBtnText: {
+  loginOption1BtnText: {
     color: Black,
-    fontSize: 24,
-    fontWeight: 700,
-    lineHeight: 36,
-    letterSpacing: -0.48
-  },
-  signUpBtn: {
-   width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    borderWidth: 0,
-    borderRadius: 99,
-    height: 76,
-    backgroundColor: HappyColor
+    fontSize: 16,
+    fontWeight: 600,
+    lineHeight: 24,
+    letterSpacing: -0.16
   },
   line: {
-    width: '45%',
+    width: '46%',
     height: 1,
-    backgroundColor: Black,
+    backgroundColor: 'rgba(35, 35, 35, 0.20)',
     opacity: 0.6
   },
   or: {
@@ -127,8 +117,40 @@ const phoneStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 600,
     lineHeight: 21,
-    letterSpacing: -0.14,
-    opacity: 0.8
+    letterSpacing: -0.14
+  },
+  signUpBtn: {
+   width: '100%',
+   height: '100%',
+   gap: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 0,
+    borderRadius: 99,
+    backgroundColor: HappyColor
+  },
+  signUpBtnText: {
+    color: White,
+    fontSize: 16,
+    fontWeight: 600,
+    lineHeight: 24,
+    letterSpacing: -0.16
+  },
+  termsPolicyBlackTxt: {
+    color: Black,
+    fontSize: 16,
+    fontWeight: 500,
+    lineHeight: 24,
+    letterSpacing: -0.16
+  },
+  termsPolicyHappyTxt: {
+    color: HappyColor,
+    fontSize: 16,
+    fontWeight: 600,
+    lineHeight: 24,
+    letterSpacing: -0.16,
+    textdecorationLine: 'underline'
   }
 });
 const tabletStyles = StyleSheet.create({
@@ -355,20 +377,20 @@ export default function LoginOptions() {
         <View style={styles.loginOptions2}>
           <TouchableOpacity style={styles.signUpBtn}>
             <EmailIcon {...styles.icons}/>
-            <CustomText style={styles.sign}>Sign up</CustomText>
+            <CustomText style={styles.signUpBtnText}>Sign up</CustomText>
           </TouchableOpacity>
         </View>
         <View style={styles.termsPolicy}>
-          <CustomText>
+          <CustomText style={styles.termsPolicyBlackTxt}>
             By continuing, you agree to our 
           </CustomText>
-          <CustomText>
+          <CustomText style={styles.termsPolicyHappyTxt}>
             Terms of service 
           </CustomText>
-          <CustomText>
+          <CustomText style={styles.termsPolicyBlackTxt}>
             and
           </CustomText>
-          <CustomText>
+          <CustomText style={styles.termsPolicyHappyTxt}>
               Privacy Policy.
           </CustomText>
         </View>
