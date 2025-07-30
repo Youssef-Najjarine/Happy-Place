@@ -369,7 +369,7 @@ export default function ChatGroups() {
       <View style={cardStyle}>
 
         <View style={styles.header}>
-          <CustomText style={styles.heading}>What's your issue?</CustomText>
+          <CustomText style={styles.heading}>Chat Groups</CustomText>
           <CustomText style={styles.subhead}>Someone is here to help.</CustomText>
         </View>
 

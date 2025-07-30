@@ -358,7 +358,7 @@ export default function LoginOptions() {
         <View style={styles.logoBox}>
           <TouchableOpacity 
             style={styles.backArrow}
-            onPress={() => navigation.navigate('Home')}
+            onPress={() => navigation.goBack()}
           >
             <BackArrow {...styles.backArrowIcon}/>
           </TouchableOpacity>
