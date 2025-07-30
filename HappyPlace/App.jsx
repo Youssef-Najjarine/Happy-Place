@@ -17,7 +17,11 @@ const App = () => {
       <NavigationContainer>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
         <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Home" component={Home} />
+          <Stack.Screen name="Home" component={Home} 
+            options={{
+              animation: 'slide_from_right'
+            }}
+          />
           <Stack.Screen name="LoginOptions" component={LoginOptions}/>
           <Stack.Screen name="ChatGroups" component={ChatGroups} />
         </Stack.Navigator>

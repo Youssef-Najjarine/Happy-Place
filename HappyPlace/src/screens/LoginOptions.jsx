@@ -1,16 +1,17 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { HappyColor, HappyColorFade, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
-import { useNavigation } from '@react-navigation/native';
 import CustomText from 'src/components/FontFamilyText';
+import BackArrow from 'assets/images/loginOptions/back-arrow-white-icon.svg';
+import Logo from 'assets/images/logo.png';
 import FacebookIcon from 'assets/images/loginOptions/facebook-icon.png';
 import AppleIcon from 'assets/images/loginOptions/apple-icon.png';
 import GoogleIcon from 'assets/images/loginOptions/google-icon.png';
 import HappyEmailIcon from 'assets/images/loginOptions/happy-email-icon.svg';
 import EmailIcon from 'assets/images/loginOptions/email-icon.svg';
-import Logo from 'assets/images/logo.png';
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -27,10 +28,29 @@ const phoneStyles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative'
+  },
+  backArrow: {
+    width: '11.2%',
+    height: '25%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    top: 6,
+    left: 20,
+    backgroundColor: '#D84863',
+    borderRadius: 99,
+    animation: 'slide_from_right'
+  },
+  backArrowIcon: {
+    width: '67%',
+    height: '67%',
+    resizeMode: 'contain'
   },
   logoImg: {
     width: '29%',
-    height: '62.1%'
+    height: '62.1%',
+    resizeMode: 'contain'
   },
   card: {
     height:'78.6%',
@@ -47,7 +67,7 @@ const phoneStyles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   loginOptions1: {
-    height: '40%',
+    height: '43%',
     width: '89%',
     justifyContent: 'space-between',
   },
@@ -60,15 +80,16 @@ const phoneStyles = StyleSheet.create({
   },
   loginOptions2: {
     width: '89%',
-    height: '10%'
+    height: '9.4%'
   },
   termsPolicy: {
     width: '89%',
     flexWrap: 'wrap',
-    gap: 5,
-    height: '9%',
+    gap: 7,
+    height: '8%',
     flexDirection: 'row',
-    lineHeight: 24
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   heading: {
     textAlign: 'center',
@@ -96,8 +117,9 @@ const phoneStyles = StyleSheet.create({
     backgroundColor: HappyColorFade
   },
   icons: {
-    width: 24,
-    height: 24
+    width: '7.2%',
+    height: '43%',
+    resizeMode: 'contain'
   },
   loginOption1BtnText: {
     color: Black,
@@ -150,7 +172,7 @@ const phoneStyles = StyleSheet.create({
     fontWeight: 600,
     lineHeight: 24,
     letterSpacing: -0.16,
-    textdecorationLine: 'underline'
+    textDecorationLine: 'underline'
   }
 });
 const tabletStyles = StyleSheet.create({
@@ -334,10 +356,15 @@ export default function LoginOptions() {
     <View style={rootStyle}>
       <View style={styles.topSection}>
         <View style={styles.logoBox}>
+          <TouchableOpacity 
+            style={styles.backArrow}
+            onPress={() => navigation.navigate('Home')}
+          >
+            <BackArrow {...styles.backArrowIcon}/>
+          </TouchableOpacity>
           <Image
             source={Logo}
             style={styles.logoImg}
-            resizeMode="contain"
             accessible={true}
             accessibilityLabel="App logo"
           />
@@ -345,7 +372,6 @@ export default function LoginOptions() {
       </View>
 
       <View style={cardStyle}>
-
         <View style={styles.header}>
           <CustomText style={styles.heading}>Welcome Back!</CustomText>
           <CustomText style={styles.subhead}>Choose a way to Login to your account</CustomText>
@@ -377,7 +403,7 @@ export default function LoginOptions() {
         <View style={styles.loginOptions2}>
           <TouchableOpacity style={styles.signUpBtn}>
             <EmailIcon {...styles.icons}/>
-            <CustomText style={styles.signUpBtnText}>Sign up</CustomText>
+            <CustomText style={styles.signUpBtnText}>Sign up with Email</CustomText>
           </TouchableOpacity>
         </View>
         <View style={styles.termsPolicy}>

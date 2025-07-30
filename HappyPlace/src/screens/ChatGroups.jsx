@@ -1,14 +1,14 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, LogBox } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
+import { HappyColor, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
+import { useNavigation } from '@react-navigation/native';
 import CustomText from 'src/components/FontFamilyText';
 import HappyEmoji from 'assets/images/home/happy-emoji.svg';
 import SadEmoji from 'assets/images/home/sad-emoji.svg';
 import Logo from 'assets/images/logo.png';
 
-const HappyColor = '#ED5370';
-const White = '#FFFFFF';
-const Black = '#232323';
 const phoneStyles = StyleSheet.create({
   root: {
     backgroundColor: HappyColor,
@@ -16,7 +16,7 @@ const phoneStyles = StyleSheet.create({
     width: '100%'
   },
   topSection: {
-    height: '40%',
+    height: '35%',
     width: '100%'
   },
   logoBox: {
@@ -27,10 +27,11 @@ const phoneStyles = StyleSheet.create({
   },
   logoImg: {
     width: '50%',
-    height: '59%'
+    height: '67.2%',
+    resizeMode: 'contain'
   },
   card: {
-    height:'60%',
+    height:'65%',
     backgroundColor: White,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -39,17 +40,17 @@ const phoneStyles = StyleSheet.create({
     paddingTop: 24
   },
   header: {
-    height: '15%',
+    height: '15.1%',
     justifyContent: 'space-between'
   },
   helpButtons: {
-    height: '35%',
+    height: '34.8%',
     width: '83%',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between'
   },
   signUpLogIn: {
     width: '73%',
-    height: '19%',
+    height: '19.1%',
     justifyContent: 'space-between'
   },
   heading: {
@@ -76,12 +77,13 @@ const phoneStyles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Black,
     borderRadius: 99,
-    height: 76,
+    height: '45.2%',
     backgroundColor: White
   },
   emojis: {
-    width: 32,
-    height: 32
+    width: '10.3%',
+    height: '42.1%',
+    resizeMode: 'contain'
   },
   helpMeBtnText: {
     color: Black,
@@ -98,7 +100,7 @@ const phoneStyles = StyleSheet.create({
     gap: 10,
     borderWidth: 0,
     borderRadius: 99,
-    height: 76,
+    height: '45.2%',
     backgroundColor: HappyColor
   },
   iCanHelpBtnText: {
@@ -106,10 +108,11 @@ const phoneStyles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 700,
     lineHeight: 36,
+    letterSpacing: -0.48
   },
   signUp: {
     width: '100%',
-    height: 31,
+    height: '34%',
     alignItems: 'center'
   },
   signUpBtn: {
@@ -132,7 +135,7 @@ const phoneStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    height: 21
+    height: '23%'
 
   },
   line: {
@@ -154,7 +157,7 @@ const phoneStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 24,
+    height: '26.1%',
     gap: 5
   },
   loginText: {
@@ -179,7 +182,7 @@ root: {
     width: '100%'
   },
   topSection: {
-    height: '40%',
+    height: '35.4%',
     width: '100%'
   },
   logoBox: {
@@ -189,128 +192,130 @@ root: {
     justifyContent: 'center',
   },
   logoImg: {
-    width: '50%',
-    height: '59%'
+    width: '34%',
+    height: '63%',
+    resizeMode: 'contain'
   },
   card: {
-    height:'60%',
+    height:'64.6%',
     backgroundColor: White,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 24,
-    paddingBottom: 34
+    paddingTop: 32
   },
   header: {
-    height: '15%',
+    height: '13.3%',
     justifyContent: 'space-between'
   },
   helpButtons: {
-    height: '35%',
-    width: '83%',
-    justifyContent: 'space-between',
+    width: '94%',
+    height: '33%',
+    justifyContent: 'space-between'
   },
   signUpLogIn: {
-    width: '73%',
-    height: '19%',
+    width: '79%',
+    height: '16.5%',
     justifyContent: 'space-between'
   },
   heading: {
     color: HappyColor,
-    fontSize: 32,
+    fontSize: 50,
     fontWeight: 800,
-    lineHeight: 38.4,
-    letterSpacing: -0.32
+    lineHeight: 48,
+    letterSpacing: -0.4
   },
   subhead: {
     color: Black,
     textAlign: 'center',
-    fontSize: 18,
-    fontWeight: 600,
-    lineHeight: 27,
-    letterSpacing: -0.18
+    fontSize: 28,
+    fontWeight: 500,
+    lineHeight: 33,
+    letterSpacing: -0.22
   },
   helpMeBtn: {
     width: '100%',
+    height: '45.2%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    borderWidth: 1.5,
+    gap: 13.41,
+    borderWidth: 2.012,
     borderColor: Black,
-    borderRadius: 99,
-    height: 76,
+    borderRadius: 132.792,
     backgroundColor: White
   },
   emojis: {
-    width: 32,
-    height: 32
+    width: '6.2%',
+    height: '42.2%',
+    resizeMode: 'contain'
   },
   helpMeBtnText: {
     color: Black,
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 700,
-    lineHeight: 36,
-    letterSpacing: -0.48
+    lineHeight: 48,
+    letterSpacing: -0.64
   },
   iCanHelpBtn: {
-   width: '100%',
+    width: '100%',
+    height: '45.2%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: 13.41,
     borderWidth: 0,
-    borderRadius: 99,
-    height: 76,
+    borderRadius: 132.792,
     backgroundColor: HappyColor
   },
   iCanHelpBtnText: {
     color: White,
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 700,
-    lineHeight: 36,
+    lineHeight: 48,
+    letterSpacing: -0.64
   },
   signUp: {
     width: '100%',
-    height: 31,
+    height: '34%',
     alignItems: 'center'
   },
   signUpBtn: {
     backgroundColor: Black,
-    borderRadius: 99,
-    width: '41.3%',
+    borderRadius: 132.792,
+    width: '24.4%',
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center'
   },
   signUpBtnText: {
     color: White,
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 800,
-    lineHeight: 27,
-    letterSpacing: -0.18
+    lineHeight: 33,
+    letterSpacing: -0.22
   },
   divider: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    height: 21
+    gap: 10.73,
+    height: 24
 
   },
   line: {
-    width: '45%',
-    height: 1,
+    width: '47%',
+    height: 2,
     backgroundColor: Black,
     opacity: 0.6
   },
   or: {
     color: Black,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 600,
-    lineHeight: 21,
-    letterSpacing: -0.14,
+    lineHeight: 24,
+    letterSpacing: -0.16,
     opacity: 0.8
   },
   alreadyHaveAccount: {
@@ -318,54 +323,63 @@ root: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 24,
-    gap: 5
+    height: '26.3%',
+    gap: 10
   },
   loginText: {
     color: Black,
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: 600,
-    lineHeight: 24,
-    letterSpacing: -0.16
+    lineHeight: 30,
+    letterSpacing: -0.2
   },
   loginLink: {
     color: HappyColor,
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: 600,
-    lineHeight: 24,
-    letterSpacing: -0.16
+    lineHeight: 30,
+    letterSpacing: -0.2
   }
 });
 export default function ChatGroups() {
+  const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
+  const navigation = useNavigation();
+  const rootStyle = {
+    ...styles.root,
+    paddingTop: statusBarHeight
+  };
+  const cardStyle = {
+    ...styles.card,
+    paddingBottom: bottomSafeHeight
+  }
   return (
-    <View style={styles.root}>
+    <View style={rootStyle}>
       <View style={styles.topSection}>
         <View style={styles.logoBox}>
           <Image
             source={Logo}
             style={styles.logoImg}
-            resizeMode="contain"
             accessible={true}
             accessibilityLabel="App logo"
           />
         </View>
       </View>
 
-      <View style={styles.card}>
+      <View style={cardStyle}>
 
         <View style={styles.header}>
-          <CustomText style={styles.heading}>Chat Groups!</CustomText>
+          <CustomText style={styles.heading}>What's your issue?</CustomText>
           <CustomText style={styles.subhead}>Someone is here to help.</CustomText>
         </View>
 
         <View style={styles.helpButtons}>
-          <TouchableOpacity style={styles.helpMeBtn}>
-            <SadEmoji style={styles.emojis}/>
+          <TouchableOpacity style={styles.helpMeBtn} onPress={() => navigation.navigate('ChatGroups')}>
+            <SadEmoji {...styles.emojis}/>
             <CustomText style={styles.helpMeBtnText}>HELP ME</CustomText>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iCanHelpBtn}>
-            <HappyEmoji style={styles.emojis}/>
+          <TouchableOpacity style={styles.iCanHelpBtn} onPress={() => navigation.navigate('ChatGroups')}>
+            <HappyEmoji {...styles.emojis}/>
             <CustomText style={styles.iCanHelpBtnText}>I CAN HELP</CustomText>
           </TouchableOpacity>
         </View>
@@ -386,7 +400,7 @@ export default function ChatGroups() {
             <CustomText style={styles.loginText}>
               Already have an account?
             </CustomText>
-            <CustomText style={styles.loginLink}>Login</CustomText>
+            <CustomText style={styles.loginLink} onPress={() => navigation.navigate('LoginOptions')}>Login</CustomText>
           </View>
         </View>
       </View>

@@ -27,7 +27,8 @@ const phoneStyles = StyleSheet.create({
   },
   logoImg: {
     width: '50%',
-    height: '67.2%'
+    height: '67.2%',
+    resizeMode: 'contain'
   },
   card: {
     height:'65%',
@@ -39,17 +40,17 @@ const phoneStyles = StyleSheet.create({
     paddingTop: 24
   },
   header: {
-    height: '16.3%',
+    height: '15.1%',
     justifyContent: 'space-between'
   },
   helpButtons: {
-    height: '37.4%',
+    height: '34.8%',
     width: '83%',
     justifyContent: 'space-between'
   },
   signUpLogIn: {
     width: '73%',
-    height: '20.5%',
+    height: '19.1%',
     justifyContent: 'space-between'
   },
   heading: {
@@ -76,12 +77,13 @@ const phoneStyles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Black,
     borderRadius: 99,
-    height: 76,
+    height: '45.2%',
     backgroundColor: White
   },
   emojis: {
-    width: 32,
-    height: 32
+    width: '10.3%',
+    height: '42.1%',
+    resizeMode: 'contain'
   },
   helpMeBtnText: {
     color: Black,
@@ -98,7 +100,7 @@ const phoneStyles = StyleSheet.create({
     gap: 10,
     borderWidth: 0,
     borderRadius: 99,
-    height: 76,
+    height: '45.2%',
     backgroundColor: HappyColor
   },
   iCanHelpBtnText: {
@@ -110,7 +112,7 @@ const phoneStyles = StyleSheet.create({
   },
   signUp: {
     width: '100%',
-    height: 31,
+    height: '34%',
     alignItems: 'center'
   },
   signUpBtn: {
@@ -133,7 +135,7 @@ const phoneStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    height: 21
+    height: '23%'
 
   },
   line: {
@@ -155,7 +157,7 @@ const phoneStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 24,
+    height: '26.1%',
     gap: 5
   },
   loginText: {
@@ -191,7 +193,8 @@ root: {
   },
   logoImg: {
     width: '34%',
-    height: '63%'
+    height: '63%',
+    resizeMode: 'contain'
   },
   card: {
     height:'64.6%',
@@ -203,17 +206,17 @@ root: {
     paddingTop: 32
   },
   header: {
-    height: '14%',
+    height: '13.3%',
     justifyContent: 'space-between'
   },
   helpButtons: {
     width: '94%',
-    height: '34%',
+    height: '33%',
     justifyContent: 'space-between'
   },
   signUpLogIn: {
     width: '79%',
-    height: '16%',
+    height: '16.5%',
     justifyContent: 'space-between'
   },
   heading: {
@@ -233,6 +236,7 @@ root: {
   },
   helpMeBtn: {
     width: '100%',
+    height: '45.2%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -240,12 +244,12 @@ root: {
     borderWidth: 2.012,
     borderColor: Black,
     borderRadius: 132.792,
-    height: 101.7,
     backgroundColor: White
   },
   emojis: {
-    width: 43,
-    height: 43
+    width: '6.2%',
+    height: '42.2%',
+    resizeMode: 'contain'
   },
   helpMeBtnText: {
     color: Black,
@@ -255,14 +259,14 @@ root: {
     letterSpacing: -0.64
   },
   iCanHelpBtn: {
-   width: '100%',
+    width: '100%',
+    height: '45.2%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 13.41,
     borderWidth: 0,
     borderRadius: 132.792,
-    height: 101.7,
     backgroundColor: HappyColor
   },
   iCanHelpBtnText: {
@@ -274,7 +278,7 @@ root: {
   },
   signUp: {
     width: '100%',
-    height: 38.4,
+    height: '34%',
     alignItems: 'center'
   },
   signUpBtn: {
@@ -319,7 +323,7 @@ root: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 30,
+    height: '26.3%',
     gap: 10
   },
   loginText: {
@@ -356,7 +360,6 @@ export default function Home() {
           <Image
             source={Logo}
             style={styles.logoImg}
-            resizeMode="contain"
             accessible={true}
             accessibilityLabel="App logo"
           />
