@@ -39,8 +39,7 @@ const phoneStyles = StyleSheet.create({
     top: 6,
     left: 20,
     backgroundColor: '#D84863',
-    borderRadius: 99,
-    animation: 'slide_from_right'
+    borderRadius: 99
   },
   backArrowIcon: {
     width: '67%',
@@ -110,11 +109,11 @@ const phoneStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: 'rgba(237, 83, 112, 0.20)',
-    borderRadius: 99,
+    backgroundColor: HappyColorFade,
+    borderRadius: 67.067,
     height: '22%',
-    backgroundColor: HappyColorFade
   },
   icons: {
     width: '7.2%',
@@ -176,13 +175,13 @@ const phoneStyles = StyleSheet.create({
   }
 });
 const tabletStyles = StyleSheet.create({
-root: {
+  root: {
     backgroundColor: HappyColor,
     height: '100%',
     width: '100%'
   },
   topSection: {
-    height: '39%',
+    height: '23.4%',
     width: '100%'
   },
   logoBox: {
@@ -190,154 +189,150 @@ root: {
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative'
+  },
+  backArrow: {
+    width: '7.6%',
+    height: '21.3%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    top: 22,
+    left: 24,
+    backgroundColor: '#D84863',
+    borderRadius: 132.792
+  },
+  backArrowIcon: {
+    width: '67%',
+    height: '67%',
+    resizeMode: 'contain'
   },
   logoImg: {
-    width: '34%',
-    height: '58%'
+    width: '19.5%',
+    height: '55%',
+    resizeMode: 'contain'
   },
   card: {
-    height:'61%',
+    height:'76.6%',
     backgroundColor: White,
+    boxShadow: '0 8px 30px 0 rgba(9, 65, 115, 0.10)',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 32,
-    paddingBottom: 50
+    paddingTop: 24
   },
   header: {
-    height: '13.3%',
+    height: '8.5%',
     justifyContent: 'space-between'
   },
-  helpButtons: {
+  loginOptions1: {
+    height: '67.3%',
     width: '94%',
-    height: '29.6%',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
   },
-  signUpLogIn: {
-    width: '79%',
-    height: '16.5%',
-    justifyContent: 'space-between'
-  },
-  heading: {
-    color: HappyColor,
-    fontSize: 50,
-    fontWeight: 800,
-    lineHeight: 48,
-    letterSpacing: -0.4
-  },
-  subhead: {
-    color: Black,
-    textAlign: 'center',
-    fontSize: 28,
-    fontWeight: 500,
-    lineHeight: 33,
-    letterSpacing: -0.22
-  },
-  helpMeBtn: {
-    width: '100%',
+  divider: {
+    width: '94%',
+    height: '3.3%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 13.41,
-    borderWidth: 2.012,
-    borderColor: Black,
-    borderRadius: 132.792,
-    height: 101.7,
-    backgroundColor: White
+    gap: 8
   },
-  emojis: {
-    width: 43,
-    height: 43
+  loginOptions2: {
+    width: '94%',
+    height: '9%'
   },
-  helpMeBtnText: {
-    color: Black,
-    fontSize: 32,
-    fontWeight: 700,
-    lineHeight: 48,
-    letterSpacing: -0.64
-  },
-  iCanHelpBtn: {
-   width: '100%',
+  termsPolicy: {
+    width: '94%',
+    flexWrap: 'wrap',
+    height: '4%',
+    gap: 10,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 13.41,
-    borderWidth: 0,
-    borderRadius: 132.792,
-    height: 101.7,
-    backgroundColor: HappyColor
-  },
-  iCanHelpBtnText: {
-    color: White,
-    fontSize: 32,
-    fontWeight: 700,
-    lineHeight: 48,
-    letterSpacing: -0.64
-  },
-  signUp: {
-    width: '100%',
-    height: 38.4,
-    alignItems: 'center'
-  },
-  signUpBtn: {
-    backgroundColor: Black,
-    borderRadius: 132.792,
-    width: '24.4%',
-    height: '100%',
     alignItems: 'center',
     justifyContent: 'center'
   },
-  signUpBtnText: {
-    color: White,
-    fontSize: 22,
-    fontWeight: 800,
-    lineHeight: 33,
-    letterSpacing: -0.22
+  heading: {
+    textAlign: 'center',
+    color: Black,
+    fontSize: 26,
+    fontWeight: 700,
+    lineHeight: 39
   },
-  divider: {
+  subhead: {
+    color: 'rgba(35, 35, 35, 0.50)',
+    fontSize: 18,
+    fontWeight: 500,
+    lineHeight: 27
+  },
+  loginOption1Btn: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 10.73,
-    height: 24
-
+    borderWidth: 1.341,
+    borderColor: 'rgba(237, 83, 112, 0.20)',
+    backgroundColor: HappyColorFade,
+    borderRadius: 89.959,
+    height: '21.4%',
+  },
+  icons: {
+    width: '5%',
+    height: '45%',
+    resizeMode: 'contain'
+  },
+  loginOption1BtnText: {
+    color: Black,
+    fontSize: 20,
+    fontWeight: 600,
+    lineHeight: 30,
+    letterSpacing: -0.2
   },
   line: {
-    width: '47%',
-    height: 2,
-    backgroundColor: Black,
+    width: '47.2%',
+    height: 1.341,
+    backgroundColor: 'rgba(35, 35, 35, 0.20)',
     opacity: 0.6
   },
   or: {
     color: Black,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 600,
-    lineHeight: 24,
-    letterSpacing: -0.16,
-    opacity: 0.8
+    lineHeight: 27,
+    letterSpacing: -0.18
   },
-  alreadyHaveAccount: {
-    width: '100%',
+  signUpBtn: {
+   width: '100%',
+   height: '100%',
+   gap: 13.41,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 30,
-    gap: 10
+    borderWidth: 0,
+    borderRadius: 132.792,
+    backgroundColor: HappyColor
   },
-  loginText: {
+  signUpBtnText: {
+    color: White,
+    fontSize: 20,
+    fontWeight: 600,
+    lineHeight: 30,
+    letterSpacing: -0.2
+  },
+  termsPolicyBlackTxt: {
     color: Black,
-    fontSize: 20,
-    fontWeight: 600,
-    lineHeight: 30,
-    letterSpacing: -0.2
+    fontSize: 21.461,
+    fontWeight: 500,
+    lineHeight: 32.192,
+    letterSpacing: -0.215
   },
-  loginLink: {
+  termsPolicyHappyTxt: {
     color: HappyColor,
-    fontSize: 20,
+    fontSize: 21.461,
     fontWeight: 600,
-    lineHeight: 30,
-    letterSpacing: -0.2
+    lineHeight: 32.192,
+    letterSpacing: -0.215,
+    textDecorationLine: 'underline'
   }
 });
 export default function LoginOptions() {

@@ -176,7 +176,7 @@ const phoneStyles = StyleSheet.create({
   }
 });
 const tabletStyles = StyleSheet.create({
-root: {
+  root: {
     backgroundColor: HappyColor,
     height: '100%',
     width: '100%'
