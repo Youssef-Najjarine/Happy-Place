@@ -5,9 +5,9 @@ import { HappyColor, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { useNavigation } from '@react-navigation/native';
 import CustomText from 'src/components/FontFamilyText';
-import HappyEmoji from 'assets/images/home/happy-emoji.svg';
-import SadEmoji from 'assets/images/home/sad-emoji.svg';
-import Logo from 'assets/images/logo.png';
+import Logo from 'assets/images/global/logo.png';
+import HappyEmoji from 'assets/images/global/happy-emoji.svg';
+import SadEmoji from 'assets/images/global/sad-emoji.svg';
 
 const phoneStyles = StyleSheet.create({
   root: {

@@ -6,7 +6,7 @@ import { HappyColor, HappyColorFade, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import CustomText from 'src/components/FontFamilyText';
 import BackArrow from 'assets/images/loginOptions/back-arrow-white-icon.svg';
-import Logo from 'assets/images/logo.png';
+import Logo from 'assets/images/global/logo.png';
 import FacebookIcon from 'assets/images/loginOptions/facebook-icon.png';
 import AppleIcon from 'assets/images/loginOptions/apple-icon.png';
 import GoogleIcon from 'assets/images/loginOptions/google-icon.png';
