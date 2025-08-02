@@ -3,6 +3,8 @@ import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { HappyColor, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
+import { scaleFont, scaleHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
+import { scaleWidthPercent, scaleHeightPercent} from 'src/utils/scaleLayout';
 import { useNavigation } from '@react-navigation/native';
 import CustomText from 'src/components/FontFamilyText';
 import Logo from 'assets/images/global/logo.png';
@@ -16,7 +18,7 @@ const phoneStyles = StyleSheet.create({
     width: '100%'
   },
   topSection: {
-    height: '35%',
+    height: scaleHeightPercent(279.90),
     width: '100%'
   },
   logoBox: {
@@ -26,130 +28,129 @@ const phoneStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoImg: {
-    width: '50%',
-    height: '67.2%',
+    width: scaleWidthPercent(188),
+    height: scaleHeightPercent(188, 279.90),
     resizeMode: 'contain'
   },
   card: {
-    height:'65%',
+    height: scaleHeightPercent(532.1),
     backgroundColor: White,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 24
+    paddingTop: scaleHeightPercent(24, 692)
   },
   header: {
-    height: '15.1%',
+    height: scaleHeightPercent(73,483),
     justifyContent: 'space-between'
   },
   helpButtons: {
-    height: '34.8%',
-    width: '83%',
+    height: scaleHeightPercent(168,483),
+    width: scaleWidthPercent(311),
     justifyContent: 'space-between'
   },
   signUpLogIn: {
-    width: '73%',
-    height: '19.1%',
+    width: scaleWidthPercent(271),
+    height: scaleHeightPercent(92,483),
     justifyContent: 'space-between'
   },
   heading: {
     color: HappyColor,
-    fontSize: 32,
+    fontSize: scaleFont(32),
     fontWeight: 800,
-    lineHeight: 38.4,
-    letterSpacing: -0.32
+    lineHeight: scaleHeight(38.4),
+    letterSpacing: scaleLetterSpacing(-0.32)
   },
   subhead: {
     color: Black,
     textAlign: 'center',
-    fontSize: 18,
+    fontSize: scaleFont(18),
     fontWeight: 600,
-    lineHeight: 27,
-    letterSpacing: -0.18
+    lineHeight: scaleHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18)
   },
   helpMeBtn: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: scaleWidthPercent(10, 311),
     borderWidth: 1.5,
     borderColor: Black,
     borderRadius: 99,
-    height: '45.2%',
+    height: scaleHeightPercent(76, 168),
     backgroundColor: White
   },
   emojis: {
-    width: '10.3%',
-    height: '42.1%',
+    width: scaleWidthPercent(32, 311),
+    height: scaleHeightPercent(32, 76),
     resizeMode: 'contain'
   },
   helpMeBtnText: {
     color: Black,
-    fontSize: 24,
+    fontSize: scaleFont(24),
     fontWeight: 700,
-    lineHeight: 36,
-    letterSpacing: -0.48
+    lineHeight: scaleHeight(36),
+    letterSpacing: scaleLetterSpacing(-0.48)
   },
   iCanHelpBtn: {
-   width: '100%',
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: scaleWidthPercent(10, 311),
     borderWidth: 0,
     borderRadius: 99,
-    height: '45.2%',
+    height: scaleHeightPercent(76, 168),
     backgroundColor: HappyColor
   },
   iCanHelpBtnText: {
     color: White,
-    fontSize: 24,
+    fontSize: scaleFont(24),
     fontWeight: 700,
-    lineHeight: 36,
-    letterSpacing: -0.48
+    lineHeight: scaleHeight(36),
+    letterSpacing: scaleLetterSpacing(-0.48)
   },
   signUp: {
     width: '100%',
-    height: '34%',
+    height: scaleHeightPercent(31, 92),
     alignItems: 'center'
   },
   signUpBtn: {
     backgroundColor: Black,
     borderRadius: 99,
-    width: '41.3%',
+    width: scaleWidthPercent(112, 271),
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center'
   },
   signUpBtnText: {
     color: White,
-    fontSize: 18,
+    fontSize: scaleFont(18),
     fontWeight: 800,
-    lineHeight: 27,
-    letterSpacing: -0.18
+    lineHeight: scaleHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18)
   },
   divider: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    height: '23%'
-
+    gap: scaleWidthPercent(8, 271),
+    height: scaleHeightPercent(21, 92),
   },
   line: {
-    width: '45%',
-    height: 1,
+    width: scaleWidthPercent(121, 271),
+    height: scaleHeightPercent(1, 21),
     backgroundColor: Black,
     opacity: 0.6
   },
   or: {
     color: Black,
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontWeight: 600,
-    lineHeight: 21,
-    letterSpacing: -0.14,
+    lineHeight: scaleHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
     opacity: 0.8
   },
   alreadyHaveAccount: {
@@ -157,24 +158,25 @@ const phoneStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: '26.1%',
-    gap: 5
+    height: scaleHeightPercent(24, 92),
+    gap: scaleWidthPercent(5, 225),
   },
   loginText: {
     color: Black,
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontWeight: 600,
-    lineHeight: 24,
-    letterSpacing: -0.16
+    lineHeight: scaleHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16)
   },
   loginLink: {
     color: HappyColor,
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontWeight: 600,
-    lineHeight: 24,
-    letterSpacing: -0.16
+    lineHeight: scaleHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16)
   }
 });
+
 const tabletStyles = StyleSheet.create({
   root: {
     backgroundColor: HappyColor,
@@ -182,7 +184,7 @@ const tabletStyles = StyleSheet.create({
     width: '100%'
   },
   topSection: {
-    height: '35.4%',
+    height: scaleHeightPercent(401),
     width: '100%'
   },
   logoBox: {
@@ -192,130 +194,129 @@ const tabletStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoImg: {
-    width: '34%',
-    height: '63%',
+    width: scaleWidthPercent(252.17),
+    height: scaleHeightPercent(252.17, 401),
     resizeMode: 'contain'
   },
   card: {
-    height:'64.6%',
+    height: scaleHeightPercent(732),
     backgroundColor: White,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 32
+    paddingTop: scaleHeightPercent(32, 692)
   },
   header: {
-    height: '13.3%',
+    height: scaleHeightPercent(91.73, 692),
     justifyContent: 'space-between'
   },
   helpButtons: {
-    width: '94%',
-    height: '33%',
+    width: scaleWidthPercent(696),
+    height: scaleHeightPercent(224.76668, 692),
     justifyContent: 'space-between'
   },
   signUpLogIn: {
-    width: '79%',
-    height: '16.5%',
+    width: scaleWidthPercent(584),
+    height: scaleHeightPercent(103.09533, 692),
     justifyContent: 'space-between'
   },
   heading: {
     color: HappyColor,
-    fontSize: 50,
+    fontSize: scaleFont(40),
     fontWeight: 800,
-    lineHeight: 48,
-    letterSpacing: -0.4
+    lineHeight: scaleHeight(48),
+    letterSpacing: scaleLetterSpacing(-0.4)
   },
   subhead: {
     color: Black,
     textAlign: 'center',
-    fontSize: 28,
+    fontSize: scaleFont(22),
     fontWeight: 500,
-    lineHeight: 33,
-    letterSpacing: -0.22
+    lineHeight: scaleHeight(33),
+    letterSpacing: scaleLetterSpacing(-0.22)
   },
   helpMeBtn: {
     width: '100%',
-    height: '45.2%',
+    height: scaleHeightPercent(101.65334, 224.76668),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 13.41,
+    gap: scaleWidthPercent(13.41, 696),
     borderWidth: 2.012,
     borderColor: Black,
     borderRadius: 132.792,
     backgroundColor: White
   },
   emojis: {
-    width: '6.2%',
-    height: '42.2%',
+    width: scaleWidthPercent(42.92267,696),
+    height: scaleHeightPercent(42.92267, 101.65334),
     resizeMode: 'contain'
   },
   helpMeBtnText: {
     color: Black,
-    fontSize: 32,
+    fontSize: scaleFont(32),
     fontWeight: 700,
-    lineHeight: 48,
-    letterSpacing: -0.64
+    lineHeight: scaleHeight(48),
+    letterSpacing: scaleLetterSpacing(-0.64)
   },
   iCanHelpBtn: {
     width: '100%',
-    height: '45.2%',
+    height: scaleHeightPercent(101.65334, 224.76668),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 13.41,
+    gap: scaleWidthPercent(13.41, 696),
     borderWidth: 0,
     borderRadius: 132.792,
     backgroundColor: HappyColor
   },
   iCanHelpBtnText: {
     color: White,
-    fontSize: 32,
+    fontSize: scaleFont(32),
     fontWeight: 700,
-    lineHeight: 48,
-    letterSpacing: -0.64
+    lineHeight: scaleHeight(48),
+    letterSpacing: scaleLetterSpacing(-0.64)
   },
   signUp: {
     width: '100%',
-    height: '34%',
+    height: scaleHeightPercent(38.6533, 103.09533),
     alignItems: 'center'
   },
   signUpBtn: {
     backgroundColor: Black,
     borderRadius: 132.792,
-    width: '24.4%',
+    width: scaleWidthPercent(142.384,584),
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center'
   },
   signUpBtnText: {
     color: White,
-    fontSize: 22,
+    fontSize: scaleFont(22),
     fontWeight: 800,
-    lineHeight: 33,
-    letterSpacing: -0.22
+    lineHeight: scaleHeight(33),
+    letterSpacing: scaleLetterSpacing(-0.22)
   },
   divider: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10.73,
+    gap: scaleWidthPercent(10.73, 584),
     height: 24
-
   },
   line: {
-    width: '47%',
-    height: 2,
+    width: scaleWidthPercent(273.6935, 584),
+    height: scaleHeightPercent(1.341, 24),
     backgroundColor: Black,
     opacity: 0.6
   },
   or: {
     color: Black,
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontWeight: 600,
-    lineHeight: 24,
-    letterSpacing: -0.16,
+    lineHeight: scaleHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
     opacity: 0.8
   },
   alreadyHaveAccount: {
@@ -323,24 +324,25 @@ const tabletStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: '26.3%',
-    gap: 10
+    height: scaleHeightPercent(30, 103.09533),
+    gap: scaleWidthPercent(5, 281)
   },
   loginText: {
     color: Black,
-    fontSize: 20,
+    fontSize: scaleFont(20),
     fontWeight: 600,
-    lineHeight: 30,
-    letterSpacing: -0.2
+    lineHeight: scaleHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2)
   },
   loginLink: {
     color: HappyColor,
-    fontSize: 20,
+    fontSize: scaleFont(20),
     fontWeight: 600,
-    lineHeight: 30,
-    letterSpacing: -0.2
+    lineHeight: scaleHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2)
   }
 });
+
 export default function Home() {
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
@@ -352,7 +354,8 @@ export default function Home() {
   const cardStyle = {
     ...styles.card,
     paddingBottom: bottomSafeHeight
-  }
+  };
+
   return (
     <View style={rootStyle}>
       <View style={styles.topSection}>
@@ -365,14 +368,11 @@ export default function Home() {
           />
         </View>
       </View>
-
       <View style={cardStyle}>
-
         <View style={styles.header}>
           <CustomText style={styles.heading}>What's your issue?</CustomText>
           <CustomText style={styles.subhead}>Someone is here to help.</CustomText>
         </View>
-
         <View style={styles.helpButtons}>
           <TouchableOpacity style={styles.helpMeBtn} onPress={() => navigation.navigate('ChatGroups')}>
             <SadEmoji {...styles.emojis}/>
@@ -383,14 +383,12 @@ export default function Home() {
             <CustomText style={styles.iCanHelpBtnText}>I CAN HELP</CustomText>
           </TouchableOpacity>
         </View>
-
         <View style={styles.signUpLogIn}>
           <View style={styles.signUp}>
             <TouchableOpacity style={styles.signUpBtn}>
               <CustomText style={styles.signUpBtnText}>Sign Up</CustomText>
             </TouchableOpacity>
           </View>
-
           <View style={styles.divider}>
             <View style={styles.line} />
             <CustomText style={styles.or}>or</CustomText>

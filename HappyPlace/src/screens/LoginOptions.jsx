@@ -4,6 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { HappyColor, HappyColorFade, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
+import { scaleFont, scaleHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
+import { scaleWidthPercent, scaleHeightPercent} from 'src/utils/scaleLayout';
 import CustomText from 'src/components/FontFamilyText';
 import BackArrow from 'assets/images/loginOptions/back-arrow-white-icon.svg';
 import Logo from 'assets/images/global/logo.png';
@@ -20,7 +22,7 @@ const phoneStyles = StyleSheet.create({
     width: '100%'
   },
   topSection: {
-    height: '21.4%',
+    height: scaleHeightPercent(173),
     width: '100%'
   },
   logoBox: {
@@ -31,61 +33,66 @@ const phoneStyles = StyleSheet.create({
     position: 'relative'
   },
   backArrow: {
-    width: '11.2%',
-    height: '25%',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
-    top: 6,
-    left: 20,
+    width: scaleWidthPercent(42),
+    height: scaleHeightPercent(42, 173),
+    top: scaleHeightPercent(6, 173),
+    left: scaleWidthPercent(20),
     backgroundColor: '#D84863',
     borderRadius: 99
   },
   backArrowIcon: {
-    width: '67%',
-    height: '67%',
+    width: scaleWidthPercent(28, 42),
+    height: scaleHeightPercent(28, 42),
     resizeMode: 'contain'
   },
   logoImg: {
-    width: '29%',
-    height: '62.1%',
+    width: scaleWidthPercent(108),
+    height: scaleHeightPercent(108, 173),
     resizeMode: 'contain'
   },
   card: {
-    height:'78.6%',
+    width: '100%',
+    height: scaleHeightPercent(639),
     backgroundColor: White,
-    boxShadow: '0 8px 30px 0 rgba(9, 65, 115, 0.10)',
+    shadowColor: '#094173',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 30,
+    elevation: 5,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 20
+    paddingTop: scaleHeightPercent(20, 595)
   },
   header: {
-    height: '11.1%',
+    height: scaleHeightPercent(62, 595),
     justifyContent: 'space-between'
   },
   loginOptions1: {
-    height: '43%',
-    width: '89%',
+    width: scaleWidthPercent(335),
+    height: scaleHeightPercent(254, 595),
     justifyContent: 'space-between',
   },
   divider: {
-    width: '89%',
-    height: '4%',
+    width: scaleWidthPercent(335),
+    height: scaleHeightPercent(21, 595),
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8
+    gap: scaleWidthPercent(8, 335)
   },
   loginOptions2: {
-    width: '89%',
-    height: '9.4%'
+    width: scaleWidthPercent(335),
+    height: scaleHeightPercent(56, 595)
   },
   termsPolicy: {
-    width: '89%',
+    width: scaleWidthPercent(335),
+    height: scaleHeightPercent(48, 595),
     flexWrap: 'wrap',
-    gap: 7,
-    height: '8%',
+    gap: scaleWidthPercent(6, 335),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center'
@@ -93,57 +100,57 @@ const phoneStyles = StyleSheet.create({
   heading: {
     textAlign: 'center',
     color: Black,
-    fontSize: 24,
+    fontSize: scaleFont(24),
     fontWeight: 700,
-    lineHeight: 36
+    lineHeight: scaleHeight(36)
   },
   subhead: {
     color: 'rgba(35, 35, 35, 0.50)',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontWeight: 500,
-    lineHeight: 24
+    lineHeight: scaleHeight(24)
   },
   loginOption1Btn: {
     width: '100%',
+    height: scaleHeightPercent(56, 254),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: scaleWidthPercent(8, 335),
     borderWidth: 1,
     borderColor: 'rgba(237, 83, 112, 0.20)',
     backgroundColor: HappyColorFade,
     borderRadius: 67.067,
-    height: '22%',
   },
   icons: {
-    width: '7.2%',
-    height: '43%',
+    width: scaleWidthPercent(24, 335),
+    height: scaleHeightPercent(24, 56),
     resizeMode: 'contain'
   },
   loginOption1BtnText: {
     color: Black,
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontWeight: 600,
-    lineHeight: 24,
-    letterSpacing: -0.16
+    lineHeight: scaleHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16)
   },
   line: {
-    width: '46%',
-    height: 1,
+    width: scaleWidthPercent(153, 335),
+    height: scaleHeightPercent(1, 21),
     backgroundColor: 'rgba(35, 35, 35, 0.20)',
     opacity: 0.6
   },
   or: {
     color: Black,
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontWeight: 600,
-    lineHeight: 21,
-    letterSpacing: -0.14
+    lineHeight: scaleHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14)
   },
   signUpBtn: {
-   width: '100%',
-   height: '100%',
-   gap: 10,
+    width: '100%',
+    height: '100%',
+    gap: scaleWidthPercent(10, 335),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -153,27 +160,28 @@ const phoneStyles = StyleSheet.create({
   },
   signUpBtnText: {
     color: White,
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontWeight: 600,
-    lineHeight: 24,
-    letterSpacing: -0.16
+    lineHeight: scaleHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16)
   },
   termsPolicyBlackTxt: {
     color: Black,
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontWeight: 500,
-    lineHeight: 24,
-    letterSpacing: -0.16
+    lineHeight: scaleHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16)
   },
   termsPolicyHappyTxt: {
     color: HappyColor,
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontWeight: 600,
-    lineHeight: 24,
-    letterSpacing: -0.16,
+    lineHeight: scaleHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
     textDecorationLine: 'underline'
   }
 });
+
 const tabletStyles = StyleSheet.create({
   root: {
     backgroundColor: HappyColor,
@@ -181,8 +189,8 @@ const tabletStyles = StyleSheet.create({
     width: '100%'
   },
   topSection: {
-    height: '23.4%',
-    width: '100%'
+    width: '100%',
+    height: scaleHeightPercent(265.00398, 1133),
   },
   logoBox: {
     height: '100%',
@@ -192,8 +200,8 @@ const tabletStyles = StyleSheet.create({
     position: 'relative'
   },
   backArrow: {
-    width: '7.6%',
-    height: '21.3%',
+    width: scaleWidthPercent(56.336),
+    height: scaleHeightPercent(56.336, 265.00398),
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
@@ -203,50 +211,54 @@ const tabletStyles = StyleSheet.create({
     borderRadius: 132.792
   },
   backArrowIcon: {
-    width: '67%',
-    height: '67%',
+    width: scaleWidthPercent(37.55733, 56.336),
+    height: scaleHeightPercent(37.55733, 56.336),
     resizeMode: 'contain'
   },
   logoImg: {
-    width: '19.5%',
-    height: '55%',
+    width: scaleWidthPercent(144.86398),
+    height: scaleHeightPercent(144.86398, 265.00398),
     resizeMode: 'contain'
   },
   card: {
-    height:'76.6%',
+    height: scaleHeightPercent(868),
     backgroundColor: White,
-    boxShadow: '0 8px 30px 0 rgba(9, 65, 115, 0.10)',
+    shadowColor: '#094173',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 30,
+    elevation: 5,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 24
+    paddingTop: scaleHeightPercent(24, 828)
   },
   header: {
-    height: '8.5%',
+    height: scaleHeightPercent(70, 828),
     justifyContent: 'space-between'
   },
   loginOptions1: {
-    height: '67.3%',
-    width: '94%',
+    width: scaleWidthPercent(696, 744),
+    height: scaleHeightPercent(352.768, 828),
     justifyContent: 'space-between',
   },
   divider: {
-    width: '94%',
-    height: '3.3%',
+    width: scaleWidthPercent(696, 744),
+    height: scaleHeightPercent(27, 828),
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8
+    gap: scaleWidthPercent(10.73, 696)
   },
   loginOptions2: {
-    width: '94%',
-    height: '9%'
+    width: scaleWidthPercent(696, 744),
+    height: scaleHeightPercent(72.192, 828),
   },
   termsPolicy: {
-    width: '94%',
+    width: scaleWidthPercent(690.34668, 744),
+    height: scaleHeightPercent(32, 828),
     flexWrap: 'wrap',
-    height: '4%',
-    gap: 10,
+    gap: scaleWidthPercent(10, 690.34668),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center'
@@ -254,57 +266,57 @@ const tabletStyles = StyleSheet.create({
   heading: {
     textAlign: 'center',
     color: Black,
-    fontSize: 26,
+    fontSize: scaleFont(26),
     fontWeight: 700,
-    lineHeight: 39
+    lineHeight: scaleHeight(39)
   },
   subhead: {
     color: 'rgba(35, 35, 35, 0.50)',
-    fontSize: 18,
+    fontSize: scaleFont(18),
     fontWeight: 500,
-    lineHeight: 27
+    lineHeight: scaleHeight(27)
   },
   loginOption1Btn: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10.73,
+    gap: scaleWidthPercent(10.73, 696),
     borderWidth: 1.341,
     borderColor: 'rgba(237, 83, 112, 0.20)',
     backgroundColor: HappyColorFade,
     borderRadius: 89.959,
-    height: '21.4%',
+    height: scaleHeightPercent(72.192, 336.768),
   },
   icons: {
-    width: '5%',
-    height: '45%',
+    width: scaleWidthPercent(32.192, 696),
+    height: scaleHeightPercent(32.192, 72.192),
     resizeMode: 'contain'
   },
   loginOption1BtnText: {
     color: Black,
-    fontSize: 20,
+    fontSize: scaleFont(20),
     fontWeight: 600,
-    lineHeight: 30,
-    letterSpacing: -0.2
+    lineHeight: scaleHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2)
   },
   line: {
-    width: '47.2%',
-    height: 1.341,
+    width: scaleWidthPercent(328.76935, 696),
+    height: scaleHeightPercent(1.341, 27),
     backgroundColor: 'rgba(35, 35, 35, 0.20)',
     opacity: 0.6
   },
   or: {
     color: Black,
-    fontSize: 18,
+    fontSize: scaleFont(18),
     fontWeight: 600,
-    lineHeight: 27,
-    letterSpacing: -0.18
+    lineHeight: scaleHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18)
   },
   signUpBtn: {
-   width: '100%',
-   height: '100%',
-   gap: 13.41,
+    width: '100%',
+    height: '100%',
+    gap: scaleWidthPercent(13.41, 696),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -314,27 +326,28 @@ const tabletStyles = StyleSheet.create({
   },
   signUpBtnText: {
     color: White,
-    fontSize: 20,
+    fontSize: scaleFont(20),
     fontWeight: 600,
-    lineHeight: 30,
-    letterSpacing: -0.2
+    lineHeight: scaleHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2)
   },
   termsPolicyBlackTxt: {
     color: Black,
-    fontSize: 21.461,
+    fontSize: scaleFont(21.461),
     fontWeight: 500,
-    lineHeight: 32.192,
-    letterSpacing: -0.215
+    lineHeight: scaleHeight(32.192),
+    letterSpacing: scaleLetterSpacing(-0.215)
   },
   termsPolicyHappyTxt: {
     color: HappyColor,
-    fontSize: 21.461,
+    fontSize: scaleFont(21.461),
     fontWeight: 600,
-    lineHeight: 32.192,
-    letterSpacing: -0.215,
+    lineHeight: scaleHeight(32.192),
+    letterSpacing: scaleLetterSpacing(-0.215),
     textDecorationLine: 'underline'
   }
 });
+
 export default function LoginOptions() {
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
@@ -346,12 +359,13 @@ export default function LoginOptions() {
   const cardStyle = {
     ...styles.card,
     paddingBottom: bottomSafeHeight
-  }
+  };
+
   return (
     <View style={rootStyle}>
       <View style={styles.topSection}>
         <View style={styles.logoBox}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backArrow}
             onPress={() => navigation.goBack()}
           >
@@ -365,13 +379,11 @@ export default function LoginOptions() {
           />
         </View>
       </View>
-
       <View style={cardStyle}>
         <View style={styles.header}>
           <CustomText style={styles.heading}>Welcome Back!</CustomText>
           <CustomText style={styles.subhead}>Choose a way to Login to your account</CustomText>
         </View>
-
         <View style={styles.loginOptions1}>
           <TouchableOpacity style={styles.loginOption1Btn}>
             <Image source={FacebookIcon} style={styles.icons}/>
@@ -403,16 +415,16 @@ export default function LoginOptions() {
         </View>
         <View style={styles.termsPolicy}>
           <CustomText style={styles.termsPolicyBlackTxt}>
-            By continuing, you agree to our 
+            By continuing, you agree to our
           </CustomText>
           <CustomText style={styles.termsPolicyHappyTxt}>
-            Terms of service 
+            Terms of service
           </CustomText>
           <CustomText style={styles.termsPolicyBlackTxt}>
             and
           </CustomText>
           <CustomText style={styles.termsPolicyHappyTxt}>
-              Privacy Policy.
+            Privacy Policy.
           </CustomText>
         </View>
       </View>
