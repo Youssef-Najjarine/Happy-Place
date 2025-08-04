@@ -4,8 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { HappyColor, HappyColorFade, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
-import { scaleFont, scaleHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
-import { scaleWidthPercent, scaleHeightPercent} from 'src/utils/scaleLayout';
+import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
+import { scaleWidth, scaleHeight, moderateScale} from 'src/utils/scaleLayout';
 import CustomText from 'src/components/FontFamilyText';
 import BackArrow from 'assets/images/loginOptions/back-arrow-white-icon.svg';
 import Logo from 'assets/images/global/logo.png';
@@ -22,7 +22,7 @@ const phoneStyles = StyleSheet.create({
     width: '100%'
   },
   topSection: {
-    height: scaleHeightPercent(173),
+    height: '21.3%',
     width: '100%'
   },
   logoBox: {
@@ -33,151 +33,151 @@ const phoneStyles = StyleSheet.create({
     position: 'relative'
   },
   backArrow: {
+    width: scaleWidth(42),
+    height: scaleHeight(42),
+    top: scaleHeight(6),
+    left: scaleWidth(20),
+    borderRadius: scaleWidth(99),
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
-    width: scaleWidthPercent(42),
-    height: scaleHeightPercent(42, 173),
-    top: scaleHeightPercent(6, 173),
-    left: scaleWidthPercent(20),
-    backgroundColor: '#D84863',
-    borderRadius: 99
+    backgroundColor: '#D84863'
   },
   backArrowIcon: {
-    width: scaleWidthPercent(28, 42),
-    height: scaleHeightPercent(28, 42),
+    width: scaleWidth(28),
+    height: scaleHeight(28),
     resizeMode: 'contain'
   },
   logoImg: {
-    width: scaleWidthPercent(108),
-    height: scaleHeightPercent(108, 173),
+    width: scaleWidth(108),
+    height: scaleHeight(108),
     resizeMode: 'contain'
   },
   card: {
+    shadowRadius: scaleWidth(30),
+    elevation: moderateScale(5),
+    borderTopLeftRadius: scaleWidth(24),
+    borderTopRightRadius: scaleWidth(24),
+    paddingTop: scaleHeight(20),
     width: '100%',
-    height: scaleHeightPercent(639),
+    height: '78.7%',
     backgroundColor: White,
     shadowColor: '#094173',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
-    shadowRadius: 30,
-    elevation: 5,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: scaleHeightPercent(20, 595)
+    justifyContent: 'space-between'
   },
   header: {
-    height: scaleHeightPercent(62, 595),
+    height: scaleHeight(62),
     justifyContent: 'space-between'
   },
   loginOptions1: {
-    width: scaleWidthPercent(335),
-    height: scaleHeightPercent(254, 595),
-    justifyContent: 'space-between',
+    width: scaleWidth(335),
+    height: scaleHeight(254),
+    justifyContent: 'space-between'
   },
   divider: {
-    width: scaleWidthPercent(335),
-    height: scaleHeightPercent(21, 595),
+    width: scaleWidth(335),
+    height: scaleHeight(21),
+    gap: scaleWidth(8),
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: scaleWidthPercent(8, 335)
+    alignItems: 'center'
   },
   loginOptions2: {
-    width: scaleWidthPercent(335),
-    height: scaleHeightPercent(56, 595)
+    width: scaleWidth(335),
+    height: scaleHeight(56)
   },
   termsPolicy: {
-    width: scaleWidthPercent(335),
-    height: scaleHeightPercent(48, 595),
+    width: scaleWidth(335),
+    height: scaleHeight(48),
+    gap: scaleWidth(6),
     flexWrap: 'wrap',
-    gap: scaleWidthPercent(6, 335),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center'
   },
   heading: {
+    fontSize: scaleFont(24),
+    lineHeight: scaleLineHeight(36),
     textAlign: 'center',
     color: Black,
-    fontSize: scaleFont(24),
-    fontWeight: 700,
-    lineHeight: scaleHeight(36)
+    fontWeight: 700
   },
   subhead: {
-    color: 'rgba(35, 35, 35, 0.50)',
     fontSize: scaleFont(16),
-    fontWeight: 500,
-    lineHeight: scaleHeight(24)
+    lineHeight: scaleLineHeight(24),
+    color: 'rgba(35, 35, 35, 0.50)',
+    fontWeight: 500
   },
   loginOption1Btn: {
+    height: scaleHeight(56),
+    gap: scaleWidth(8),
+    borderWidth: scaleWidth(1),
+    borderRadius: scaleWidth(67.067),
     width: '100%',
-    height: scaleHeightPercent(56, 254),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scaleWidthPercent(8, 335),
-    borderWidth: 1,
     borderColor: 'rgba(237, 83, 112, 0.20)',
-    backgroundColor: HappyColorFade,
-    borderRadius: 67.067,
+    backgroundColor: HappyColorFade
   },
   icons: {
-    width: scaleWidthPercent(24, 335),
-    height: scaleHeightPercent(24, 56),
+    width: scaleWidth(24),
+    height: scaleHeight(24),
     resizeMode: 'contain'
   },
   loginOption1BtnText: {
-    color: Black,
     fontSize: scaleFont(16),
-    fontWeight: 600,
-    lineHeight: scaleHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16)
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    color: Black,
+    fontWeight: 600
   },
   line: {
-    width: scaleWidthPercent(153, 335),
-    height: scaleHeightPercent(1, 21),
+    width: scaleWidth(153),
+    height: scaleHeight(1),
     backgroundColor: 'rgba(35, 35, 35, 0.20)',
     opacity: 0.6
   },
   or: {
-    color: Black,
     fontSize: scaleFont(14),
-    fontWeight: 600,
-    lineHeight: scaleHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14)
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    color: Black,
+    fontWeight: 600
   },
   signUpBtn: {
+    gap: scaleWidth(10),
+    borderRadius: scaleWidth(99),
     width: '100%',
     height: '100%',
-    gap: scaleWidthPercent(10, 335),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 0,
-    borderRadius: 99,
     backgroundColor: HappyColor
   },
   signUpBtnText: {
-    color: White,
     fontSize: scaleFont(16),
-    fontWeight: 600,
-    lineHeight: scaleHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16)
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    color: White,
+    fontWeight: 600
   },
   termsPolicyBlackTxt: {
-    color: Black,
     fontSize: scaleFont(16),
-    fontWeight: 500,
-    lineHeight: scaleHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16)
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    color: Black,
+    fontWeight: 500
   },
   termsPolicyHappyTxt: {
-    color: HappyColor,
     fontSize: scaleFont(16),
-    fontWeight: 600,
-    lineHeight: scaleHeight(24),
+    lineHeight: scaleLineHeight(24),
     letterSpacing: scaleLetterSpacing(-0.16),
+    color: HappyColor,
+    fontWeight: 600,
     textDecorationLine: 'underline'
   }
 });
@@ -190,7 +190,7 @@ const tabletStyles = StyleSheet.create({
   },
   topSection: {
     width: '100%',
-    height: scaleHeightPercent(265.00398, 1133),
+    height: '23.4%'
   },
   logoBox: {
     height: '100%',
@@ -200,150 +200,150 @@ const tabletStyles = StyleSheet.create({
     position: 'relative'
   },
   backArrow: {
-    width: scaleWidthPercent(56.336),
-    height: scaleHeightPercent(56.336, 265.00398),
+    width: scaleWidth(56.336),
+    height: scaleHeight(56.336),
+    top: scaleHeight(22),
+    left: scaleWidth(24),
+    borderRadius: scaleWidth(132.792),
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
-    top: 22,
-    left: 24,
-    backgroundColor: '#D84863',
-    borderRadius: 132.792
+    backgroundColor: '#D84863'
   },
   backArrowIcon: {
-    width: scaleWidthPercent(37.55733, 56.336),
-    height: scaleHeightPercent(37.55733, 56.336),
+    width: scaleWidth(37.55733),
+    height: scaleHeight(37.55733),
     resizeMode: 'contain'
   },
   logoImg: {
-    width: scaleWidthPercent(144.86398),
-    height: scaleHeightPercent(144.86398, 265.00398),
+    width: scaleWidth(144.86398),
+    height: scaleHeight(144.86398),
     resizeMode: 'contain'
   },
   card: {
-    height: scaleHeightPercent(868),
+    paddingTop: scaleHeight(24),
+    shadowRadius: scaleWidth(30),
+    elevation: moderateScale(5),
+    height: '76.6%',
     backgroundColor: White,
     shadowColor: '#094173',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
-    shadowRadius: 30,
-    elevation: 5,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: scaleHeightPercent(24, 828)
+    justifyContent: 'space-between'
   },
   header: {
-    height: scaleHeightPercent(70, 828),
+    height: scaleHeight(70),
     justifyContent: 'space-between'
   },
   loginOptions1: {
-    width: scaleWidthPercent(696, 744),
-    height: scaleHeightPercent(352.768, 828),
+    width: scaleWidth(696),
+    height: scaleHeight(352.768),
     justifyContent: 'space-between',
   },
   divider: {
-    width: scaleWidthPercent(696, 744),
-    height: scaleHeightPercent(27, 828),
+    width: scaleWidth(696),
+    height: scaleHeight(27),
+    gap: scaleWidth(10.73),
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: scaleWidthPercent(10.73, 696)
+    alignItems: 'center'
   },
   loginOptions2: {
-    width: scaleWidthPercent(696, 744),
-    height: scaleHeightPercent(72.192, 828),
+    width: scaleWidth(696),
+    height: scaleHeight(72.192)
   },
   termsPolicy: {
-    width: scaleWidthPercent(690.34668, 744),
-    height: scaleHeightPercent(32, 828),
+    width: scaleWidth(690.34668),
+    height: scaleHeight(32),
     flexWrap: 'wrap',
-    gap: scaleWidthPercent(10, 690.34668),
+    gap: scaleWidth(10),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center'
   },
   heading: {
+    fontSize: scaleFont(26),
+    lineHeight: scaleLineHeight(39),
     textAlign: 'center',
     color: Black,
-    fontSize: scaleFont(26),
-    fontWeight: 700,
-    lineHeight: scaleHeight(39)
+    fontWeight: 700
   },
   subhead: {
-    color: 'rgba(35, 35, 35, 0.50)',
     fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    color: 'rgba(35, 35, 35, 0.50)',
     fontWeight: 500,
-    lineHeight: scaleHeight(27)
   },
   loginOption1Btn: {
+    gap: scaleWidth(10.73),
+    borderWidth: scaleWidth(1.341),
+    borderRadius: scaleWidth(89.959),
+    height: scaleHeight(72.192),
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scaleWidthPercent(10.73, 696),
-    borderWidth: 1.341,
     borderColor: 'rgba(237, 83, 112, 0.20)',
-    backgroundColor: HappyColorFade,
-    borderRadius: 89.959,
-    height: scaleHeightPercent(72.192, 336.768),
+    backgroundColor: HappyColorFade
   },
   icons: {
-    width: scaleWidthPercent(32.192, 696),
-    height: scaleHeightPercent(32.192, 72.192),
+    width: scaleWidth(32.192),
+    height: scaleHeight(32.192),
     resizeMode: 'contain'
   },
   loginOption1BtnText: {
-    color: Black,
     fontSize: scaleFont(20),
-    fontWeight: 600,
-    lineHeight: scaleHeight(30),
-    letterSpacing: scaleLetterSpacing(-0.2)
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    color: Black,
+    fontWeight: 600
   },
   line: {
-    width: scaleWidthPercent(328.76935, 696),
-    height: scaleHeightPercent(1.341, 27),
+    width: scaleWidth(328.76935),
+    height: scaleHeight(1.341),
     backgroundColor: 'rgba(35, 35, 35, 0.20)',
     opacity: 0.6
   },
   or: {
-    color: Black,
     fontSize: scaleFont(18),
-    fontWeight: 600,
-    lineHeight: scaleHeight(27),
-    letterSpacing: scaleLetterSpacing(-0.18)
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    color: Black,
+    fontWeight: 600
   },
   signUpBtn: {
+    gap: scaleWidth(13.41),
+    borderRadius: scaleWidth(132.792),
     width: '100%',
     height: '100%',
-    gap: scaleWidthPercent(13.41, 696),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 0,
-    borderRadius: 132.792,
     backgroundColor: HappyColor
   },
   signUpBtnText: {
-    color: White,
     fontSize: scaleFont(20),
-    fontWeight: 600,
-    lineHeight: scaleHeight(30),
-    letterSpacing: scaleLetterSpacing(-0.2)
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    color: White,
+    fontWeight: 600
   },
   termsPolicyBlackTxt: {
-    color: Black,
     fontSize: scaleFont(21.461),
-    fontWeight: 500,
-    lineHeight: scaleHeight(32.192),
-    letterSpacing: scaleLetterSpacing(-0.215)
+    lineHeight: scaleLineHeight(32.192),
+    letterSpacing: scaleLetterSpacing(-0.215),
+    color: Black,
+    fontWeight: 500
   },
   termsPolicyHappyTxt: {
-    color: HappyColor,
     fontSize: scaleFont(21.461),
-    fontWeight: 600,
-    lineHeight: scaleHeight(32.192),
+    lineHeight: scaleLineHeight(32.192),
     letterSpacing: scaleLetterSpacing(-0.215),
+    color: HappyColor,
+    fontWeight: 600,
     textDecorationLine: 'underline'
   }
 });
