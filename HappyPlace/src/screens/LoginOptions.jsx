@@ -54,6 +54,7 @@ const phoneStyles = StyleSheet.create({
     resizeMode: 'contain'
   },
   card: {
+    flex: 1,
     shadowRadius: scaleWidth(30),
     elevation: moderateScale(5),
     borderTopLeftRadius: scaleWidth(24),
@@ -90,7 +91,7 @@ const phoneStyles = StyleSheet.create({
   },
   termsPolicy: {
     width: scaleWidth(335),
-    height: scaleHeight(48),
+    height: scaleHeight(52),
     gap: scaleWidth(6),
     flexWrap: 'wrap',
     flexDirection: 'row',
