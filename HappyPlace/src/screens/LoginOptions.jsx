@@ -56,8 +56,8 @@ const phoneStyles = StyleSheet.create({
   card: {
     shadowRadius: scaleWidth(30),
     elevation: moderateScale(5),
-    borderTopLeftRadius: scaleWidth(24),
-    borderTopRightRadius: scaleWidth(24),
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     paddingTop: scaleHeight(20),
     flex: 1,
     width: '100%',

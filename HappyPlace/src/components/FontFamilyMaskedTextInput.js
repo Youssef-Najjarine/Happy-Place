@@ -1,5 +1,6 @@
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { MaskedTextInput } from 'react-native-mask-text';
 
 const weightMap = {
   100: 'Thin',
@@ -13,13 +14,12 @@ const weightMap = {
   900: 'Black',
 };
 
-const CustomText = ({ style = {}, ...rest }) => {
+export default function CustomMaskedTextInput({ style = {}, ...rest }) {
   const flat = StyleSheet.flatten(style) || {};
 
-  const numericWeight = Number(flat.fontWeight) || 400;
+  const fontWeight = flat.fontWeight || 400;
   const fontStyle = flat.fontStyle || 'normal';
-
-  const baseName = weightMap[numericWeight] || 'Regular';
+  const baseName = weightMap[fontWeight] || 'Regular';
   const italicSuffix = fontStyle === 'italic' ? 'Italic' : '';
   const fontFamily = `Urbanist-${baseName}${italicSuffix}`;
 
@@ -30,7 +30,5 @@ const CustomText = ({ style = {}, ...rest }) => {
     fontStyle: undefined,
   };
 
-  return <Text style={mergedStyle} {...rest} />;
-};
-
-export default CustomText;
+  return <MaskedTextInput style={mergedStyle} {...rest} />;
+}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { TextInput, StyleSheet } from 'react-native';
 
 const weightMap = {
   100: 'Thin',
@@ -13,13 +13,12 @@ const weightMap = {
   900: 'Black',
 };
 
-const CustomText = ({ style = {}, ...rest }) => {
+export default function CustomTextInput({ style = {}, ...rest }) {
   const flat = StyleSheet.flatten(style) || {};
 
-  const numericWeight = Number(flat.fontWeight) || 400;
+  const fontWeight = flat.fontWeight || 400;
   const fontStyle = flat.fontStyle || 'normal';
-
-  const baseName = weightMap[numericWeight] || 'Regular';
+  const baseName = weightMap[fontWeight] || 'Regular';
   const italicSuffix = fontStyle === 'italic' ? 'Italic' : '';
   const fontFamily = `Urbanist-${baseName}${italicSuffix}`;
 
@@ -30,7 +29,5 @@ const CustomText = ({ style = {}, ...rest }) => {
     fontStyle: undefined,
   };
 
-  return <Text style={mergedStyle} {...rest} />;
-};
-
-export default CustomText;
+  return <TextInput style={mergedStyle} {...rest} />;
+}

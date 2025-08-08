@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import { HappyColor, HappyColorFade, White, Black } from 'src/constants/colors';
+import { HappyColor, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
 import CustomText from 'src/components/FontFamilyText';
+import CustomTextInput from 'src/components/FontFamilyTextInput';
+import CustomMaskedTextInput from 'src/components/FontFamilyMaskedTextInput';
 import Check from 'assets/images/login/white-check-icon.svg';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
 import EmailIcon from 'assets/images/global/email-outline-icon.svg';
@@ -24,12 +26,13 @@ const phoneStyles = StyleSheet.create({
   card: {
     shadowRadius: scaleWidth(30),
     elevation: moderateScale(5),
-    borderTopLeftRadius: scaleWidth(24),
-    borderTopRightRadius: scaleWidth(24),
-    width: '100%',
-    height: '100%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     paddingTop: scaleHeight(20),
     paddingHorizontal: scaleWidth(20),
+    width: '100%',
+    height: '100%',
+    flex: 1,
     backgroundColor: White,
     shadowColor: '#094173',
     shadowOffset: { width: 0, height: 8 },
@@ -134,18 +137,21 @@ const phoneStyles = StyleSheet.create({
   },
   input: {
     height: scaleHeight(48),
-    borderWidth: scaleWidth(1.341),
-    borderRadius: scaleWidth(89.959),
+    borderWidth: scaleWidth(1),
+    borderRadius: scaleWidth(67.067),
     paddingLeft: scaleWidth(48),
     paddingVertical: scaleHeight(12),
     paddingRight: scaleWidth(16),
     fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(1.4),
+    fontWeight: 500,
     borderColor: '#F9F9F9',
     backgroundColor: 'rgba(249, 249, 249, 0.30)',
-    color: Black,
+    color: Black
   },
   largeRightPadding: {
-    paddingRight: scaleWidth(49.204),
+    paddingRight: scaleWidth(48)
   },
   eyeIcons: {
     top: scaleHeight(12),
@@ -161,30 +167,30 @@ const phoneStyles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   rememberMe: {
+    gap: scaleWidth(6),
     flexDirection: 'row',
-    gap: scaleWidth(6)
-
+    alignItems: 'center'
   },
   rememberMeBtn: {
-    width: scaleWidth(26.827),
-    height: scaleHeight(26.827),
+    width: scaleWidth(20),
+    height: scaleHeight(20),
     borderWidth: scaleWidth(1.341),
-    borderRadius: scaleWidth(10.731),
+    borderRadius: scaleWidth(8),
     borderColor: '#F9F9F9',
     backgroundColor: 'rgba(249, 249, 249, 0.30)',
 
   },
   rememberMeBtnSelected: {
-    width: scaleWidth(26.827),
-    height: scaleHeight(26.827),
-    borderRadius: scaleWidth(10.731),
+    width: scaleWidth(20),
+    height: scaleHeight(20),
+    borderRadius: scaleWidth(8),
     backgroundColor: HappyColor,
     justifyContent: 'center',
     alignItems: 'center'
   },
   checkIcon: {
-    width: scaleWidth(11.401),
-    height: scaleHeight(7.592)
+    width: scaleWidth(8.5),
+    height: scaleHeight(5.66)
   },
   rememberMeTxt: {
     fontSize: scaleFont(14),
@@ -247,59 +253,61 @@ const tabletStyles = StyleSheet.create({
     width: '100%'
   },
   card: {
-    shadowRadius: scaleWidth(30),
-    elevation: moderateScale(5),
-    borderTopLeftRadius: scaleWidth(24),
-    borderTopRightRadius: scaleWidth(24),
+    marginTop: scaleHeight(20),
+    paddingTop: scaleHeight(26.83),
+    paddingHorizontal: scaleWidth(24),
+    elevation: moderateScale(12),
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     width: '100%',
     height: '100%',
-    paddingTop: scaleHeight(20),
-    paddingHorizontal: scaleWidth(20),
+    flex: 1,
     backgroundColor: White,
     shadowColor: '#094173',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.10,
+    shadowOffset: { width: 0, height: 10.731 },
+    shadowRadius: 20.12,
     justifyContent: 'space-between'
   },
   part1: {
-    height: scaleHeight(467)
+    height: scaleHeight(615)
   },
   part2: {
-    height: scaleHeight(89)
+    height: scaleHeight(113.2)
   },
   BackArrow: {
-    width: scaleWidth(42),
-    height: scaleHeight(42),
-    borderRadius: scaleWidth(99),
-    marginBottom: scaleHeight(24),
+    width: scaleWidth(56.336),
+    height: scaleHeight(56.336),
+    borderRadius: scaleWidth(132.792),
+    marginBottom: scaleHeight(32),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F9F9F9'
   },
   backArrowIcon: {
-    width: scaleWidth(28),
-    height: scaleHeight(28),
+    width: scaleWidth(37.557),
+    height: scaleHeight(37.557),
   },
   signIn: {
-    fontSize: scaleFont(24),
-    lineHeight: scaleLineHeight(36),
-    marginBottom: scaleHeight(2),
+    fontSize: scaleFont(26),
+    lineHeight: scaleLineHeight(39),
+    marginBottom: scaleHeight(4),
     fontWeight: 700,
     color: Black,
   },
   signInDesc: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    marginBottom: scaleHeight(24),
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    marginBottom: scaleHeight(32),
     fontWeight: 500,
     color: 'rgba(35, 35, 35, 0.50)',
   },
   signInType: {
-    borderRadius: scaleWidth(67.067),
-    borderWidth: scaleWidth(1),
-    paddingHorizontal: scaleWidth(4),
-    marginBottom: scaleHeight(16),
-    height: scaleHeight(48),
+    borderRadius: scaleWidth(89.959),
+    borderWidth: scaleWidth(1.341),
+    paddingHorizontal: scaleWidth(6),
+    marginBottom: scaleHeight(24),
+    height: scaleHeight(64),
     width: '100%',
     borderColor: '#F9F9F9',
     backgroundColor: 'rgba(249, 249, 249, 0.30)',
@@ -308,101 +316,104 @@ const tabletStyles = StyleSheet.create({
     alignItems: 'center'
   },
   signInTypeSelectedBtn: {
-    width: scaleWidth(159.5),
-    height: scaleHeight(40),
+    width: scaleWidth(336),
+    height: scaleHeight(52),
     borderRadius: scaleWidth(99),
     backgroundColor: HappyColor,
     justifyContent: 'center',
     alignItems: 'center'
   },
   signInTypeSelectedtxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 700,
     color: White
   },
   signInTypeNotSelectedBtn: {
-    width: scaleWidth(159.5),
-    height: scaleHeight(40),
+    width: scaleWidth(336),
+    height: scaleHeight(52),
     borderRadius: scaleWidth(99),
     justifyContent: 'center',
     alignItems: 'center'
   },
   signInTypeNotSelectedTxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 600,
     color: '#1D1E25'
   },
   emailPhoneView: {
-    marginBottom: scaleHeight(12)
-  },
-  passwordView: {
     marginBottom: scaleHeight(16)
   },
+  passwordView: {
+    marginBottom: scaleHeight(24)
+  },
   textBoxLabel: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.28),
-    marginBottom: scaleHeight(4),
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.36),
+    marginBottom: scaleHeight(6),
     fontWeight: 600,
     color: Black
   },
   textBoxIcon: {
-    width: scaleWidth(24),
-    height: scaleHeight(24),
-    top: scaleHeight(12),
-    left: scaleWidth(16),
+    width: scaleWidth(32.19),
+    height: scaleHeight(32.19),
+    top: scaleHeight(16),
+    left: scaleWidth(20),
     position: 'absolute',
   },
   input: {
-    height: scaleHeight(48),
+    height: scaleHeight(64.192),
     borderWidth: scaleWidth(1.341),
     borderRadius: scaleWidth(89.959),
-    paddingLeft: scaleWidth(48),
-    paddingVertical: scaleHeight(12),
-    paddingRight: scaleWidth(16),
-    fontSize: scaleFont(16),
+    paddingLeft: scaleWidth(64.192),
+    paddingVertical: scaleHeight(16),
+    paddingRight: scaleWidth(20),
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(1.8),
+    fontWeight: 500,
     borderColor: '#F9F9F9',
     backgroundColor: 'rgba(249, 249, 249, 0.30)',
     color: Black,
   },
   largeRightPadding: {
-    paddingRight: scaleWidth(49.204),
+    paddingRight: scaleWidth(64.19),
   },
   eyeIcons: {
-    top: scaleHeight(12),
-    right: scaleWidth(16),
+    top: scaleHeight(16),
+    right: scaleWidth(20),
     position: 'absolute'
   },
   eyeIcon: {
-    width: scaleWidth(25.204),
-    height: scaleHeight(24)
+    width: scaleWidth(33.807),
+    height: scaleHeight(32.192)
   },
   rememberMeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between'
   },
   rememberMe: {
+    gap: scaleWidth(8),
     flexDirection: 'row',
-    gap: scaleWidth(6)
-
+    alignItems: 'center'
   },
   rememberMeBtn: {
-    width: scaleWidth(26.827),
-    height: scaleHeight(26.827),
     borderWidth: scaleWidth(1.341),
     borderRadius: scaleWidth(10.731),
+    width: 37,
+    height: 37,
     borderColor: '#F9F9F9',
     backgroundColor: 'rgba(249, 249, 249, 0.30)',
 
   },
   rememberMeBtnSelected: {
-    width: scaleWidth(26.827),
-    height: scaleHeight(26.827),
     borderRadius: scaleWidth(10.731),
+    width: 37,
+    height: 37,
     backgroundColor: HappyColor,
     justifyContent: 'center',
     alignItems: 'center'
@@ -412,54 +423,54 @@ const tabletStyles = StyleSheet.create({
     height: scaleHeight(7.592)
   },
   rememberMeTxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.28),
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.36),
     fontWeight: 500,
     color: Black
   },
   forgotPasswordTxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.28),
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.36),
     fontWeight: 600,
     color: HappyColor
   },
   login: {
-    marginBottom: scaleHeight(10)
+    marginBottom: scaleHeight(12)
   },
   loginBtn: {
-    height: scaleHeight(45),
-    borderRadius: scaleWidth(99),
+    height: scaleHeight(59.192),
+    borderRadius: scaleWidth(132.792),
     backgroundColor: HappyColor,
     justifyContent: 'center',
     alignItems: 'center'
   },
   loginBtnText: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 700,
     color: White
   },
   dontHaveAccount: {
-    gap: scaleWidth(5),
+    gap: scaleWidth(7),
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
   },
   dontHaveAccountTxt: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
     fontWeight: 600,
     color: Black
   },
   signUp: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
     fontWeight: 600,
     color: HappyColor
   }
@@ -515,7 +526,7 @@ export default function Login() {
             <View style={styles.emailPhoneView}>
                 <CustomText style={styles.textBoxLabel}>Email</CustomText>
                 <View>
-                    <TextInput
+                    <CustomTextInput
                     style={styles.input}
                     keyboardType="email-address"
                     autoCapitalize="none"
@@ -530,8 +541,9 @@ export default function Login() {
                 <View style={styles.emailPhoneView}>
                     <CustomText style={styles.textBoxLabel}>Phone Number</CustomText>
                     <View>
-                        <TextInput
+                        <CustomMaskedTextInput
                         style={styles.input}
+                        mask="(999) 999-9999"
                         keyboardType="phone-pad"
                         value={phone}
                         onChangeText={setPhone}
@@ -543,7 +555,7 @@ export default function Login() {
             <View style={styles.passwordView}>
                 <CustomText style={styles.textBoxLabel}>Password</CustomText>
                 <View>
-                    <TextInput
+                    <CustomTextInput
                         style={[styles.input, styles.largeRightPadding]}
                         secureTextEntry={!showPassword}
                         value={password}
