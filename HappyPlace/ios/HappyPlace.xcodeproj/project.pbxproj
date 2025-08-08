@@ -11,6 +11,7 @@
 		018F9DF528094296B6D8D380 /* Urbanist-SemiBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3DEF1A74122B429E8B509C65 /* Urbanist-SemiBoldItalic.ttf */; };
 		0359E726CC884793B4AE4BCB /* Urbanist-ExtraBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 56AABD18FE244E9480921E1F /* Urbanist-ExtraBoldItalic.ttf */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		310A514A5DAA73C960C9633B /* libPods-HappyPlace.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8D0C750BEE66FAC82531F338 /* libPods-HappyPlace.a */; };
 		354D6A394B594F7D969CBCE2 /* Urbanist-ThinItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F7F0BEF24C314B80A8C15379 /* Urbanist-ThinItalic.ttf */; };
 		43A6745349D14CBE85A71126 /* Urbanist-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F39A8F0A6F33432DB78B4FA2 /* Urbanist-Italic.ttf */; };
 		54CC66AC36EA4FFC809D2EAB /* Urbanist-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D9144E04F6DB4023B6579BA9 /* Urbanist-LightItalic.ttf */; };
@@ -21,7 +22,6 @@
 		75962876768C483B9273A2BE /* Urbanist-ExtraLightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 350E179A4B984E9694E0D4E2 /* Urbanist-ExtraLightItalic.ttf */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		7C9A27CECC21410C85A7C26C /* Urbanist-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 10F9C230CE344E23ACD6CC42 /* Urbanist-Bold.ttf */; };
-		7ED2F9092AA20A83854787C1 /* libPods-HappyPlace.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F0A6FF7A0E33E476EF7752AA /* libPods-HappyPlace.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		88945905B2A445C985FB27D5 /* Urbanist-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FB5727B328F94C58AB81DA99 /* Urbanist-Light.ttf */; };
 		8F5E1ACFC4BE41A5BA476539 /* Urbanist-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 684AA3BEE3A3499D8277B78D /* Urbanist-SemiBold.ttf */; };
@@ -33,7 +33,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0297EFA2A15ED8444D831D2C /* Pods-HappyPlace.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HappyPlace.debug.xcconfig"; path = "Target Support Files/Pods-HappyPlace/Pods-HappyPlace.debug.xcconfig"; sourceTree = "<group>"; };
 		05DBB85B47504DB78CD277B0 /* Urbanist-BlackItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-BlackItalic.ttf"; path = "../assets/fonts/Urbanist-BlackItalic.ttf"; sourceTree = "<group>"; };
 		10F9C230CE344E23ACD6CC42 /* Urbanist-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-Bold.ttf"; path = "../assets/fonts/Urbanist-Bold.ttf"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* HappyPlace.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HappyPlace.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -43,20 +42,21 @@
 		1B9BCBB4003F47CAB0D4C584 /* Urbanist-Black.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-Black.ttf"; path = "../assets/fonts/Urbanist-Black.ttf"; sourceTree = "<group>"; };
 		350E179A4B984E9694E0D4E2 /* Urbanist-ExtraLightItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-ExtraLightItalic.ttf"; path = "../assets/fonts/Urbanist-ExtraLightItalic.ttf"; sourceTree = "<group>"; };
 		3DEF1A74122B429E8B509C65 /* Urbanist-SemiBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-SemiBoldItalic.ttf"; path = "../assets/fonts/Urbanist-SemiBoldItalic.ttf"; sourceTree = "<group>"; };
+		3F2923753753268AB27BE99D /* Pods-HappyPlace.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HappyPlace.debug.xcconfig"; path = "Target Support Files/Pods-HappyPlace/Pods-HappyPlace.debug.xcconfig"; sourceTree = "<group>"; };
 		4776EABD2B4F435696A49386 /* Urbanist-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-Medium.ttf"; path = "../assets/fonts/Urbanist-Medium.ttf"; sourceTree = "<group>"; };
 		56AABD18FE244E9480921E1F /* Urbanist-ExtraBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-ExtraBoldItalic.ttf"; path = "../assets/fonts/Urbanist-ExtraBoldItalic.ttf"; sourceTree = "<group>"; };
 		5A57BF2F3D7B4450ABE42F02 /* Urbanist-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-BoldItalic.ttf"; path = "../assets/fonts/Urbanist-BoldItalic.ttf"; sourceTree = "<group>"; };
 		684AA3BEE3A3499D8277B78D /* Urbanist-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-SemiBold.ttf"; path = "../assets/fonts/Urbanist-SemiBold.ttf"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = HappyPlace/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = HappyPlace/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		8D0C750BEE66FAC82531F338 /* libPods-HappyPlace.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-HappyPlace.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AEC19A2DB9E4F9C25444FFA7 /* Pods-HappyPlace.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HappyPlace.release.xcconfig"; path = "Target Support Files/Pods-HappyPlace/Pods-HappyPlace.release.xcconfig"; sourceTree = "<group>"; };
 		C8B14BB572FF41BD9A5BF9BC /* Urbanist-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-ExtraBold.ttf"; path = "../assets/fonts/Urbanist-ExtraBold.ttf"; sourceTree = "<group>"; };
 		D2DDF7870DC74A67984E3C07 /* Urbanist-Thin.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-Thin.ttf"; path = "../assets/fonts/Urbanist-Thin.ttf"; sourceTree = "<group>"; };
 		D8731FC3BA094D93869B9DA6 /* Urbanist-MediumItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-MediumItalic.ttf"; path = "../assets/fonts/Urbanist-MediumItalic.ttf"; sourceTree = "<group>"; };
 		D9144E04F6DB4023B6579BA9 /* Urbanist-LightItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-LightItalic.ttf"; path = "../assets/fonts/Urbanist-LightItalic.ttf"; sourceTree = "<group>"; };
-		E449CE6C87168A2D7708D785 /* Pods-HappyPlace.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HappyPlace.release.xcconfig"; path = "Target Support Files/Pods-HappyPlace/Pods-HappyPlace.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		ED42F37FF4984119A83F768A /* Urbanist-ExtraLight.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-ExtraLight.ttf"; path = "../assets/fonts/Urbanist-ExtraLight.ttf"; sourceTree = "<group>"; };
-		F0A6FF7A0E33E476EF7752AA /* libPods-HappyPlace.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-HappyPlace.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F39A8F0A6F33432DB78B4FA2 /* Urbanist-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-Italic.ttf"; path = "../assets/fonts/Urbanist-Italic.ttf"; sourceTree = "<group>"; };
 		F5122AAFDB28486598FEB58A /* Urbanist-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-Regular.ttf"; path = "../assets/fonts/Urbanist-Regular.ttf"; sourceTree = "<group>"; };
 		F7F0BEF24C314B80A8C15379 /* Urbanist-ThinItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Urbanist-ThinItalic.ttf"; path = "../assets/fonts/Urbanist-ThinItalic.ttf"; sourceTree = "<group>"; };
@@ -68,7 +68,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7ED2F9092AA20A83854787C1 /* libPods-HappyPlace.a in Frameworks */,
+				310A514A5DAA73C960C9633B /* libPods-HappyPlace.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -91,7 +91,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				F0A6FF7A0E33E476EF7752AA /* libPods-HappyPlace.a */,
+				8D0C750BEE66FAC82531F338 /* libPods-HappyPlace.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -154,8 +154,8 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				0297EFA2A15ED8444D831D2C /* Pods-HappyPlace.debug.xcconfig */,
-				E449CE6C87168A2D7708D785 /* Pods-HappyPlace.release.xcconfig */,
+				3F2923753753268AB27BE99D /* Pods-HappyPlace.debug.xcconfig */,
+				AEC19A2DB9E4F9C25444FFA7 /* Pods-HappyPlace.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -167,13 +167,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "HappyPlace" */;
 			buildPhases = (
-				339AC44D4BED3101718419F9 /* [CP] Check Pods Manifest.lock */,
+				7BD27797E8317652E6A162C3 /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				BEA03781565AA180D224DE9E /* [CP] Embed Pods Frameworks */,
-				C28A4367577CAB1789ECAA13 /* [CP] Copy Pods Resources */,
+				51935FA0B7CB76E47234EE9E /* [CP] Embed Pods Frameworks */,
+				481E37F4A400B2BED7EFCF61 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -263,7 +263,41 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"$WITH_ENVIRONMENT $REACT_NATIVE_XCODE\"\n";
 		};
-		339AC44D4BED3101718419F9 /* [CP] Check Pods Manifest.lock */ = {
+		481E37F4A400B2BED7EFCF61 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-HappyPlace/Pods-HappyPlace-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-HappyPlace/Pods-HappyPlace-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HappyPlace/Pods-HappyPlace-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		51935FA0B7CB76E47234EE9E /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-HappyPlace/Pods-HappyPlace-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-HappyPlace/Pods-HappyPlace-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HappyPlace/Pods-HappyPlace-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		7BD27797E8317652E6A162C3 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -285,40 +319,6 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		BEA03781565AA180D224DE9E /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-HappyPlace/Pods-HappyPlace-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-HappyPlace/Pods-HappyPlace-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HappyPlace/Pods-HappyPlace-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		C28A4367577CAB1789ECAA13 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-HappyPlace/Pods-HappyPlace-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-HappyPlace/Pods-HappyPlace-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HappyPlace/Pods-HappyPlace-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -335,7 +335,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0297EFA2A15ED8444D831D2C /* Pods-HappyPlace.debug.xcconfig */;
+			baseConfigurationReference = 3F2923753753268AB27BE99D /* Pods-HappyPlace.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -366,7 +366,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = E449CE6C87168A2D7708D785 /* Pods-HappyPlace.release.xcconfig */;
+			baseConfigurationReference = AEC19A2DB9E4F9C25444FFA7 /* Pods-HappyPlace.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
