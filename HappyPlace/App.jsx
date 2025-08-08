@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Home from 'screens/Home';
 import LoginOptions from 'screens/LoginOptions';
+import Login from 'screens/Login';
 import ChatGroups from 'screens/ChatGroups';
 
 const Stack = createNativeStackNavigator();
@@ -23,6 +24,7 @@ const App = () => {
             }}
           />
           <Stack.Screen name="LoginOptions" component={LoginOptions}/>
+          <Stack.Screen name="Login" component={Login}/>
           <Stack.Screen name="ChatGroups" component={ChatGroups} />
         </Stack.Navigator>
       </NavigationContainer>

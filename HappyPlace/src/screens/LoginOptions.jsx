@@ -54,12 +54,12 @@ const phoneStyles = StyleSheet.create({
     resizeMode: 'contain'
   },
   card: {
-    flex: 1,
     shadowRadius: scaleWidth(30),
     elevation: moderateScale(5),
     borderTopLeftRadius: scaleWidth(24),
     borderTopRightRadius: scaleWidth(24),
     paddingTop: scaleHeight(20),
+    flex: 1,
     width: '100%',
     height: '78.7%',
     backgroundColor: White,
@@ -225,6 +225,7 @@ const tabletStyles = StyleSheet.create({
     paddingTop: scaleHeight(24),
     shadowRadius: scaleWidth(30),
     elevation: moderateScale(5),
+    flex: 1,
     height: '76.6%',
     backgroundColor: White,
     shadowColor: '#094173',
@@ -398,7 +399,7 @@ export default function LoginOptions() {
             <Image source={GoogleIcon} style={styles.icons}/>
             <CustomText style={styles.loginOption1BtnText}>Sign in with Google</CustomText>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.loginOption1Btn}>
+          <TouchableOpacity style={styles.loginOption1Btn} onPress={() => navigation.navigate('Login')}>
             <HappyEmailIcon {...styles.icons}/>
             <CustomText style={styles.loginOption1BtnText}>Sign in with Email</CustomText>
           </TouchableOpacity>
