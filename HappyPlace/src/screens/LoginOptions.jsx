@@ -201,11 +201,11 @@ const tabletStyles = StyleSheet.create({
     position: 'relative'
   },
   backArrow: {
-    width: scaleWidth(56.336),
-    height: scaleHeight(56.336),
     top: scaleHeight(22),
     left: scaleWidth(24),
     borderRadius: scaleWidth(132.792),
+    width: 78,
+    height: 78,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
@@ -410,7 +410,7 @@ export default function LoginOptions() {
           <View style={styles.line} />
         </View>
         <View style={styles.loginOptions2}>
-          <TouchableOpacity style={styles.signUpBtn}>
+          <TouchableOpacity style={styles.signUpBtn} onPress={() => navigation.navigate('CreateAccount')}>
             <EmailIcon {...styles.icons}/>
             <CustomText style={styles.signUpBtnText}>Sign up with Email</CustomText>
           </TouchableOpacity>
@@ -419,15 +419,19 @@ export default function LoginOptions() {
           <CustomText style={styles.termsPolicyBlackTxt}>
             By continuing, you agree to our
           </CustomText>
-          <CustomText style={styles.termsPolicyHappyTxt}>
-            Terms of service
-          </CustomText>
+          <TouchableOpacity>
+            <CustomText style={styles.termsPolicyHappyTxt}>
+              Terms of service
+            </CustomText>
+          </TouchableOpacity>
           <CustomText style={styles.termsPolicyBlackTxt}>
             and
           </CustomText>
-          <CustomText style={styles.termsPolicyHappyTxt}>
-            Privacy Policy.
-          </CustomText>
+          <TouchableOpacity>
+            <CustomText style={styles.termsPolicyHappyTxt}>
+              Privacy Policy.
+            </CustomText>
+          </TouchableOpacity>
         </View>
       </View>
     </View>

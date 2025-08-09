@@ -385,7 +385,7 @@ export default function Home() {
         <View style={styles.signUpLogIn}>
           <View style={styles.signUp}>
             <TouchableOpacity style={styles.signUpBtn}>
-              <CustomText style={styles.signUpBtnText}>Sign Up</CustomText>
+              <CustomText style={styles.signUpBtnText} onPress={() => navigation.navigate('CreateAccount')}>Sign Up</CustomText>
             </TouchableOpacity>
           </View>
           <View style={styles.divider}>

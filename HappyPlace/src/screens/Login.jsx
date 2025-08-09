@@ -142,9 +142,9 @@ const phoneStyles = StyleSheet.create({
     paddingLeft: scaleWidth(48),
     paddingVertical: scaleHeight(12),
     paddingRight: scaleWidth(16),
-    fontSize: scaleFont(16),
+    fontSize: scaleFont(14),
     lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(1.4),
+    letterSpacing: scaleLetterSpacing(-0.14),
     fontWeight: 500,
     borderColor: '#F9F9F9',
     backgroundColor: 'rgba(249, 249, 249, 0.30)',
@@ -276,10 +276,10 @@ const tabletStyles = StyleSheet.create({
     height: scaleHeight(113.2)
   },
   BackArrow: {
-    width: scaleWidth(56.336),
-    height: scaleHeight(56.336),
     borderRadius: scaleWidth(132.792),
     marginBottom: scaleHeight(32),
+    width: 78,
+    height: 78,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F9F9F9'
@@ -374,7 +374,7 @@ const tabletStyles = StyleSheet.create({
     paddingRight: scaleWidth(20),
     fontSize: scaleFont(18),
     lineHeight: scaleLineHeight(27),
-    letterSpacing: scaleLetterSpacing(1.8),
+    letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 500,
     borderColor: '#F9F9F9',
     backgroundColor: 'rgba(249, 249, 249, 0.30)',
@@ -501,26 +501,26 @@ export default function Login() {
       <View style={cardStyle}>
         <View style={styles.part1}>
             <TouchableOpacity 
-            style={styles.BackArrow}
-            onPress={() => navigation.goBack()}
+              style={styles.BackArrow}
+              onPress={() => navigation.goBack()}
             >
-            <BackArrow {...styles.backArrowIcon}/>
+              <BackArrow {...styles.backArrowIcon}/>
             </TouchableOpacity>
             <CustomText style={styles.signIn}>Sign in</CustomText>
             <CustomText style={styles.signInDesc}>Sign In to your account</CustomText>
             <View style={styles.signInType}>
-            <TouchableOpacity
-                style={selectedSignInType === 'email' ? styles.signInTypeSelectedBtn : styles.signInTypeNotSelectedBtn}
-                onPress={() => setSelectedSignInType('email')}
-            >
-                <CustomText style={selectedSignInType === 'email' ? styles.signInTypeSelectedtxt : styles.signInTypeNotSelectedTxt}>Email Address</CustomText>
-            </TouchableOpacity>
-            <TouchableOpacity
-                style={selectedSignInType === 'phone' ? styles.signInTypeSelectedBtn : styles.signInTypeNotSelectedBtn}
-                onPress={() => setSelectedSignInType('phone')}
-            >
-                <CustomText style={selectedSignInType === 'phone' ? styles.signInTypeSelectedtxt : styles.signInTypeNotSelectedTxt}>Phone Number</CustomText>
-            </TouchableOpacity>
+              <TouchableOpacity
+                  style={selectedSignInType === 'email' ? styles.signInTypeSelectedBtn : styles.signInTypeNotSelectedBtn}
+                  onPress={() => setSelectedSignInType('email')}
+              >
+                  <CustomText style={selectedSignInType === 'email' ? styles.signInTypeSelectedtxt : styles.signInTypeNotSelectedTxt}>Email Address</CustomText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                  style={selectedSignInType === 'phone' ? styles.signInTypeSelectedBtn : styles.signInTypeNotSelectedBtn}
+                  onPress={() => setSelectedSignInType('phone')}
+              >
+                  <CustomText style={selectedSignInType === 'phone' ? styles.signInTypeSelectedtxt : styles.signInTypeNotSelectedTxt}>Phone Number</CustomText>
+              </TouchableOpacity>
             </View>
             {selectedSignInType === 'email' && (
             <View style={styles.emailPhoneView}>
@@ -595,7 +595,7 @@ export default function Login() {
             </View>
             <View style={styles.dontHaveAccount}>
                 <CustomText style={styles.dontHaveAccountTxt}>Don't have an account?</CustomText>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('CreateAccount')}>
                     <CustomText style={styles.signUp}>Sign up</CustomText>
                 </TouchableOpacity>
             </View>

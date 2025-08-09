@@ -4,9 +4,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Home from 'screens/Home';
+import ChatGroups from 'screens/ChatGroups';
+import CreateAccount from 'screens/CreateAccount';
 import LoginOptions from 'screens/LoginOptions';
 import Login from 'screens/Login';
-import ChatGroups from 'screens/ChatGroups';
 
 const Stack = createNativeStackNavigator();
 
@@ -23,9 +24,10 @@ const App = () => {
               animation: 'slide_from_right'
             }}
           />
+          <Stack.Screen name="CreateAccount" component={CreateAccount} />
+          <Stack.Screen name="ChatGroups" component={ChatGroups} />
           <Stack.Screen name="LoginOptions" component={LoginOptions}/>
           <Stack.Screen name="Login" component={Login}/>
-          <Stack.Screen name="ChatGroups" component={ChatGroups} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
