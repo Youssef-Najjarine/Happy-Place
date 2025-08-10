@@ -39,9 +39,6 @@ const phoneStyles = StyleSheet.create({
     shadowOpacity: 0.1,
     justifyContent: 'space-between'
   },
-  part1: {
-    height: scaleHeight(467)
-  },
   part2: {
     height: scaleHeight(89)
   },
@@ -268,9 +265,6 @@ const tabletStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10.731 },
     shadowRadius: 20.12,
     justifyContent: 'space-between'
-  },
-  part1: {
-    height: scaleHeight(615)
   },
   part2: {
     height: scaleHeight(113.2)

@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Home from 'screens/Home';
 import ChatGroups from 'screens/ChatGroups';
 import CreateAccount from 'screens/CreateAccount';
+import VerifyCode from 'screens/VerifyCode';
 import LoginOptions from 'screens/LoginOptions';
 import Login from 'screens/Login';
 
@@ -25,6 +26,7 @@ const App = () => {
             }}
           />
           <Stack.Screen name="CreateAccount" component={CreateAccount} />
+          <Stack.Screen name="VerifyCode" component={VerifyCode} />
           <Stack.Screen name="ChatGroups" component={ChatGroups} />
           <Stack.Screen name="LoginOptions" component={LoginOptions}/>
           <Stack.Screen name="Login" component={Login}/>

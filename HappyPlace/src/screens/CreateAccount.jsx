@@ -452,6 +452,13 @@ const canSubmit = nameValid &&
   rules.minLen && rules.number && 
   rules.lowerUpper && rules.match;
 
+const goToVerifyCode = () => {
+    const emailOrPhoneValue = selectedCreateAccountType === 'email' ? email : phone;
+    navigation.navigate('VerifyCode', {
+        contact: emailOrPhoneValue
+    });
+};
+
 const rootStyle = {
 ...styles.root,
 paddingTop: statusBarHeight
@@ -492,14 +499,14 @@ paddingBottom: bottomSafeHeight
                     <CustomText style={styles.textBoxLabel}>Full Name</CustomText>
                     <View>
                         <CustomTextInput
-                        style={styles.input}
-                        keyboardType="default"
-                        autoCapitalize="words"   
-                        autoCorrect={false}
-                        textContentType="name"
-                        autoComplete="name"  
-                        value={name}
-                        onChangeText={setName}
+                          style={styles.input}
+                          keyboardType="default"
+                          autoCapitalize="words"   
+                          autoCorrect={false}
+                          textContentType="name"
+                          autoComplete="name"  
+                          value={name}
+                          onChangeText={setName}
                         />
                         <ProfileIcon {...styles.textBoxIcon}/>
                     </View>
@@ -589,11 +596,11 @@ paddingBottom: bottomSafeHeight
             <View style={styles.signUp}>
             <TouchableOpacity
                 style={[
-                styles.signUpBtn,
-                !canSubmit && { opacity: 0.5 }
+                    styles.signUpBtn,
+                    !canSubmit && { opacity: 0.5 }
                 ]}
                 disabled={!canSubmit}
-                onPress={() => {/* submit action */}}
+                onPress={goToVerifyCode}
             >
                 <CustomText style={styles.signUpBtnText}>Sign up</CustomText>
             </TouchableOpacity>
