@@ -7,6 +7,7 @@ import Home from 'screens/Home';
 import ChatGroups from 'screens/ChatGroups';
 import CreateAccount from 'screens/CreateAccount';
 import VerifyCode from 'screens/VerifyCode';
+import AccountVerified from 'screens/AccountVerified';
 import LoginOptions from 'screens/LoginOptions';
 import Login from 'screens/Login';
 
@@ -27,6 +28,7 @@ const App = () => {
           />
           <Stack.Screen name="CreateAccount" component={CreateAccount} />
           <Stack.Screen name="VerifyCode" component={VerifyCode} />
+          <Stack.Screen name="AccountVerified" component={AccountVerified} />
           <Stack.Screen name="ChatGroups" component={ChatGroups} />
           <Stack.Screen name="LoginOptions" component={LoginOptions}/>
           <Stack.Screen name="Login" component={Login}/>

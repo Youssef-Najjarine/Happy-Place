@@ -408,11 +408,14 @@ export default function VerifyCode() {
         setSecondsLeft(INITIAL_SECONDS);
         setIsCounting(true);
     };
+    const verifyCode = () => {
+        navigation.navigate('AccountVerified');
+    };
     useFocusEffect(
-    useCallback(() => {
-        setSecondsLeft(INITIAL_SECONDS);
-        setIsCounting(true);
-    }, [])
+        useCallback(() => {
+            setSecondsLeft(INITIAL_SECONDS);
+            setIsCounting(true);
+        }, [])
     );
     const rootStyle = {
     ...styles.root,
@@ -489,8 +492,8 @@ export default function VerifyCode() {
                         { opacity: canConfirm ? 1 : 0.5 }
                     ]}
                     onPress={() => {
-                        if (canConfirm) {
-                        }
+                        if (canConfirm) verifyCode()
+                        
                     }}
                     disabled={!canConfirm} 
                 >

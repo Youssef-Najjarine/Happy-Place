@@ -171,11 +171,10 @@ const phoneStyles = StyleSheet.create({
   rememberMeBtn: {
     width: scaleWidth(20),
     height: scaleHeight(20),
-    borderWidth: scaleWidth(1.341),
+    borderWidth: scaleWidth(1.5),
     borderRadius: scaleWidth(8),
-    borderColor: '#F9F9F9',
-    backgroundColor: 'rgba(249, 249, 249, 0.30)',
-
+    borderColor: HappyColor,
+    backgroundColor: 'rgba(237, 83, 112, 0.15)'
   },
   rememberMeBtnSelected: {
     width: scaleWidth(20),
@@ -396,13 +395,12 @@ const tabletStyles = StyleSheet.create({
     alignItems: 'center'
   },
   rememberMeBtn: {
-    borderWidth: scaleWidth(1.341),
+    borderWidth: scaleWidth(2),
     borderRadius: scaleWidth(10.731),
     width: 37,
     height: 37,
-    borderColor: '#F9F9F9',
-    backgroundColor: 'rgba(249, 249, 249, 0.30)',
-
+     borderColor: HappyColor,
+    backgroundColor: 'rgba(237, 83, 112, 0.15)'
   },
   rememberMeBtnSelected: {
     borderRadius: scaleWidth(10.731),
