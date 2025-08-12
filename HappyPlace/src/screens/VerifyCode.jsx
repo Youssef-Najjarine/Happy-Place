@@ -293,6 +293,7 @@ export default function VerifyCode() {
     const navigation = useNavigation();
     const route = useRoute();
     const contact = route.params?.contact || '';
+    const source  = route.params?.source || 'createAccount';
     const CODE_LENGTH = 6;
     const [code, setCode] = useState(Array(CODE_LENGTH).fill(''));
     const inputsRef = useRef(Array.from({ length: CODE_LENGTH }, () => React.createRef()));
@@ -409,7 +410,12 @@ export default function VerifyCode() {
         setIsCounting(true);
     };
     const verifyCode = () => {
-        navigation.navigate('AccountVerified');
+      if (!canConfirm) return;
+      if (source === 'forgotPassword') {
+      navigation.replace('SetupPassword', { contact });
+      } else {
+      navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
+      }
     };
     useFocusEffect(
         useCallback(() => {

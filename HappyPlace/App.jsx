@@ -10,6 +10,8 @@ import VerifyCode from 'screens/VerifyCode';
 import AccountVerified from 'screens/AccountVerified';
 import LoginOptions from 'screens/LoginOptions';
 import Login from 'screens/Login';
+import ForgotPassword from 'screens/ForgotPassword';
+import SetupPassword from 'screens/SetupPassword';
 
 const Stack = createNativeStackNavigator();
 
@@ -32,6 +34,8 @@ const App = () => {
           <Stack.Screen name="ChatGroups" component={ChatGroups} />
           <Stack.Screen name="LoginOptions" component={LoginOptions}/>
           <Stack.Screen name="Login" component={Login}/>
+          <Stack.Screen name="ForgotPassword" component={ForgotPassword}/>
+          <Stack.Screen name="SetupPassword" component={SetupPassword}/>
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

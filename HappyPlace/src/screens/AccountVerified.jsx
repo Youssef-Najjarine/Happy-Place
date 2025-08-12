@@ -196,7 +196,7 @@ const tabletStyles = StyleSheet.create({
   }
 });
 
-export default function VerifyCode() {
+export default function AccountVerified() {
     const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
     const styles = useResponsiveStyles(phoneStyles, tabletStyles);
     const navigation = useNavigation();

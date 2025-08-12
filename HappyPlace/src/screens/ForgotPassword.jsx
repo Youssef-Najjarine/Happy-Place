@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
@@ -9,13 +9,9 @@ import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
 import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
 import CustomMaskedTextInput from 'src/components/FontFamilyMaskedTextInput';
-import Check from 'assets/images/login/white-check-icon.svg';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
 import EmailIcon from 'assets/images/global/email-outline-icon.svg';
 import PhoneIcon from 'assets/images/global/phone-icon.svg';
-import KeyIcon from 'assets/images/global/key-icon.svg';
-import EyeIcon from 'assets/images/global/eye-icon.svg';
-import EyeSlashIcon from 'assets/images/global/eye-slash-icon.svg';
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -40,7 +36,7 @@ const phoneStyles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   part2: {
-    height: scaleHeight(89)
+    height: scaleHeight(55)
   },
   BackArrow: {
     width: scaleWidth(42),
@@ -55,25 +51,25 @@ const phoneStyles = StyleSheet.create({
     width: scaleWidth(28),
     height: scaleHeight(28),
   },
-  signIn: {
+  forgotPassword: {
     fontSize: scaleFont(24),
     lineHeight: scaleLineHeight(36),
     marginBottom: scaleHeight(2),
     fontWeight: 700,
     color: Black,
   },
-  signInDesc: {
+  forgotPasswordDesc: {
     fontSize: scaleFont(16),
     lineHeight: scaleLineHeight(24),
     marginBottom: scaleHeight(24),
     fontWeight: 500,
     color: 'rgba(35, 35, 35, 0.50)',
   },
-  signInType: {
+  forgotPasswordType: {
     borderRadius: scaleWidth(67.067),
     borderWidth: scaleWidth(1),
     paddingHorizontal: scaleWidth(4),
-    marginBottom: scaleHeight(16),
+    marginBottom: scaleHeight(24),
     height: scaleHeight(48),
     width: '100%',
     borderColor: '#F9F9F9',
@@ -82,7 +78,7 @@ const phoneStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center'
   },
-  signInTypeSelectedBtn: {
+  forgotPasswordTypeSelectedBtn: {
     width: scaleWidth(159.5),
     height: scaleHeight(40),
     borderRadius: scaleWidth(99),
@@ -90,32 +86,26 @@ const phoneStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
-  signInTypeSelectedtxt: {
+  forgotPasswordTypeSelectedtxt: {
     fontSize: scaleFont(14),
     lineHeight: scaleLineHeight(21),
     letterSpacing: scaleLetterSpacing(-0.14),
     fontWeight: 700,
     color: White
   },
-  signInTypeNotSelectedBtn: {
+  forgotPasswordTypeNotSelectedBtn: {
     width: scaleWidth(159.5),
     height: scaleHeight(40),
     borderRadius: scaleWidth(99),
     justifyContent: 'center',
     alignItems: 'center'
   },
-  signInTypeNotSelectedTxt: {
+  forgotPasswordTypeNotSelectedTxt: {
     fontSize: scaleFont(14),
     lineHeight: scaleLineHeight(21),
     letterSpacing: scaleLetterSpacing(-0.14),
     fontWeight: 600,
     color: '#1D1E25'
-  },
-  emailPhoneView: {
-    marginBottom: scaleHeight(12)
-  },
-  passwordView: {
-    marginBottom: scaleHeight(16)
   },
   textBoxLabel: {
     fontSize: scaleFont(14),
@@ -147,98 +137,19 @@ const phoneStyles = StyleSheet.create({
     backgroundColor: 'rgba(249, 249, 249, 0.30)',
     color: Black
   },
-  largeRightPadding: {
-    paddingRight: scaleWidth(48)
-  },
-  eyeIcons: {
-    top: scaleHeight(12),
-    right: scaleWidth(16),
-    position: 'absolute'
-  },
-  eyeIcon: {
-    width: scaleWidth(25.204),
-    height: scaleHeight(24)
-  },
-  rememberMeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
-  rememberMe: {
-    gap: scaleWidth(6),
-    flexDirection: 'row',
-    alignItems: 'center'
-  },
-  rememberMeBtn: {
-    width: scaleWidth(20),
-    height: scaleHeight(20),
-    borderWidth: scaleWidth(1.5),
-    borderRadius: scaleWidth(8),
-    borderColor: HappyColor,
-    backgroundColor: 'rgba(237, 83, 112, 0.15)'
-  },
-  rememberMeBtnSelected: {
-    width: scaleWidth(20),
-    height: scaleHeight(20),
-    borderRadius: scaleWidth(8),
-    backgroundColor: HappyColor,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  checkIcon: {
-    width: scaleWidth(8.5),
-    height: scaleHeight(5.66)
-  },
-  rememberMeTxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.28),
-    fontWeight: 500,
-    color: Black
-  },
-  forgotPasswordTxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.28),
-    fontWeight: 600,
-    color: HappyColor
-  },
-  login: {
-    marginBottom: scaleHeight(10)
-  },
-  loginBtn: {
+  confirmBtn: {
     height: scaleHeight(45),
     borderRadius: scaleWidth(99),
     backgroundColor: HappyColor,
     justifyContent: 'center',
     alignItems: 'center'
   },
-  loginBtnText: {
+  confirmBtnText: {
     fontSize: scaleFont(14),
     lineHeight: scaleLineHeight(21),
     letterSpacing: scaleLetterSpacing(-0.14),
     fontWeight: 700,
     color: White
-  },
-  dontHaveAccount: {
-    gap: scaleWidth(5),
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  dontHaveAccountTxt: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
-    fontWeight: 600,
-    color: Black
-  },
-  signUp: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
-    fontWeight: 600,
-    color: HappyColor
   }
 });
 
@@ -266,7 +177,7 @@ const tabletStyles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   part2: {
-    height: scaleHeight(113.2)
+    height: scaleHeight(71.192)
   },
   BackArrow: {
     borderRadius: scaleWidth(132.792),
@@ -281,25 +192,25 @@ const tabletStyles = StyleSheet.create({
     width: scaleWidth(37.557),
     height: scaleHeight(37.557),
   },
-  signIn: {
+  forgotPassword: {
     fontSize: scaleFont(26),
     lineHeight: scaleLineHeight(39),
     marginBottom: scaleHeight(4),
     fontWeight: 700,
     color: Black,
   },
-  signInDesc: {
+  forgotPasswordDesc: {
     fontSize: scaleFont(18),
     lineHeight: scaleLineHeight(27),
     marginBottom: scaleHeight(32),
     fontWeight: 500,
     color: 'rgba(35, 35, 35, 0.50)',
   },
-  signInType: {
+  forgotPasswordType: {
     borderRadius: scaleWidth(89.959),
     borderWidth: scaleWidth(1.341),
     paddingHorizontal: scaleWidth(6),
-    marginBottom: scaleHeight(24),
+    marginBottom: scaleHeight(32),
     height: scaleHeight(64),
     width: '100%',
     borderColor: '#F9F9F9',
@@ -308,7 +219,7 @@ const tabletStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center'
   },
-  signInTypeSelectedBtn: {
+  forgotPasswordTypeSelectedBtn: {
     width: scaleWidth(336),
     height: scaleHeight(52),
     borderRadius: scaleWidth(99),
@@ -316,32 +227,26 @@ const tabletStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
-  signInTypeSelectedtxt: {
+  forgotPasswordTypeSelectedtxt: {
     fontSize: scaleFont(18),
     lineHeight: scaleLineHeight(27),
     letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 700,
     color: White
   },
-  signInTypeNotSelectedBtn: {
+  forgotPasswordTypeNotSelectedBtn: {
     width: scaleWidth(336),
     height: scaleHeight(52),
     borderRadius: scaleWidth(99),
     justifyContent: 'center',
     alignItems: 'center'
   },
-  signInTypeNotSelectedTxt: {
+  forgotPasswordTypeNotSelectedTxt: {
     fontSize: scaleFont(18),
     lineHeight: scaleLineHeight(27),
     letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 600,
     color: '#1D1E25'
-  },
-  emailPhoneView: {
-    marginBottom: scaleHeight(16)
-  },
-  passwordView: {
-    marginBottom: scaleHeight(24)
   },
   textBoxLabel: {
     fontSize: scaleFont(18),
@@ -352,8 +257,8 @@ const tabletStyles = StyleSheet.create({
     color: Black
   },
   textBoxIcon: {
-    width: scaleWidth(32.19),
-    height: scaleHeight(32.19),
+    width: scaleWidth(32.192),
+    height: scaleHeight(32.192),
     top: scaleHeight(16),
     left: scaleWidth(20),
     position: 'absolute',
@@ -364,121 +269,49 @@ const tabletStyles = StyleSheet.create({
     borderRadius: scaleWidth(89.959),
     paddingLeft: scaleWidth(64.192),
     paddingVertical: scaleHeight(16),
-    paddingRight: scaleWidth(20),
+    paddingRight: scaleWidth(16),
     fontSize: scaleFont(18),
     lineHeight: scaleLineHeight(27),
     letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 500,
     borderColor: '#F9F9F9',
     backgroundColor: 'rgba(249, 249, 249, 0.30)',
-    color: Black,
-  },
-  largeRightPadding: {
-    paddingRight: scaleWidth(64.19),
-  },
-  eyeIcons: {
-    top: scaleHeight(16),
-    right: scaleWidth(20),
-    position: 'absolute'
-  },
-  eyeIcon: {
-    width: scaleWidth(33.807),
-    height: scaleHeight(32.192)
-  },
-  rememberMeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
-  rememberMe: {
-    gap: scaleWidth(8),
-    flexDirection: 'row',
-    alignItems: 'center'
-  },
-  rememberMeBtn: {
-    borderWidth: scaleWidth(2),
-    borderRadius: scaleWidth(10.731),
-    width: 37,
-    height: 37,
-     borderColor: HappyColor,
-    backgroundColor: 'rgba(237, 83, 112, 0.15)'
-  },
-  rememberMeBtnSelected: {
-    borderRadius: scaleWidth(10.731),
-    width: 37,
-    height: 37,
-    backgroundColor: HappyColor,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  checkIcon: {
-    width: scaleWidth(11.401),
-    height: scaleHeight(7.592)
-  },
-  rememberMeTxt: {
-    fontSize: scaleFont(18),
-    lineHeight: scaleLineHeight(27),
-    letterSpacing: scaleLetterSpacing(-0.36),
-    fontWeight: 500,
     color: Black
   },
-  forgotPasswordTxt: {
-    fontSize: scaleFont(18),
-    lineHeight: scaleLineHeight(27),
-    letterSpacing: scaleLetterSpacing(-0.36),
-    fontWeight: 600,
-    color: HappyColor
-  },
-  login: {
-    marginBottom: scaleHeight(12)
-  },
-  loginBtn: {
+  confirmBtn: {
     height: scaleHeight(59.192),
     borderRadius: scaleWidth(132.792),
     backgroundColor: HappyColor,
     justifyContent: 'center',
     alignItems: 'center'
   },
-  loginBtnText: {
+  confirmBtnText: {
     fontSize: scaleFont(18),
     lineHeight: scaleLineHeight(27),
     letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 700,
     color: White
-  },
-  dontHaveAccount: {
-    gap: scaleWidth(7),
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  dontHaveAccountTxt: {
-    fontSize: scaleFont(20),
-    lineHeight: scaleLineHeight(30),
-    letterSpacing: scaleLetterSpacing(-0.2),
-    fontWeight: 600,
-    color: Black
-  },
-  signUp: {
-    fontSize: scaleFont(20),
-    lineHeight: scaleLineHeight(30),
-    letterSpacing: scaleLetterSpacing(-0.2),
-    fontWeight: 600,
-    color: HappyColor
   }
 });
 
-export default function Login() {
+export default function ForgotPassword() {
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
-  const [selectedSignInType, setSelectedSignInType] = useState('email');
+  const [selectedForgotPasswordType, setSelectedForgotPasswordType] = useState('email');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
+  const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+  const phoneValid = selectedForgotPasswordType === 'phone' ? phone.length >= 10 : false;
+  const emailValid = selectedForgotPasswordType === 'email' ? isEmail(email) : false;
+  const canConfirm = emailValid || phoneValid;
 
+  const goToVerifyCode = () => {
+  if (!canConfirm) return;
+  const contact = selectedForgotPasswordType === 'email' ? email.trim() : phone;
+  navigation.navigate('VerifyCode', { contact });
+  navigation.navigate('VerifyCode', { contact, source: 'forgotPassword' });
+};
   const rootStyle = {
     ...styles.root,
     paddingTop: statusBarHeight
@@ -498,23 +331,23 @@ export default function Login() {
             >
               <BackArrow {...styles.backArrowIcon}/>
             </TouchableOpacity>
-            <CustomText style={styles.signIn}>Sign in</CustomText>
-            <CustomText style={styles.signInDesc}>Sign In to your account</CustomText>
-            <View style={styles.signInType}>
+            <CustomText style={styles.forgotPassword}>Forgot Password</CustomText>
+            <CustomText style={styles.forgotPasswordDesc}>Enter your email or phone number to reset your password.</CustomText>
+            <View style={styles.forgotPasswordType}>
               <TouchableOpacity
-                  style={selectedSignInType === 'email' ? styles.signInTypeSelectedBtn : styles.signInTypeNotSelectedBtn}
-                  onPress={() => setSelectedSignInType('email')}
+                  style={selectedForgotPasswordType === 'email' ? styles.forgotPasswordTypeSelectedBtn : styles.forgotPasswordTypeNotSelectedBtn}
+                  onPress={() => setSelectedForgotPasswordType('email')}
               >
-                  <CustomText style={selectedSignInType === 'email' ? styles.signInTypeSelectedtxt : styles.signInTypeNotSelectedTxt}>Email Address</CustomText>
+                  <CustomText style={selectedForgotPasswordType === 'email' ? styles.forgotPasswordTypeSelectedtxt : styles.forgotPasswordTypeNotSelectedTxt}>Email Address</CustomText>
               </TouchableOpacity>
               <TouchableOpacity
-                  style={selectedSignInType === 'phone' ? styles.signInTypeSelectedBtn : styles.signInTypeNotSelectedBtn}
-                  onPress={() => setSelectedSignInType('phone')}
+                  style={selectedForgotPasswordType === 'phone' ? styles.forgotPasswordTypeSelectedBtn : styles.forgotPasswordTypeNotSelectedBtn}
+                  onPress={() => setSelectedForgotPasswordType('phone')}
               >
-                  <CustomText style={selectedSignInType === 'phone' ? styles.signInTypeSelectedtxt : styles.signInTypeNotSelectedTxt}>Phone Number</CustomText>
+                  <CustomText style={selectedForgotPasswordType === 'phone' ? styles.forgotPasswordTypeSelectedtxt : styles.forgotPasswordTypeNotSelectedTxt}>Phone Number</CustomText>
               </TouchableOpacity>
             </View>
-            {selectedSignInType === 'email' && (
+            {selectedForgotPasswordType === 'email' && (
             <View style={styles.emailPhoneView}>
                 <CustomText style={styles.textBoxLabel}>Email</CustomText>
                 <View>
@@ -529,66 +362,31 @@ export default function Login() {
                 </View>
             </View>
             )}
-            {selectedSignInType === 'phone' && (
-                <View style={styles.emailPhoneView}>
-                    <CustomText style={styles.textBoxLabel}>Phone Number</CustomText>
-                    <View>
-                        <CustomMaskedTextInput
-                        style={styles.input}
-                        mask="(999) 999-9999"
-                        keyboardType="phone-pad"
-                        value={phone}
-                        onChangeText={setPhone}
-                        />
-                        <PhoneIcon {...styles.textBoxIcon}/>
-                    </View>
-                </View>
-            )}
-            <View style={styles.passwordView}>
-                <CustomText style={styles.textBoxLabel}>Password</CustomText>
-                <View>
-                    <CustomTextInput
-                        style={[styles.input, styles.largeRightPadding]}
-                        secureTextEntry={!showPassword}
-                        value={password}
-                        onChangeText={setPassword}
-                    />
-                    <TouchableOpacity style={styles.eyeIcons} onPress={() => setShowPassword(!showPassword)}>
-                    {showPassword ? <EyeSlashIcon {...styles.eyeIcon} /> : <EyeIcon {...styles.eyeIcon} />}
-                    </TouchableOpacity>
-                    <KeyIcon {...styles.textBoxIcon}/>
-                </View>
-            </View>
-            <View style={styles.rememberMeRow}>
-                <View style={styles.rememberMe}>
-                    <TouchableOpacity 
-                        style={rememberMe ? styles.rememberMeBtnSelected : styles.rememberMeBtn}
-                        onPress={() => setRememberMe(!rememberMe)}
-                    >
-                        {rememberMe && (
-                                <Check {...styles.checkIcon}/>
-                            )
-                        }
-                    </TouchableOpacity>
-                    <CustomText style={styles.rememberMeTxt}>Remember me</CustomText>
-                </View>
-                <View>
-                    <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                      <CustomText style={styles.forgotPasswordTxt}>Forgot Password?</CustomText>
-                    </TouchableOpacity>
-                </View>
-            </View>
+ {selectedForgotPasswordType === 'phone' && (
+   <View style={styles.emailPhoneView}>
+     <CustomText style={styles.textBoxLabel}>Phone Number</CustomText>
+     <View>
+        <CustomMaskedTextInput
+            style={styles.input}
+            mask="(999) 999-9999"
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={(formatted, extracted) => setPhone(extracted || '')}
+        />
+       <PhoneIcon {...styles.textBoxIcon}/>
+     </View>
+   </View>
+ )}
+
         </View>
         <View style={styles.part2}>
-            <View style={styles.login}>
-                <TouchableOpacity style={styles.loginBtn}>
-                <CustomText style={styles.loginBtnText}>Login</CustomText>
-                </TouchableOpacity>
-            </View>
-            <View style={styles.dontHaveAccount}>
-                <CustomText style={styles.dontHaveAccountTxt}>Don't have an account?</CustomText>
-                <TouchableOpacity onPress={() => navigation.navigate('CreateAccount')}>
-                    <CustomText style={styles.signUp}>Sign up</CustomText>
+            <View style={styles.confirm}>
+                <TouchableOpacity 
+                  style={[styles.confirmBtn, !canConfirm && { opacity: 0.5 }]}
+                  disabled={!canConfirm}
+                  onPress={goToVerifyCode}
+                >
+                <CustomText style={styles.confirmBtnText}>Confirm</CustomText>
                 </TouchableOpacity>
             </View>
         </View>
