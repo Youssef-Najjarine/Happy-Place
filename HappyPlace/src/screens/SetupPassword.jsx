@@ -242,6 +242,9 @@ const tabletStyles = StyleSheet.create({
     backgroundColor: 'rgba(249, 249, 249, 0.30)',
     color: Black
   },
+  inputSelected: {
+    borderColor: '#E86062'
+  },
   largeRightPadding: {
     paddingRight: scaleWidth(64.19)
   },
@@ -338,7 +341,9 @@ export default function SetupPassword() {
     lowerUpper: hasLowerUpper(password),
     match: password.length > 0 && password === confirmPassword,
   }), [password, confirmPassword]);
-
+const goToPasswordReset = () => {
+  navigation.navigate('PasswordReset');
+};
 const canSubmit = rules.minLen && rules.number && rules.lowerUpper && rules.match;
 const rootStyle = {
 ...styles.root,
@@ -432,6 +437,7 @@ paddingBottom: bottomSafeHeight
                     !canSubmit && { opacity: 0.5 }
                 ]}
                 disabled={!canSubmit}
+                onPress={goToPasswordReset}
             >
                 <CustomText style={styles.setupPasswordBtnText}>Setup Password</CustomText>
             </TouchableOpacity>

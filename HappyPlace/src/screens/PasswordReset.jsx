@@ -7,8 +7,7 @@ import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
 import CustomText from 'src/components/FontFamilyText';
-import SuccessLogo from 'assets/images/accountVerified/account-verified-success-logo.png';
-import HappyCheck from 'assets/images/accountVerified/happy-check-icon.svg';
+import SuccessLogo from 'assets/images/passwordRecovered/password-recovered-logo.png';
 const phoneStyles = StyleSheet.create({
   root: {
     backgroundColor: HappyColor,
@@ -17,14 +16,14 @@ const phoneStyles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   part1: {
-      height: scaleHeight(388),
+      height: scaleHeight(364),
       paddingHorizontal: scaleWidth(32),
       width: '100%',
     alignItems: 'center',
     justifyContent: 'flex-end'
   },
   part2: {
-    height: scaleHeight(78.5),
+    height: scaleHeight(45),
     paddingHorizontal: scaleWidth(20),
     width: '100%',
     alignItems: 'center'
@@ -35,7 +34,7 @@ const phoneStyles = StyleSheet.create({
     marginBottom: scaleHeight(32),
     resizeMode: 'contain'
   },
-  accountVerifiedTxt: {
+  passwordResetTxt: {
     fontSize: scaleFont(24),
     lineHeight: scaleLineHeight(36),
     marginBottom: scaleHeight(8),
@@ -49,43 +48,10 @@ const phoneStyles = StyleSheet.create({
     color: White,
     textAlign: 'center'
   },
-  rememberMeRow: {
-    gap: scaleWidth(6),
-    marginBottom: scaleHeight(12.5),
-    flexDirection: 'row',
-    alignItems: 'center'
-  },
-  checkbox: {
-    width: scaleWidth(20),
-    height: scaleHeight(20),
-    borderWidth: scaleWidth(1.5),
-    borderRadius: scaleWidth(8),
-     borderColor: White,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)'
-  },
-  checkboxSelected: {
-    width: scaleWidth(20),
-    height: scaleHeight(20),
-    borderRadius: scaleWidth(8),
-    backgroundColor: White,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  happyCheckIcon: {
-    width: scaleWidth(8.5),
-    height: scaleHeight(5.66)
-  },
-  rememberMeTxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.28),
-    fontWeight: 500,
-    color: White
-  },
-  getStartedView: {
+  loginView: {
     width: '100%'
   },
-  getStartedBtn: {
+  loginBtn: {
     height: scaleHeight(45),
     borderRadius: scaleWidth(99),
     width: '100%',
@@ -93,7 +59,7 @@ const phoneStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
-  getStartedTxt: {
+  loginTxt: {
     fontSize: scaleFont(14),
     lineHeight: scaleLineHeight(21),
     letterSpacing: scaleLetterSpacing(-0.14),
@@ -110,14 +76,14 @@ const tabletStyles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   part1: {
-      height: scaleHeight(641.125),
-      paddingHorizontal: scaleWidth(163.84),
-      width: '100%',
+    height: scaleHeight(609.125),
+    paddingHorizontal: scaleWidth(163.85),
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'flex-end'
   },
   part2: {
-    height: scaleHeight(110.192),
+    height: scaleHeight(71.192),
     paddingHorizontal: scaleWidth(24),
     width: '100%',
     alignItems: 'center'
@@ -128,7 +94,7 @@ const tabletStyles = StyleSheet.create({
     marginBottom: scaleHeight(32),
     resizeMode: 'contain'
   },
-  accountVerifiedTxt: {
+  passwordResetTxt: {
     fontSize: scaleFont(26),
     lineHeight: scaleLineHeight(39),
     marginBottom: scaleHeight(12),
@@ -142,43 +108,10 @@ const tabletStyles = StyleSheet.create({
     color: White,
     textAlign: 'center'
   },
-  rememberMeRow: {
-    gap: scaleWidth(8),
-    marginBottom: scaleHeight(12.09),
-    flexDirection: 'row',
-    alignItems: 'center'
-  },
-  checkbox: {
-    width: 37.21,
-    height: 37.21,
-    borderWidth: scaleWidth(2),
-    borderRadius: scaleWidth(10.731),
-     borderColor: White,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)'
-  },
-  checkboxSelected: {
-    width: 37.21,
-    height: 37.21,
-    borderRadius: scaleWidth(10.731),
-    backgroundColor: White,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  happyCheckIcon: {
-    width: scaleWidth(11.401),
-    height: scaleHeight(7.592)
-  },
-  rememberMeTxt: {
-    fontSize: scaleFont(18),
-    lineHeight: scaleLineHeight(27),
-    letterSpacing: scaleLetterSpacing(-0.36),
-    fontWeight: 500,
-    color: White
-  },
-  getStartedView: {
+  loginView: {
     width: '100%'
   },
-  getStartedBtn: {
+  loginBtn: {
     height: scaleHeight(59.192),
     borderRadius: scaleWidth(132.792),
     width: '100%',
@@ -186,7 +119,7 @@ const tabletStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
-  getStartedTxt: {
+  loginTxt: {
     fontSize: scaleFont(18),
     lineHeight: scaleLineHeight(27),
     letterSpacing: scaleLetterSpacing(-0.18),
@@ -195,11 +128,10 @@ const tabletStyles = StyleSheet.create({
   }
 });
 
-export default function AccountVerified() {
+export default function PasswordReset() {
     const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
     const styles = useResponsiveStyles(phoneStyles, tabletStyles);
     const navigation = useNavigation();
-    const [rememberMe, setRememberMe] = useState(false);
     const route = useRoute();
 
     const rootStyle = {
@@ -217,27 +149,16 @@ export default function AccountVerified() {
             accessible={true}
             accessibilityLabel="Success logo"
           />
-          <CustomText style={styles.accountVerifiedTxt}>Account Verified</CustomText>
-          <CustomText style={styles.descriptionTxt}>Your account has been verified succesfully, now let’s enjoy Happy Place features!</CustomText>
+          <CustomText style={styles.passwordResetTxt}>Password Reset!</CustomText>
+          <CustomText style={styles.descriptionTxt}>Your password has been successfully reset!</CustomText>
         </View>
         <View style={styles.part2}>
-            <View style={styles.rememberMeRow}>
+            <View style={styles.loginView}>
                 <TouchableOpacity 
-                style={rememberMe ? styles.checkboxSelected : styles.checkbox} 
-                    onPress={() => setRememberMe(!rememberMe)}
+                    style={styles.loginBtn}
+                    onPress={() => navigation.navigate('LoginOptions')}
                 >
-                    {rememberMe && (
-                        <HappyCheck {...styles.happyCheckIcon}/>
-                    )}
-                </TouchableOpacity>
-                <CustomText style={styles.rememberMeTxt}>Login & Remember me</CustomText>
-            </View>
-            <View style={styles.getStartedView}>
-                <TouchableOpacity 
-                    style={styles.getStartedBtn}
-                    onPress={() => navigation.navigate('ChatGroups')}
-                >
-                    <CustomText style={styles.getStartedTxt}>Get Started</CustomText>
+                    <CustomText style={styles.loginTxt}>Login</CustomText>
                 </TouchableOpacity>
             </View>
         </View>

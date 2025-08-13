@@ -6,6 +6,8 @@ import { HappyColor, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
+import { useDispatch, useSelector } from 'react-redux';
+import { showLoading, hideLoading } from 'store/loadingSlice'; 
 import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
@@ -288,6 +290,10 @@ const tabletStyles = StyleSheet.create({
 });
 
 export default function VerifyCode() {
+    const dispatch = useDispatch();
+  const isLoading = useSelector((state) => state.loading.isLoading);
+  dispatch(showLoading());
+
     const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
     const styles = useResponsiveStyles(phoneStyles, tabletStyles);
     const navigation = useNavigation();
