@@ -123,7 +123,7 @@ const phoneStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(22),
     opacity: 0.7,
     fontWeight: 400,
-    color: '#232323'
+    color: Black
   },
   setupPassword: {
     marginBottom: scaleHeight(10)
@@ -275,7 +275,7 @@ const tabletStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(29.509),
     opacity: 0.7,
     fontWeight: 400,
-    color: '#232323'
+    color: Black
   },
   setupPassword: {
     marginBottom: scaleHeight(12)

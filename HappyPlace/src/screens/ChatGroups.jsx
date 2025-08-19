@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, TouchableOpacity, StyleSheet, Image, FlatList, useWindowDimensions, Pressable } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -9,12 +9,17 @@ import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleF
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import { tabletBreakpoint } from 'src/constants/breakpoints';
 import CustomText from 'src/components/FontFamilyText';
+import CustomTextInput from 'src/components/FontFamilyTextInput';
 import SadEmoji from 'assets/images/global/sad-emoji.svg';
 import HappyEmoji from 'assets/images/global/happy-emoji.svg';
+import SearchIcon from 'assets/images/global/search-icon.svg';
+import SortIcon from 'assets/images/chatGroups/sort-icon.svg';
+import DownArrowIcon from 'assets/images/chatGroups/arrow-down-icon.svg';
 import EllipsisIcon from 'assets/images/global/three-dots-icon.svg';
 import EditIcon from 'assets/images/global/edit-icon.svg';
 import MembersIcon from 'assets/images/global/members-icon.svg';
 import PendingMembersCircle from 'assets/images/global/pending-members-circle.svg';
+import PrivateIcon from 'assets/images/global/private-chat-icon.svg';
 import TrashIcon from 'assets/images/global/trash-outline-icon.svg';
 import Image1 from 'assets/images/placeholderProfiles/profile-1.png';
 import Image2 from 'assets/images/placeholderProfiles/profile-2.png';
@@ -37,66 +42,186 @@ import Image18 from 'assets/images/placeholderProfiles/profile-18.jpg';
 import Image19 from 'assets/images/placeholderProfiles/profile-19.jpg';
 import Image20 from 'assets/images/placeholderProfiles/profile-20.jpg';
 
+const ActiveIndexContext = React.createContext(-1);
+const stylesActive = StyleSheet.create({
+  zLift: { zIndex: 1000, elevation: 1000, overflow: 'visible' },
+});
+
+function ActiveListCell({ children, index, style, ...props }) {
+  const activeIndex = React.useContext(ActiveIndexContext);
+  const isActive = index === activeIndex;
+  return (
+    <View {...props} style={[style, isActive ? stylesActive.zLift : null]}>
+      {children}
+    </View>
+  );
+}
+
+const HelperStack = React.memo(
+  function HelperStack({
+    helpers,
+    spacing,
+    maxVisible = 5,
+    imageBaseStyle,
+    wrapperStyle,
+    stackStyle,
+    extraCircleStyle,
+    extraTextStyle,
+    TextComponent,
+  }) {
+    const capped = useMemo(() => helpers.slice(0, maxVisible), [helpers, maxVisible]);
+
+    return (
+      <View style={wrapperStyle}>
+        <View
+          style={stackStyle}
+          collapsable={false}
+          shouldRasterizeIOS
+          renderToHardwareTextureAndroid
+        >
+          {capped.map((h, i) => (
+            <Image
+              key={i}
+              source={h.image}
+              defaultSource={h.image}
+              fadeDuration={0}
+              progressiveRenderingEnabled={false}
+              style={[imageBaseStyle, { left: i * spacing }]}
+            />
+          ))}
+
+          {helpers.length > maxVisible && (
+            <View style={[extraCircleStyle, { left: maxVisible * spacing }]}>
+              <TextComponent style={extraTextStyle}>+{helpers.length - maxVisible}</TextComponent>
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  },
+  (prev, next) =>
+    prev.helpers === next.helpers &&
+    prev.spacing === next.spacing &&
+    prev.maxVisible === next.maxVisible
+);
+
+const HELPERS_DATA = [
+  { image: Image1, name: 'Jaydon' },
+  { image: Image2, name: 'Julia' },
+  { image: Image3, name: 'Mike' },
+  { image: Image4, name: 'Mia' },
+  { image: Image5, name: 'Demi' },
+  { image: Image6, name: 'Brian' },
+  { image: Image7, name: 'Jeffry Michael' },
+];
+
+const CHAT_GROUPS_DATA = [
+  {
+    helpers: [{ image: Image7 }, { image: Image8 }, { image: Image9 }, { image: Image10 }, { image: Image11 }, { image: Image12 }, { image: Image13 }],
+    joined: true,
+    owner: true,
+    public: true,
+    pendingMembers: true,
+    title: 'Happy in Paddleboarding 🔥',
+  },
+  {
+    helpers: [{ image: Image12 }, { image: Image13 }, { image: Image14 }, { image: Image15 }],
+    joined: false,
+    owner: false,
+    public: false,
+    pendingMembers: false,
+    title: 'I’m depressed!',
+  },
+  {
+    helpers: [{ image: Image16 }, { image: Image17 }, { image: Image18 }, { image: Image19 }, { image: Image20 }, { image: Image1 }, { image: Image2 }, { image: Image2 }, { image: Image3 }, { image: Image4 }, { image: Image5 }, { image: Image6 }],
+    joined: false,
+    owner: true,
+    public: true,
+    pendingMembers: false,
+    title: 'I failed my Final Exams.',
+  },
+  {
+    helpers: [{ image: Image16 }],
+    joined: true,
+    owner: false,
+    public: false,
+    pendingMembers: false,
+    title: 'I just got cheated on.',
+  },
+];
+
 const phoneStyles = StyleSheet.create({
-  root: {
-    backgroundColor: '#F9F5EA',
-    height: '100%',
-    width: '100%'
+  root: { 
+    backgroundColor: '#F9F5EA', 
+    height: '100%', 
+    width: '100%',
+    position: 'relative'
   },
   topNav: {
-    width: '100%',
-    height: scaleHeight(158),
+    gap: scaleHeight(12),
     paddingBottom: scaleHeight(16),
     borderBottomLeftRadius: scaleWidth(24),
     borderBottomRightRadius: scaleWidth(24),
-    backgroundColor: White,
-    justifyContent: 'space-between',
-    marginBottom: scaleHeight(20)
-  },
-  login: {
+    marginBottom: scaleHeight(20),
     width: '100%',
+    backgroundColor: White,
+    justifyContent: 'space-between'
+  },
+  profileAndLogin: {
     height: scaleHeight(44),
+    paddingHorizontal: scaleWidth(20),
+    width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingRight: scaleWidth(20),
-    paddingLeft: scaleWidth(20),
-    backgroundColor: '#F9F9F9'
+    alignItems: 'center'
   },
-  unlockAllFeatures: {
-    color: Black,
-    fontSize: scaleFont(14),
+  welcomeBackTxt: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
     fontWeight: 600,
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14)
+    color: Black
   },
-  loginView: {
-    width: scaleWidth(62),
-    height: scaleHeight(32),
+  profileImage: { 
+    width: scaleWidth(44), 
+    height: scaleHeight(44), 
+    borderRadius: scaleWidth(99) 
+  },
+  loginBg: { 
+    backgroundColor: '#F9F9F9' 
+  },
+  unlockAllFeaturesTxt: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    fontWeight: 600,
+    color: Black
+  },
+  loginView: { 
+    width: scaleWidth(62), 
+    height: scaleHeight(32) 
   },
   loginBtn: {
+    borderRadius: scaleWidth(99),
     width: '100%',
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: HappyColor,
-    borderBlockColor: HappyColor,
-    borderRadius: scaleWidth(99)
+    backgroundColor: HappyColor
   },
   loginBtnTxt: {
-    color: White,
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
     fontSize: scaleFont(16),
     fontWeight: 600,
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16)
+    color: White
   },
   searchingView: {
     height: scaleHeight(42),
+    paddingHorizontal: scaleWidth(20),
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingRight: scaleWidth(20),
-    paddingLeft: scaleWidth(20)
+    alignItems: 'center'
   },
   searching: {
     width: scaleWidth(87),
@@ -107,130 +232,222 @@ const phoneStyles = StyleSheet.create({
     alignItems: 'center'
   },
   searchingTxt: {
-    color: Black,
     fontSize: scaleFont(14),
-    fontWeight: 600,
     lineHeight: scaleLineHeight(21),
     letterSpacing: scaleLetterSpacing(-0.14),
-    minWidth: scaleWidth(71)
+    minWidth: scaleWidth(71),
+    fontWeight: 600,
+    color: Black
   },
-  cancelView: {
-    width: scaleWidth(81),
-    height: scaleHeight(42),
-    backgroundColor: '#F9F9F9',
-    borderRadius: scaleWidth(99)
-
+  cancelView: { 
+    width: scaleWidth(81), 
+    height: scaleHeight(42), 
+    borderRadius: scaleWidth(99), 
+    backgroundColor: '#F9F9F9' 
   },
-  cancelBtn: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+  cancelBtn: { 
+    width: '100%', 
+    height: '100%', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
   },
   cancelTxt: {
-    color: Black,
-    fontWeight: 600,
     fontSize: scaleFont(16),
     lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16)
+    letterSpacing: scaleLetterSpacing(-0.16),
+    color: Black,
+    fontWeight: 600
   },
   helpView: {
     height: scaleHeight(41),
+    paddingHorizontal: scaleWidth(20),
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingRight: scaleWidth(20),
-    paddingLeft: scaleWidth(20)
+    alignItems: 'center'
   },
-  faceEmojis: {
-    width: scaleWidth(20),
-    height: scaleHeight(20),
-    resizeMode: 'contain'
+  topNavIcons: { 
+    width: scaleWidth(20), 
+    height: scaleHeight(20), 
+    resizeMode: 'contain' 
   },
   helpMeBtn: {
     width: scaleWidth(160),
     height: scaleHeight(41),
+    borderWidth: scaleWidth(1.5),
+    borderRadius: scaleWidth(99),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: scaleWidth(6),
-    borderWidth: scaleWidth(1.5),
     borderColor: Black,
-    borderRadius: scaleWidth(99),
     backgroundColor: White
   },
   helpMeTxt: {
-    color: Black,
-    fontWeight: 600,
     fontSize: scaleFont(14),
     lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14)
+    letterSpacing: scaleLetterSpacing(-0.14),
+    color: Black,
+    fontWeight: 600
   },
   iCanHelpBtn: {
     width: scaleWidth(167),
     height: scaleHeight(41),
+    borderRadius: scaleWidth(99),
+    gap: scaleWidth(6),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scaleWidth(6),
     borderWidth: 0,
-    borderRadius: scaleWidth(99),
     backgroundColor: HappyColor
   },
-  iCanHelpMeTxt: {
-    color: White,
-    fontWeight: 600,
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14)
+  iCanHelpTxt: { 
+    fontSize: scaleFont(14), 
+    lineHeight: scaleLineHeight(21), 
+    letterSpacing: scaleLetterSpacing(-0.14), 
+    color: White, 
+    fontWeight: 600 
   },
-  mainContent: {
-    paddingLeft: scaleWidth(20),
-    paddingRight: scaleWidth(20),
-    flex: 1
-  },
-  helpers: {
+  searchAndSortRow: {
+    paddingHorizontal: scaleWidth(20),
+    height: scaleHeight(39),
     width: '100%',
-    height: scaleHeight(115),
-    marginBottom: scaleHeight(16)
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   },
-  availableHelpersTxt: {
-    color: Black,
-    fontWeight: 600,
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16)
+  search: { 
+    width: scaleWidth(200),
+    height: '100%' 
   },
-  helpersListContent: {
-    paddingTop: scaleHeight(12),
-    gap: scaleWidth(16)
+  searchIcon: { 
+    top: scaleHeight(9), 
+    left: scaleWidth(10), 
+    position: 'absolute' 
   },
-  helperCard: {
-    alignItems: 'center',
-    width: scaleWidth(50),
-    gap: scaleHeight(8)
-
-  },
-  helperImage: {
-    width: scaleWidth(50),
-    height: scaleHeight(50),
-    borderRadius: scaleWidth(50),
-    resizeMode: 'cover'
-  },
-  helperName: {
-    color: Black,
+  searchInput: {
+    borderRadius: scaleWidth(99),
+    paddingLeft: scaleWidth(38),
+    paddingVertical: scaleHeight(9),
+    paddingRight: scaleWidth(16),
     fontSize: scaleFont(14),
     lineHeight: scaleLineHeight(21),
     letterSpacing: scaleLetterSpacing(-0.14),
-    height: scaleHeight(21)
-  },
-  ChatGroups: {
+    fontWeight: 500,
     width: '100%',
-    flex: 1
+    height: '100%',
+    backgroundColor: '#F9F9F9',
+    color: Black
   },
-  chatGroupsListContent: {
+  sort: { 
+    width: scaleWidth(127), 
+    height: '100%' 
+  },
+  sortBtn: {
+    borderRadius: scaleWidth(99),
+    paddingVertical: scaleHeight(9),
+    paddingHorizontal: scaleWidth(10),
     width: '100%',
-    gap: scaleHeight(12)
+    height: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F9F9F9'
+  },
+  sortTxt: { 
+    fontSize: scaleFont(14), 
+    lineHeight: scaleLineHeight(21), 
+    letterSpacing: scaleLetterSpacing(-0.14), 
+    fontWeight: 600, 
+    color: Black 
+  },
+  sortByDropdown: {
+    top: scaleHeight(-32),
+    right: scaleWidth(20),
+    width: scaleWidth(127),
+    borderRadius: scaleWidth(16),
+    borderWidth: scaleWidth(1.341),
+    shadowRadius: scaleWidth(15),
+    shadowOffset: { 
+      width: scaleWidth(8), 
+      height: scaleHeight(8) 
+    },
+    position: 'absolute',
+    borderColor: 'rgba(238, 238, 238, 0.40)',
+    backgroundColor: White,
+    shadowColor: 'rgba(83, 26, 255, 0.1)',
+    shadowOpacity: 1,
+    elevation: 12,
+    zIndex: 2000
+  },
+  sortByOptions: { 
+    paddingHorizontal: scaleWidth(16), 
+    paddingVertical: scaleHeight(8), 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center' 
+  },
+  sortByDropdownTxt: { 
+    fontSize: scaleFont(14), 
+    lineHeight: scaleLineHeight(21), 
+    letterSpacing: scaleLetterSpacing(-0.14), 
+    fontWeight: 500 
+  },
+  sortByNotSelectedTxt: { 
+    color: Black 
+  },
+  sortBySelectedTxt: { 
+    color: HappyColor 
+  },
+  sortByOptionsBorderBottom: { 
+    borderBottomWidth: scaleHeight(0.671), 
+    borderBottomColor: 'rgba(0, 0, 0, 0.25)' 
+  },
+  mainContent: { 
+    flex: 1 
+  },
+  helpers: { 
+    paddingLeft: scaleWidth(20), 
+    height: scaleHeight(115), 
+    marginBottom: scaleHeight(16), 
+    width: '100%' 
+  },
+  availableHelpersTxt: { 
+    fontSize: scaleFont(16), 
+    lineHeight: scaleLineHeight(24), 
+    letterSpacing: scaleLetterSpacing(-0.16), 
+    color: Black, 
+    fontWeight: 600 
+  },
+  helpersListContent: { 
+    paddingTop: scaleHeight(12), 
+    gap: scaleWidth(16) 
+  },
+  helperCard: { 
+    width: scaleWidth(50), 
+    gap: scaleHeight(8),
+    alignItems: 'center'
+  },
+  helperImage: { 
+    width: scaleWidth(50), 
+    height: scaleHeight(50), 
+    borderRadius: scaleWidth(50), 
+    resizeMode: 'cover' 
+  },
+  helperName: { 
+    fontSize: scaleFont(14), 
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14), 
+    height: scaleHeight(21),
+    color: Black
+  },
+  ChatGroups: { 
+    paddingHorizontal: scaleWidth(20), 
+    width: '100%', 
+    flex: 1 
+  },
+  chatGroupsListContent: { 
+    gap: scaleHeight(12),
+    width: '100%'
   },
   chatGroupCard: {
     height: scaleHeight(163),
@@ -242,9 +459,18 @@ const phoneStyles = StyleSheet.create({
     width: '100%',
     backgroundColor: White
   },
-  chatGroupCardJoinedBorder: {
-    borderWidth: scaleWidth(1),
-    borderColor: HappyColor
+  chatGroupCardJoinedBorder: { 
+    borderWidth: scaleWidth(1), 
+    borderColor: HappyColor 
+  },
+  chatGroupHelpersWrapper: { 
+    height: scaleHeight(36), 
+    overflow: 'visible' 
+  },
+  chatGroupHelpersStack: { 
+    height: scaleHeight(36), 
+    position: 'relative', 
+    overflow: 'visible' 
   },
   chatGroupHelperImage: {
     width: scaleWidth(36),
@@ -261,70 +487,77 @@ const phoneStyles = StyleSheet.create({
     height: scaleWidth(36),
     borderRadius: scaleWidth(50),
     borderWidth: scaleWidth(2),
+    marginLeft: -scaleWidth(2),
     borderColor: White,
     backgroundColor: Black,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: -scaleWidth(2),
-    zIndex: 0,
+    zIndex: 0
   },
-  extraHelpersText: {
-    fontSize: scaleFont(12),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
-    color: White,
-    fontWeight: 600
+  extraHelpersText: { 
+    fontSize: scaleFont(12), 
+    lineHeight: scaleLineHeight(21), 
+    letterSpacing: scaleLetterSpacing(-0.14), 
+    color: White, 
+    fontWeight: 600 
   },
-  chatPhotosHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%'
+  chatPhotosHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    width: '100%' 
   },
-  joinedEllipsisView: {
-    width: scaleWidth(108),
-    gap: scaleWidth(8),
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+  joinedEllipsisView: { 
+    width: scaleWidth(108), 
+    gap: scaleWidth(8), 
+    flexDirection: 'row', 
+    justifyContent: 'flex-end', 
+    alignItems: 'center' 
   },
-  joined: {
-    width: scaleWidth(64),
-    height: scaleHeight(29),
-    borderRadius: scaleWidth(99),
+  publicCircle: { 
+    width: scaleWidth(60), 
+    height: scaleHeight(29), 
+    borderRadius: scaleWidth(99), 
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(237, 83, 112, 0.20)'
+    alignItems: 'center', 
+    backgroundColor: '#F9F9F9' 
   },
-  joinedLabel: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
-    fontWeight: 600,
-    color: '#232323'
+  publicAndPrivateLabel: { 
+    fontSize: scaleFont(14), 
+    lineHeight: scaleLineHeight(21), 
+    letterSpacing: scaleLetterSpacing(-0.14), 
+    fontWeight: 600, 
+    color: Black 
   },
-  ellipsisBackground: {
-    width: scaleWidth(36),
-    height: scaleHeight(36),
-    borderRadius: scaleWidth(99),
-    backgroundColor: '#F9F9F9',
-    justifyContent: 'center',
-    alignItems: 'center'
+  privateCircle: { 
+    width: scaleWidth(67), 
+    height: scaleHeight(29), 
+    borderRadius: scaleWidth(99), 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    backgroundColor: 'rgba(237, 83, 112, 0.20)' 
   },
-  ellipsis: {
-    width: scaleWidth(28),
-    height: scaleHeight(28),
+  ellipsisBackground: { 
+    width: scaleWidth(36), 
+    height: scaleHeight(36), 
+    borderRadius: scaleWidth(99), 
+    backgroundColor: '#F9F9F9', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  ellipsis: { 
+    width: scaleWidth(28), 
+    height: scaleHeight(28) 
   },
   chatGroupDropdown: {
-    position: 'absolute',
     top: scaleHeight(37),
     right: scaleWidth(30),
-    width: scaleWidth(180),
+    width: scaleWidth(210),
     borderRadius: scaleWidth(16),
     borderWidth: scaleWidth(1),
     shadowRadius: scaleWidth(15),
-    shadowOffset: {
-      width: scaleWidth(8),
-      height: scaleHeight(8),
+    shadowOffset: { 
+      width: scaleWidth(8), 
+      height: scaleHeight(8) 
     },
     position: 'absolute',
     borderColor: 'rgba(238, 238, 238, 0.40)',
@@ -332,53 +565,51 @@ const phoneStyles = StyleSheet.create({
     shadowColor: 'rgba(83, 26, 255, 0.1)',
     shadowOpacity: 1,
     elevation: 12,
-    zIndex: 999
+    zIndex: 2000,
   },
-  dropdownIcons: {
-    width: scaleWidth(24),
-    height: scaleHeight(24),
+  dropdownIcons: { 
+    width: scaleWidth(24), 
+    height: scaleHeight(24) 
   },
-  editMemberOptions: {
-    paddingHorizontal: scaleWidth(16),
-    paddingVertical: scaleHeight(10),
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  chatGroupDropdownOptions: { 
+    paddingHorizontal: scaleWidth(16), 
+    paddingVertical: scaleHeight(10), 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center' 
   },
-  editMemberOptionsBorderBottom: {
-    borderBottomWidth: scaleHeight(0.5),
-    borderBottomColor: 'rgba(0, 0, 0, 0.25)'
+  chatGroupDropdownOptionsBorderBottom: { 
+    borderBottomWidth: scaleHeight(0.5), 
+    borderBottomColor: 'rgba(0, 0, 0, 0.25)' 
   },
   pendingMembersCircle: {
-    top: scaleHeight(5),
-    right: scaleWidth(11),
-    width: scaleWidth(14),
-    height: scaleHeight(14),
-    position: 'absolute'
+    top: scaleHeight(5), 
+    right: scaleWidth(11), 
+    width: scaleWidth(14), 
+    height: scaleHeight(14), 
+    position: 'absolute' 
   },
-  deleteOption: {
-    paddingHorizontal: scaleWidth(16),
-    paddingVertical: scaleHeight(10.5),
-    flexDirection: 'row',
+  deleteOption: { 
+    paddingHorizontal: scaleWidth(16), 
+    paddingVertical: scaleHeight(10.5), 
+    flexDirection: 'row', 
     justifyContent: 'space-between',
-    alignItems: 'center',
-
+    alignItems: 'center'
   },
   dropdownBlackTxt: {
-    fontSize: scaleFont(16),
+    fontSize: scaleFont(16), 
     lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
-    color: Black,
-    fontWeight: 500,
-  },
-  dropdownRedTxt: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
-    color: HappyColor,
+    letterSpacing: scaleLetterSpacing(-0.16),color: Black,
     fontWeight: 500
   },
-  chatGroupTitleView: {
+  dropdownRedTxt: { 
+    fontSize: scaleFont(16), 
+    lineHeight: scaleLineHeight(24), 
+    letterSpacing: scaleLetterSpacing(-0.16), 
+    fontWeight: 500,
+    color: HappyColor
+  },
+  chatGroupTitleView: { 
     width: '100%'
   },
   chatGroupTitle: {
@@ -388,14 +619,19 @@ const phoneStyles = StyleSheet.create({
     color: Black,
     fontWeight: 600
   },
-  chatGroupBtnView: {
+  chatGroupOneBtnView: {
+    height: scaleHeight(41),
+    width: '100%'
+  },
+  chatGroupTwoBtnView: {
+    height: scaleHeight(41),
     flexDirection: 'row',
     justifyContent: 'space-between'
   },
   groupChatLeaveChatBtn: {
     width: scaleWidth(128),
-    height: scaleHeight(41),
     borderRadius: scaleWidth(99),
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     borderColor: 'none',
@@ -405,861 +641,524 @@ const phoneStyles = StyleSheet.create({
     fontSize: scaleFont(14),
     lineHeight: scaleLineHeight(21),
     letterSpacing: scaleLetterSpacing(-0.14),
-    color: HappyColor,
-    fontWeight: 600
+    color: HappyColor, 
+    fontWeight: 600 
   },
-  groupChatHappyBtn: {
+  groupChatViewChatBtn: {
     width: scaleWidth(167),
-    height: scaleHeight(41),
     borderRadius: scaleWidth(99),
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     borderColor: 'none',
     backgroundColor: HappyColor
   },
-  groupChatHappyTxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
-    fontWeight: 600,
-    color: White
+  groupChatViewChatTxt: { 
+    fontSize: scaleFont(14), 
+    lineHeight: scaleLineHeight(21), 
+    letterSpacing: scaleLetterSpacing(-0.14), 
+    fontWeight: 600, 
+    color: White 
   },
-  groupChatSpectateBtn: {
-    width: scaleWidth(128),
-    height: scaleHeight(41),
-    borderRadius: scaleWidth(99),
-    borderWidth: scaleWidth(1.5),
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderColor: HappyColor,
-    backgroundColor: White
+  groupChatRequestJoinBtn: { 
+    borderRadius: scaleWidth(99), 
+    width: '100%', height: '100%', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    borderColor: 'none', 
+    backgroundColor: 'rgba(237, 83, 112, 0.10)' 
   },
-  groupChatSpectateTxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
-    fontWeight: 600,
-    color: Black
-  }
+  groupChatRequestJoinTxt: { 
+    fontSize: scaleFont(14), 
+    lineHeight: scaleLineHeight(21), 
+    letterSpacing: scaleLetterSpacing(-0.14), 
+    fontWeight: 600, 
+    color: HappyColor 
+  },
+  groupChatJoinNowBtn: { 
+    borderRadius: scaleWidth(99), 
+    width: '100%', height: '100%', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    borderColor: 'none', 
+    backgroundColor: HappyColor 
+  },
+  groupChatJoinNowTxt: { 
+    fontSize: scaleFont(14), 
+    lineHeight: scaleLineHeight(21), 
+    letterSpacing: scaleLetterSpacing(-0.14), 
+    fontWeight: 600, 
+    color: White 
+  },
+ activeListCell: {
+    zIndex: 1000,
+    elevation: 1000,
+    overflow: 'visible'
+  },
 });
 
 const tabletStyles = StyleSheet.create({});
 
 export default function ChatGroups() {
-  const [activeDropdownIndex, setActiveDropdownIndex] = useState(null);
+  const helpersTop = HELPERS_DATA;
+  const route = useRoute();
+  const sortOptions = ['Popular', 'Latest', 'A - Z', 'Z - A'];
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const [sortBy, setSortBy] = useState('Popular');
   const [showSearching, setShowSearching] = useState(false);
-  const [dotCount, setDotCount] = useState(0);
+  const [activeDropdownIndex, setActiveDropdownIndex] = useState(null);
+  const [search, setSearch] = useState('');
   const ellipsisRefs = useRef([]);
   const chatGroupsRef = useRef(null);
-  const route = useRoute();
-  const navigation = useNavigation();
-  const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
-  const styles = useResponsiveStyles(phoneStyles, tabletStyles);
-  const helpers = [
-    {
-      image: Image1,
-      name: 'Jaydon'
-    },
-    {
-      image: Image2,
-      name: 'Julia'
-    },
-    {
-      image: Image3,
-      name: 'Mike'
-    }, 
-    {
-      image: Image4,
-      name: 'Mia'
-    },
-    {
-      image: Image5,
-      name: 'Demi'
-    },
-    {
-      image: Image6,
-      name: 'Brian'
-    },
-    {
-      image: Image7,
-      name: 'Jeffry Michael'
+  const sortBtnRef = useRef(null);
+  const sortDropdownRef = useRef(null);
+  const chatDropdownRef = useRef(null);
+  const swallowNextCloseRef = useRef(false);
+  const rectsRef = useRef({
+    sortBtn: null,
+    sortDropdown: null,
+    chatDropdown: null,
+    ellipsisBtn: null,
+  });
+  const listCommonProps = useMemo(
+    () => ({ keyboardShouldPersistTaps: 'always', onScrollBeginDrag: closeAllMenus }),
+    [closeAllMenus]
+  );
+  const SearchingView = React.memo(() => {
+    const [dotCount, setDotCount] = useState(0);
+    useEffect(() => {
+      const interval = setInterval(() => setDotCount((p) => (p + 1) % 4), 500);
+      return () => clearInterval(interval);
+    }, []);
+    return (
+      <View style={styles.searchingView}>
+        <View style={styles.searching}>
+          <CustomText style={styles.searchingTxt}>{`Searching${'.'.repeat(dotCount)}`}</CustomText>
+        </View>
+        <View style={styles.cancelView}>
+          <TouchableOpacity
+            style={styles.cancelBtn}
+            onPressIn={() => { closeAllMenus(); setShowSearching(false); }}
+          >
+            <CustomText style={styles.cancelTxt}>Cancel</CustomText>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  });
+  const sortedChatGroups = useMemo(() => {
+    const arr = [...CHAT_GROUPS_DATA];
+    switch (sortBy) {
+      case 'Popular':
+        return arr.sort((a, b) => (b.helpers?.length || 0) - (a.helpers?.length || 0));
+      case 'A - Z':
+        return arr.sort((a, b) => a.title.localeCompare(b.title));
+      case 'Z - A':
+        return arr.sort((a, b) => b.title.localeCompare(a.title));
+      case 'Latest':
+      default:
+        return arr;
     }
-  ]
-  const chatGroups = [
-    {
-      helpers: [
-        {
-          image: Image7
-        },
-        {
-          image: Image8
-        },
-        {
-          image: Image9
-        }, 
-        {
-          image: Image10
-        },
-        {
-          image: Image11
-        },
-        {
-          image: Image12
-        },
-        {
-          image: Image13
-        }
-      ],
-      joined: true,
-      owner: true,
-      pendingMembers: true,
-      title: "Happy in Paddleboarding 🔥"
-    },
-    {
-      helpers: [
-        {
-          image: Image12
-        },
-        {
-          image: Image13
-        },
-        {
-          image: Image14
-        }, 
-        {
-          image: Image15
-        }
-      ],
-      joined: false,
-      owner: false,
-      pendingMembers: false,
-      title: "I’m depressed!"
-    },
-    {
-      helpers: [
-        {
-          image: Image16
-        },
-        {
-          image: Image17
-        },
-        {
-          image: Image18
-        }, 
-        {
-          image: Image19
-        },
-        {
-          image: Image20
-        },
-        {
-          image: Image1
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image3
-        },
-        {
-          image: Image4
-        },
-        {
-          image: Image5
-        },
-        {
-          image: Image6
-        }
-      ],
-      joined: false,
-      owner: false,
-      pendingMembers: false,
-      title: "I failed my Final Exams."
-    },
-    {
-      helpers: [
-        {
-          image: Image16
-        },
-        {
-          image: Image17
-        },
-        {
-          image: Image18
-        }, 
-        {
-          image: Image19
-        },
-        {
-          image: Image20
-        },
-        {
-          image: Image1
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image3
-        },
-        {
-          image: Image4
-        },
-        {
-          image: Image5
-        },
-        {
-          image: Image6
-        },
-        {
-          image: Image16
-        },
-        {
-          image: Image17
-        },
-        {
-          image: Image18
-        }, 
-        {
-          image: Image19
-        },
-        {
-          image: Image20
-        },
-        {
-          image: Image1
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image3
-        },
-        {
-          image: Image4
-        },
-        {
-          image: Image5
-        },
-        {
-          image: Image6
-        },
-        {
-          image: Image16
-        },
-        {
-          image: Image17
-        },
-        {
-          image: Image18
-        }, 
-        {
-          image: Image19
-        },
-        {
-          image: Image20
-        },
-        {
-          image: Image1
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image3
-        },
-        {
-          image: Image4
-        },
-        {
-          image: Image5
-        },
-        {
-          image: Image6
-        },
-        {
-          image: Image16
-        },
-        {
-          image: Image17
-        },
-        {
-          image: Image18
-        }, 
-        {
-          image: Image19
-        },
-        {
-          image: Image20
-        },
-        {
-          image: Image1
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image3
-        },
-        {
-          image: Image4
-        },
-        {
-          image: Image5
-        },
-        {
-          image: Image6
-        },
-        {
-          image: Image16
-        },
-        {
-          image: Image17
-        },
-        {
-          image: Image18
-        }, 
-        {
-          image: Image19
-        },
-        {
-          image: Image20
-        },
-        {
-          image: Image1
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image3
-        },
-        {
-          image: Image4
-        },
-        {
-          image: Image5
-        },
-        {
-          image: Image6
-        },
-        {
-          image: Image16
-        },
-        {
-          image: Image17
-        },
-        {
-          image: Image18
-        }, 
-        {
-          image: Image19
-        },
-        {
-          image: Image20
-        },
-        {
-          image: Image1
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image3
-        },
-        {
-          image: Image4
-        },
-        {
-          image: Image5
-        },
-        {
-          image: Image6
-        },
-        {
-          image: Image16
-        },
-        {
-          image: Image17
-        },
-        {
-          image: Image18
-        }, 
-        {
-          image: Image19
-        },
-        {
-          image: Image20
-        },
-        {
-          image: Image1
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image3
-        },
-        {
-          image: Image4
-        },
-        {
-          image: Image5
-        },
-        {
-          image: Image6
-        },
-        {
-          image: Image16
-        },
-        {
-          image: Image17
-        },
-        {
-          image: Image18
-        }, 
-        {
-          image: Image19
-        },
-        {
-          image: Image20
-        },
-        {
-          image: Image1
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image3
-        },
-        {
-          image: Image4
-        },
-        {
-          image: Image5
-        },
-        {
-          image: Image6
-        },
-        {
-          image: Image16
-        },
-        {
-          image: Image17
-        },
-        {
-          image: Image18
-        }, 
-        {
-          image: Image19
-        },
-        {
-          image: Image20
-        },
-        {
-          image: Image1
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image3
-        },
-        {
-          image: Image4
-        },
-        {
-          image: Image5
-        },
-        {
-          image: Image6
-        },
-        {
-          image: Image16
-        },
-        {
-          image: Image17
-        },
-        {
-          image: Image18
-        }, 
-        {
-          image: Image19
-        },
-        {
-          image: Image20
-        },
-        {
-          image: Image1
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image3
-        },
-        {
-          image: Image4
-        },
-        {
-          image: Image5
-        },
-        {
-          image: Image6
-        },
-        {
-          image: Image16
-        },
-        {
-          image: Image17
-        },
-        {
-          image: Image18
-        }, 
-        {
-          image: Image19
-        },
-        {
-          image: Image20
-        },
-        {
-          image: Image1
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image3
-        },
-        {
-          image: Image4
-        },
-        {
-          image: Image5
-        },
-        {
-          image: Image6
-        },
-        {
-          image: Image16
-        },
-        {
-          image: Image17
-        },
-        {
-          image: Image18
-        }, 
-        {
-          image: Image19
-        },
-        {
-          image: Image20
-        },
-        {
-          image: Image1
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image2
-        },
-        {
-          image: Image3
-        },
-        {
-          image: Image4
-        },
-        {
-          image: Image5
-        },
-        {
-          image: Image6
-        }
-      ],
-      joined: false,
-      owner: false,
-      pendingMembers: false,
-      title: "I just got cheated on."
+  }, [sortBy]);
+  const measureToRect = useCallback((ref, key) => {
+    if (!ref?.current) {
+      rectsRef.current[key] = null;
+      return;
     }
-  ]
-  const handleScroll = () => {
-    if (activeDropdownIndex !== null) {
-      setActiveDropdownIndex(null);
+    ref.current.measureInWindow((x, y, width, height) => {
+      rectsRef.current[key] = { x, y, width, height };
+    });
+  }, []);
+  const pointInRect = useCallback((x, y, r) => {
+    return !!r && x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height;
+  }, []);
+  const handleRootTouchEndCapture = useCallback((e) => {
+    if (swallowNextCloseRef.current) {
+      swallowNextCloseRef.current = false;
+      return;
     }
-  };
-  const handleEllipsisPress = (index) => {
-    if (activeDropdownIndex === index) {
-      setActiveDropdownIndex(null);
-    } else {
-      const buttonRef = ellipsisRefs.current[index];
-      if (buttonRef && buttonRef.current) {
-        setActiveDropdownIndex(index);
-      } else {
-        console.log("Ref not ready for index:", index);
-      }
+    if (!isSortOpen && activeDropdownIndex === null) return;
+
+    const { pageX: x, pageY: y } = e.nativeEvent;
+    const { sortBtn, sortDropdown, chatDropdown, ellipsisBtn } = rectsRef.current;
+
+    if (
+      pointInRect(x, y, sortBtn) ||
+      pointInRect(x, y, sortDropdown) ||
+      pointInRect(x, y, chatDropdown) ||
+      pointInRect(x, y, ellipsisBtn)
+    ) {
+      return;
     }
-  };
-  const renderHelper = ({ item }) => (
+    closeAllMenus();
+  }, [isSortOpen, activeDropdownIndex, closeAllMenus, pointInRect]);
+  const closeAllMenus = useCallback(() => {
+    setIsSortOpen(false);
+    setActiveDropdownIndex(null);
+  }, []);
+  const handleHelpersScroll = useCallback(() => {
+    if (isSortOpen) setIsSortOpen(false);
+  }, [isSortOpen]);
+  const handleChatGroupsScroll = useCallback(() => {
+    if (activeDropdownIndex !== null) setActiveDropdownIndex(null);
+    if (isSortOpen) setIsSortOpen(false);
+  }, [activeDropdownIndex, isSortOpen]);
+  const handleEllipsisPress = useCallback((index) => {
+    swallowNextCloseRef.current = true;
+    setIsSortOpen(false);
+    setActiveDropdownIndex((curr) => (curr === index ? null : index));
+  }, []);
+  const handleSortPressIn = useCallback(() => {
+    swallowNextCloseRef.current = true;
+    setActiveDropdownIndex(null);
+    setIsSortOpen((o) => !o);
+  }, []);
+  const handleSortOptionPressIn = useCallback((opt) => {
+    swallowNextCloseRef.current = true;
+    setSortBy(opt);
+  }, []);
+  const handleSearchFocusOrTouch = useCallback(() => {
+    closeAllMenus();
+  }, [closeAllMenus]);
+  const handleHelpMePressIn = useCallback(() => {
+    closeAllMenus();
+    setShowSearching(true);
+  }, [closeAllMenus]);
+  const handleICanHelpPressIn = useCallback(() => {
+    closeAllMenus();
+    setShowSearching(true);
+  }, [closeAllMenus]);
+  const handleLoginPressIn = useCallback(() => {
+    closeAllMenus();
+    navigation.navigate('LoginOptions');
+  }, [closeAllMenus, navigation]);
+  const handleEditNamePressIn = useCallback((index) => {
+    swallowNextCloseRef.current = true;
+  }, []);
+  const handleMembersPressIn = useCallback((index) => {
+    swallowNextCloseRef.current = true;
+  }, []);
+  const handleMakeChatPrivatePressIn = useCallback((index) => {
+    swallowNextCloseRef.current = true;
+  }, []);
+  const handleDeleteChatPressIn = useCallback((index) => {
+    swallowNextCloseRef.current = true;
+  }, []);
+  const renderHelper = useCallback(({ item }) => (
     <View style={styles.helperCard}>
-      <Image source={item.image} style={styles.helperImage} />
+      <Image source={item.image} style={styles.helperImage} fadeDuration={0} />
       <CustomText style={styles.helperName}>{item.name}</CustomText>
     </View>
-  );
-  const handleCancel = () => {
-    setShowSearching(false);
-  };
-  const handleHelpMe = () => {
-    setShowSearching(true);
-  };
-  const handleICanHelp = () => {
-    setShowSearching(true);
-  };
-  useEffect(() => {
-    ellipsisRefs.current = Array(chatGroups.length)
-      .fill()
-      .map((_, i) => ellipsisRefs.current[i] ?? React.createRef());
-  }, [chatGroups]);
-  useEffect(() => {
-    if (route.params?.startSearching) {
-      setShowSearching(true);
-    }
-  }, [route.params]);
-  useEffect(() => {
-    if (!showSearching) return;
+  ), [styles]);
+  const renderChatGroup = useCallback(({ item, index }) => {
+      const isActive = activeDropdownIndex === index;
+      const maxVisible = 5;
+      const overlapSpacing = isTablet ? 32.19 : 24;
+      const spacing = scaleWidth(overlapSpacing);
 
-    const interval = setInterval(() => {
-      setDotCount((prev) => (prev + 1) % 4);
-    }, 500);
+      return (
+        <View style={[styles.chatGroupCard, item.joined && styles.chatGroupCardJoinedBorder, { overflow: 'visible' }]} needsOffscreenAlphaCompositing>
+          <View style={styles.chatPhotosHeader}>
+            <HelperStack
+              helpers={item.helpers}
+              spacing={spacing}
+              maxVisible={maxVisible}
+              imageBaseStyle={styles.chatGroupHelperImage}
+              wrapperStyle={styles.chatGroupHelpersWrapper}
+              stackStyle={styles.chatGroupHelpersStack}
+              extraCircleStyle={styles.extraHelpersCircle}
+              extraTextStyle={styles.extraHelpersText}
+              TextComponent={CustomText}
+            />
+            <View style={styles.joinedEllipsisView}>
+              {item.public ? (
+                <View style={styles.publicCircle}>
+                  <CustomText style={styles.publicAndPrivateLabel}>Public</CustomText>
+                </View>
+              ) : (
+                <View style={styles.privateCircle}>
+                  <CustomText style={styles.publicAndPrivateLabel}>Private</CustomText>
+                </View>
+              )}
+              <TouchableOpacity
+                ref={(ref) => (ellipsisRefs.current[index] = ref)}
+                style={styles.ellipsisBackground}
+                onPressIn={() => handleEllipsisPress(index)}
+              >
+                <EllipsisIcon {...styles.ellipsis} />
+              </TouchableOpacity>
+            </View>
+          </View>
 
-    return () => clearInterval(interval);
-  }, [showSearching]);
-  const topNav = {
-    ...styles.topNav,
-    paddingTop: statusBarHeight
-  }
-  const { width } = useWindowDimensions();
-  const isTablet = width >= tabletBreakpoint;
-  const getHelperImageStyles = (count = 5) => {
-    const overlapSpacing = isTablet ? 32.19 : 24;
-
-    const spacing = scaleWidth(overlapSpacing);
-
-    return Array.from({ length: count }).map((_, i) => ({
-      ...styles.chatGroupHelperImage,
-      left: i * spacing,
-      zIndex: i + 1,
-    }));
-  };
-
-  return (
-    <View style={styles.root}>
-      <View style={topNav}>
-        <View style={styles.login}>
-          <View>
-            <CustomText style={styles.unlockAllFeatures}>
-              Unlock all features!
+          <View style={styles.chatGroupTitleView}>
+            <CustomText style={styles.chatGroupTitle} numberOfLines={1} ellipsizeMode="tail">
+              {item.title}
             </CustomText>
           </View>
-          <View style={styles.loginView}>
-            <TouchableOpacity style={styles.loginBtn} onPress={() => navigation.navigate('LoginOptions')}>
-              <CustomText style={styles.loginBtnTxt}>Login</CustomText>
+
+          {item.joined ? (
+            <View style={styles.chatGroupTwoBtnView}>
+              <TouchableOpacity style={styles.groupChatLeaveChatBtn} onPress={() => { closeAllMenus();}}>
+                <CustomText style={styles.groupChatLeaveChatTxt}>Leave Chat</CustomText>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.groupChatViewChatBtn} onPress={() => { closeAllMenus();}}>
+                <CustomText style={styles.groupChatViewChatTxt}>View Chat</CustomText>
+              </TouchableOpacity>
+            </View>
+          ) : !item.public && !item.joined ? (
+            <View style={styles.chatGroupOneBtnView}>
+              <TouchableOpacity style={styles.groupChatRequestJoinBtn} onPress={() => { closeAllMenus();}}>
+                <CustomText style={styles.groupChatRequestJoinTxt}>Request Join</CustomText>
+              </TouchableOpacity>
+            </View>
+          ) : item.public && !item.joined ? (
+            <View style={styles.chatGroupOneBtnView}>
+              <TouchableOpacity style={styles.groupChatJoinNowBtn} onPress={() => { closeAllMenus();}}>
+                <CustomText style={styles.groupChatJoinNowTxt}>Join Now</CustomText>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          {isActive && (
+            <Pressable
+              ref={chatDropdownRef}
+              onLayout={() => measureToRect(chatDropdownRef, 'chatDropdown')}
+              style={styles.chatGroupDropdown}
+            >
+              {item.owner && (
+                <TouchableOpacity
+                  onPressIn={() => handleEditNamePressIn(index)}
+                  onPressOut={closeAllMenus}
+                  style={[styles.chatGroupDropdownOptions, styles.chatGroupDropdownOptionsBorderBottom]}
+                >
+                  <CustomText style={styles.dropdownBlackTxt}>Edit name</CustomText>
+                  <EditIcon {...styles.dropdownIcons} />
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                onPressIn={() => handleMembersPressIn(index)}
+                onPressOut={closeAllMenus}
+                style={[styles.chatGroupDropdownOptions, item.owner ? styles.chatGroupDropdownOptionsBorderBottom : null]}
+              >
+                <CustomText style={styles.dropdownBlackTxt}>Members</CustomText>
+                <MembersIcon {...styles.dropdownIcons} />
+                {item.pendingMembers && item.owner && <PendingMembersCircle {...styles.pendingMembersCircle} />}
+              </TouchableOpacity>
+
+              {item.owner && item.public && (
+                <TouchableOpacity
+                  onPressIn={() => handleMakeChatPrivatePressIn(index)}
+                  onPressOut={closeAllMenus}
+                  style={[styles.chatGroupDropdownOptions, styles.chatGroupDropdownOptionsBorderBottom]}
+                >
+                  <CustomText style={styles.dropdownBlackTxt}>Make Chat Private</CustomText>
+                  <PrivateIcon {...styles.dropdownIcons} />
+                </TouchableOpacity>
+              )}
+
+              {item.owner && (
+                <TouchableOpacity
+                  onPressIn={() => handleDeleteChatPressIn(index)}
+                  onPressOut={closeAllMenus}
+                  style={styles.deleteOption}
+                >
+                  <CustomText style={styles.dropdownRedTxt}>Delete group</CustomText>
+                  <TrashIcon {...styles.dropdownIcons} />
+                </TouchableOpacity>
+              )}
+            </Pressable>
+          )}
+        </View>
+      );
+    }, [activeDropdownIndex, isTablet, styles]
+  );
+  useEffect(() => {
+    ellipsisRefs.current = Array(CHAT_GROUPS_DATA.length)
+      .fill(null)
+      .map((_, i) => ellipsisRefs.current[i] ?? React.createRef());
+  }, []);
+  useEffect(() => {
+    if (route.params?.startSearching) setShowSearching(true);
+  }, [route.params]);
+  useEffect(() => {
+    if (isSortOpen) {
+      requestAnimationFrame(() => {
+        measureToRect(sortBtnRef, 'sortBtn');
+        measureToRect(sortDropdownRef, 'sortDropdown');
+      });
+    } else {
+      rectsRef.current.sortDropdown = null;
+    }
+  }, [isSortOpen, measureToRect]);
+  useEffect(() => {
+    if (activeDropdownIndex !== null) {
+      const ellipsisRef = ellipsisRefs.current[activeDropdownIndex];
+      requestAnimationFrame(() => {
+        if (ellipsisRef?.current) {
+          ellipsisRef.current.measureInWindow((x, y, width, height) => {
+            rectsRef.current.ellipsisBtn = { x, y, width, height };
+          });
+        }
+        if (chatDropdownRef.current) {
+          measureToRect(chatDropdownRef, 'chatDropdown');
+        }
+      });
+    } else {
+      rectsRef.current.ellipsisBtn = null;
+      rectsRef.current.chatDropdown = null;
+    }
+  }, [activeDropdownIndex, measureToRect]);
+  const navigation = useNavigation();
+  const cameFromLogin = route.params?.from === 'login';
+  const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= tabletBreakpoint;
+  const styles = useResponsiveStyles(phoneStyles, tabletStyles);
+  const topNavStyle = useMemo(
+    () => ({ ...styles.topNav, paddingTop: statusBarHeight }),
+    [styles.topNav, statusBarHeight]
+  );
+  
+  return (
+    <View style={styles.root} onTouchEndCapture={handleRootTouchEndCapture}>
+      <View style={topNavStyle}>
+        {cameFromLogin ? (
+          <View style={styles.profileAndLogin}>
+            <CustomText style={styles.welcomeBackTxt}>Welcome Back!</CustomText>
+            <View>
+              <Image source={Image1} style={styles.profileImage} fadeDuration={0} />
+            </View>
+          </View>
+        ) : (
+          <View style={[styles.profileAndLogin, styles.loginBg]}>
+            <View>
+              <CustomText style={styles.unlockAllFeaturesTxt}>Unlock all features!</CustomText>
+            </View>
+            <View style={styles.loginView}>
+              <TouchableOpacity
+                style={styles.loginBtn}
+                onPressIn={handleLoginPressIn}
+              >
+                <CustomText style={styles.loginBtnTxt}>Login</CustomText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {showSearching ? (
+          <SearchingView />
+        ) : (
+          <View style={styles.helpView}>
+            <TouchableOpacity
+              style={styles.helpMeBtn}
+              onPressIn={handleHelpMePressIn}
+            >
+              <SadEmoji {...styles.topNavIcons} />
+              <CustomText style={styles.helpMeTxt}>HELP ME</CustomText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iCanHelpBtn}
+              onPressIn={handleICanHelpPressIn}
+            >
+              <HappyEmoji {...styles.topNavIcons} />
+              <CustomText style={styles.iCanHelpTxt}>I CAN HELP</CustomText>
+            </TouchableOpacity>
+          </View>
+        )}
+        <View style={styles.searchAndSortRow}>
+          <View style={styles.search}>
+            <CustomTextInput
+              style={styles.searchInput}
+              keyboardType="default"
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="none"
+              autoComplete="off"
+              importantForAutofill="no"
+              returnKeyType="search"
+              value={search}
+              onChangeText={setSearch}
+              onFocus={handleSearchFocusOrTouch}
+              onTouchStart={handleSearchFocusOrTouch}
+            />
+            <SearchIcon {...StyleSheet.flatten([styles.topNavIcons, styles.searchIcon])} />
+          </View>
+          <View style={styles.sort}>
+            <TouchableOpacity
+              style={styles.sortBtn}
+              ref={sortBtnRef}
+              onPressIn={handleSortPressIn}
+            >
+              <SortIcon {...styles.topNavIcons} />
+              <CustomText style={styles.sortTxt}>{sortBy}</CustomText>
+              <DownArrowIcon {...styles.topNavIcons} />
             </TouchableOpacity>
           </View>
         </View>
-        {showSearching ?
-            <View style={styles.searchingView}>
-              <View style={styles.searching}>
-                <CustomText style={styles.searchingTxt}>
-                  {`Searching${'.'.repeat(dotCount)}`}
-                </CustomText>
-              </View>
-              <View style={styles.cancelView}>
-                <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
-                  <CustomText style={styles.cancelTxt}>Cancel</CustomText>
-                </TouchableOpacity>
-              </View>
-            </View>
-        :
-            <View style={styles.helpView}>
-              <TouchableOpacity style={styles.helpMeBtn} onPress={handleHelpMe}>
-                <SadEmoji {...styles.faceEmojis}/>
-                <CustomText style={styles.helpMeTxt}>HELP ME</CustomText>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.iCanHelpBtn} onPress={handleICanHelp}>
-                <HappyEmoji {...styles.faceEmojis}/>
-                <CustomText style={styles.iCanHelpMeTxt}>I CAN HELP</CustomText>
-              </TouchableOpacity>
-            </View>
-        }
       </View>
       <View style={styles.mainContent}>
-        {helpers.length > 0 && (
+        {helpersTop.length > 0 && (
           <View style={styles.helpers}>
             <CustomText style={styles.availableHelpersTxt}>Available Helpers</CustomText>
             <FlatList
-              data={helpers}
+              data={helpersTop}
+              {...listCommonProps}
+              onScroll={handleHelpersScroll}
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.helpersListContent}
-              keyExtractor={(item, index) => index.toString()}
+              keyExtractor={(item) => item.name}
               renderItem={renderHelper}
               horizontal
             />
           </View>
         )}
         <View style={styles.ChatGroups}>
-          <FlatList
-            ref={chatGroupsRef}
-            data={chatGroups}
-            contentContainerStyle={styles.chatGroupsListContent}
-            showsVerticalScrollIndicator={false}
-            keyExtractor={(item, index) => index.toString()}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
-            renderItem={({ item, index }) => {
-              const maxVisible = 5;
-              const helperImageStyles = getHelperImageStyles(maxVisible);
-              return (
-                <View style={[styles.chatGroupCard, item.joined ? styles.chatGroupCardJoinedBorder : null]} >
-                  <View style={styles.chatPhotosHeader}>
-                    <View style={styles.chatGroupHelpersWrapper}>
-                      <View style={styles.chatGroupHelpersStack}>
-                        {item.helpers.slice(0, maxVisible).map((helper, i) => (
-                          <Image key={i} source={helper.image} style={helperImageStyles[i]} />
-                        ))}
-                        {item.helpers.length > maxVisible && (
-                          <View
-                            style={[
-                              styles.extraHelpersCircle,
-                              {
-                                left: helperImageStyles[maxVisible - 1].left + scaleWidth(isTablet ? 32.19 : 24),
-                                zIndex: maxVisible + 1,
-                              },
-                            ]}
-                          >
-                            <CustomText style={styles.extraHelpersText}>
-                              +{item.helpers.length - maxVisible}
-                            </CustomText>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                    <View style={styles.joinedEllipsisView}>
-                      {item.joined && (
-                        <View style={styles.joined}>
-                          <CustomText style={styles.joinedLabel}>Joined</CustomText>
-                        </View>
-                      )}
-                      <TouchableOpacity
-                        ref={ellipsisRefs.current[index]}
-                        style={styles.ellipsisBackground}
-                        onPress={() => handleEllipsisPress(index)}
-                      >
-                        <EllipsisIcon {...styles.ellipsis} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  <View style={styles.chatGroupTitleView}>
-                    <CustomText style={styles.chatGroupTitle} numberOfLines={1} ellipsizeMode="tail">{item.title}</CustomText>
-                  </View>
-                  {item.joined  ?
-                    <View style={styles.chatGroupBtnView}>
-                      <TouchableOpacity style={styles.groupChatLeaveChatBtn}>
-                        <CustomText style={styles.groupChatLeaveChatTxt}>Leave Chat</CustomText>
-                      </TouchableOpacity>
-                    <TouchableOpacity style={styles.groupChatHappyBtn}>
-                        <CustomText style={styles.groupChatHappyTxt}>View Chat</CustomText>
-                      </TouchableOpacity>                      
-                    </View>                 
-                  :
-                    <View style={styles.chatGroupBtnView}>
-                      <TouchableOpacity style={styles.groupChatSpectateBtn}>
-                        <CustomText style={styles.groupChatSpectateTxt}>Spectate</CustomText>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.groupChatHappyBtn}>
-                        <CustomText style={styles.groupChatHappyTxt}>Request Join</CustomText>
-                      </TouchableOpacity>
-                    </View>  
-                  }
-                  {activeDropdownIndex === index && (
-                    <Pressable
-                      onPress={(e) => e.stopPropagation()} 
-                      style={styles.chatGroupDropdown}
-                    >
-                      {item.owner && (
-                        <TouchableOpacity
-                          onPress={() => { setActiveDropdownIndex(null); }}
-                          style={[styles.editMemberOptions, styles.editMemberOptionsBorderBottom]}
-                        >
-                          <CustomText style={styles.dropdownBlackTxt}>Edit name</CustomText>
-                          <EditIcon {...styles.dropdownIcons} />
-                        </TouchableOpacity>
-                      )}
-                      <TouchableOpacity
-                        onPress={() => { setActiveDropdownIndex(null); }}
-                        style={[styles.editMemberOptions, item.owner ? styles.editMemberOptionsBorderBottom : null]}
-                      >
-                        <CustomText style={styles.dropdownBlackTxt}>Members</CustomText>
-                        <MembersIcon {...styles.dropdownIcons} />
-                        {(item.pendingMembers && item.owner) && (
-                          <PendingMembersCircle {...styles.pendingMembersCircle}/>
-                        )}
-                      </TouchableOpacity>
-                      {item.owner && (
-                        <TouchableOpacity
-                          onPress={() => { setActiveDropdownIndex(null); }}
-                          style={styles.deleteOption}
-                        >
-                          <CustomText style={styles.dropdownRedTxt}>Delete group</CustomText>
-                          <TrashIcon {...styles.dropdownIcons} />
-                        </TouchableOpacity>
-                      )}
-                    </Pressable>
-                  )}
-                </View>
-              );
-            }}
-          />
+          <ActiveIndexContext.Provider value={activeDropdownIndex}>
+            <FlatList
+              ref={chatGroupsRef}
+              data={sortedChatGroups}
+              {...listCommonProps}
+              contentContainerStyle={styles.chatGroupsListContent}
+              showsVerticalScrollIndicator={false}
+              keyExtractor={(item) => item.title}
+              onScroll={handleChatGroupsScroll}
+              scrollEventThrottle={16}
+              removeClippedSubviews={false}
+              extraData={activeDropdownIndex}
+              renderItem={renderChatGroup}
+              CellRendererComponent={ActiveListCell}
+            />
+          </ActiveIndexContext.Provider>
         </View>
+        {isSortOpen && (
+          <View
+            ref={sortDropdownRef}
+            onLayout={() => measureToRect(sortDropdownRef, 'sortDropdown')}
+            style={styles.sortByDropdown}
+          >
+            {sortOptions.map((opt, idx) => (
+              <TouchableOpacity
+                key={opt}
+                onPressIn={() => handleSortOptionPressIn(opt)}
+                onPressOut={closeAllMenus}
+                style={[styles.sortByOptions, idx < sortOptions.length - 1 && styles.sortByOptionsBorderBottom]}
+              >
+                <CustomText
+                  style={[
+                    styles.sortByDropdownTxt,
+                    sortBy === opt ? styles.sortBySelectedTxt : styles.sortByNotSelectedTxt,
+                  ]}
+                >
+                  {opt}
+                </CustomText>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
       <LinearGradient
+        pointerEvents="none"
         colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.7)']}
         style={{
           position: 'absolute',

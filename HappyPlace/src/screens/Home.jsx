@@ -10,7 +10,8 @@ import CustomText from 'src/components/FontFamilyText';
 import Logo from 'assets/images/global/logo.png';
 import HappyEmoji from 'assets/images/global/happy-emoji.svg';
 import SadEmoji from 'assets/images/global/sad-emoji.svg';
-
+import { useDispatch } from 'react-redux';
+import { showLoading, hideLoading } from 'store/loadingSlice'; 
 const phoneStyles = StyleSheet.create({
   root: {
     backgroundColor: HappyColor,
@@ -344,9 +345,44 @@ const tabletStyles = StyleSheet.create({
 });
 
 export default function Home() {
+  const dispatch = useDispatch();
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
+
+  const handleHelpMe = () => {
+    dispatch(showLoading()); // Show modal during navigation/async
+    // Simulate async (e.g., API call before navigation)
+    setTimeout(() => {
+      dispatch(hideLoading()); // Hide when done
+      navigation.navigate('ChatGroups', { startSearching: true });
+    }, 1000); // Replace with actual async logic
+  };
+
+  const handleICanHelp = () => {
+    dispatch(showLoading());
+    setTimeout(() => {
+      dispatch(hideLoading());
+      navigation.navigate('ChatGroups', { startSearching: true });
+    }, 1000);
+  };
+
+  const handleSignUp = () => {
+    dispatch(showLoading());
+    setTimeout(() => {
+      dispatch(hideLoading());
+      navigation.navigate('CreateAccount');
+    }, 1000);
+  };
+
+  const handleLogin = () => {
+    dispatch(showLoading());
+    setTimeout(() => {
+      dispatch(hideLoading());
+      navigation.navigate('LoginOptions');
+    }, 1000);
+  };
+
   const rootStyle = {
     ...styles.root,
     paddingTop: statusBarHeight
@@ -355,6 +391,7 @@ export default function Home() {
     ...styles.card,
     paddingBottom: bottomSafeHeight
   };
+
   return (
     <View style={rootStyle}>
       <View style={styles.topSection}>
@@ -373,19 +410,19 @@ export default function Home() {
           <CustomText style={styles.subhead}>Someone is here to help.</CustomText>
         </View>
         <View style={styles.helpButtons}>
-          <TouchableOpacity style={styles.helpMeBtn} onPress={() => navigation.navigate('ChatGroups', { startSearching: true })}>
+          <TouchableOpacity style={styles.helpMeBtn} onPress={handleHelpMe}>
             <SadEmoji {...styles.emojis}/>
             <CustomText style={styles.helpMeBtnText}>HELP ME</CustomText>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iCanHelpBtn} onPress={() => navigation.navigate('ChatGroups', { startSearching: true })}>
+          <TouchableOpacity style={styles.iCanHelpBtn} onPress={handleICanHelp}>
             <HappyEmoji {...styles.emojis}/>
             <CustomText style={styles.iCanHelpBtnText}>I CAN HELP</CustomText>
           </TouchableOpacity>
         </View>
         <View style={styles.signUpLogIn}>
           <View style={styles.signUp}>
-            <TouchableOpacity style={styles.signUpBtn}>
-              <CustomText style={styles.signUpBtnText} onPress={() => navigation.navigate('CreateAccount')}>Sign Up</CustomText>
+            <TouchableOpacity style={styles.signUpBtn} onPress={handleSignUp}>
+              <CustomText style={styles.signUpBtnText}>Sign Up</CustomText>
             </TouchableOpacity>
           </View>
           <View style={styles.divider}>
@@ -397,7 +434,7 @@ export default function Home() {
             <CustomText style={styles.loginText}>
               Already have an account?
             </CustomText>
-            <CustomText style={styles.loginLink} onPress={() => navigation.navigate('LoginOptions')}>Login</CustomText>
+            <CustomText style={styles.loginLink} onPress={handleLogin}>Login</CustomText>
           </View>
         </View>
       </View>

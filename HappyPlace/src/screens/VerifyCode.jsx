@@ -290,230 +290,242 @@ const tabletStyles = StyleSheet.create({
 });
 
 export default function VerifyCode() {
-    const dispatch = useDispatch();
+  const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.loading.isLoading);
-  dispatch(showLoading());
-
-    const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
-    const styles = useResponsiveStyles(phoneStyles, tabletStyles);
-    const navigation = useNavigation();
-    const route = useRoute();
-    const contact = route.params?.contact || '';
-    const source  = route.params?.source || 'createAccount';
-    const CODE_LENGTH = 6;
-    const [code, setCode] = useState(Array(CODE_LENGTH).fill(''));
-    const inputsRef = useRef(Array.from({ length: CODE_LENGTH }, () => React.createRef()));
-    const canConfirm = code.every((c) => c !== '');
-    const codeValue  = code.join('');
-    const INITIAL_SECONDS = 60;
-    const [secondsLeft, setSecondsLeft] = useState(INITIAL_SECONDS);
-    const [isCounting, setIsCounting] = useState(true);
-    let maskedContact = '';
-    let descriptionText = '';
-    const maskEmail = (email) => {
+    // Show the modal permanently on this page (runs once on mount)
+  // useEffect(() => {
+  //   dispatch(showLoading());
+  //   return () => dispatch(hideLoading());
+  // }, [dispatch]);
+  const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
+  const styles = useResponsiveStyles(phoneStyles, tabletStyles);
+  const navigation = useNavigation();
+  const route = useRoute();
+  const contact = route.params?.contact || '';
+  const source = route.params?.source || 'createAccount';
+  const CODE_LENGTH = 6;
+  const [code, setCode] = useState(Array(CODE_LENGTH).fill(''));
+  const inputsRef = useRef(Array.from({ length: CODE_LENGTH }, () => React.createRef()));
+  const canConfirm = code.every((c) => c !== '');
+  const codeValue = code.join('');
+  const INITIAL_SECONDS = 60;
+  const [secondsLeft, setSecondsLeft] = useState(INITIAL_SECONDS);
+  const [isCounting, setIsCounting] = useState(true);
+  let maskedContact = '';
+  let descriptionText = '';
+  const maskEmail = (email) => {
     const [name, domain] = email.split('@');
     if (name.length <= 4) return email;
     return `${name.slice(0, 4)}${'*'.repeat(name.length - 4)}@${domain}`;
-    };
-    const maskPhone = (phone) => {
+  };
+  const maskPhone = (phone) => {
     if (phone.length <= 4) return phone;
     const visibleStart = phone.slice(0, 5);
     const visibleEnd = phone.slice(-3);
     const maskedMiddle = '*'.repeat(phone.length - 8);
     return `${visibleStart}${maskedMiddle}${visibleEnd}`;
-    };
+  };
 
-    if (contact.includes('@')) {
-        maskedContact = maskEmail(contact);
-        descriptionText = 'Please enter the code we just sent to your email.';
-    } else {
-        maskedContact = maskPhone(contact);
-        descriptionText = 'Please enter the code we just sent to your phone number.';
-    }
+  if (contact.includes('@')) {
+    maskedContact = maskEmail(contact);
+    descriptionText = 'Please enter the code we just sent to your email.';
+  } else {
+    maskedContact = maskPhone(contact);
+    descriptionText = 'Please enter the code we just sent to your phone number.';
+  }
 
-    const focusInput = (i) => {
+  const focusInput = (i) => {
     inputsRef.current[i]?.current?.focus?.();
-    };
+  };
 
-    const setDigit = (i, val) => {
+  const setDigit = (i, val) => {
     const digits = String(val).replace(/\D/g, '');
     if (!digits) return;
 
     setCode((prev) => {
-        const next = [...prev];
-        let idx = i;
+      const next = [...prev];
+      let idx = i;
 
-        for (let d of digits) {
+      for (let d of digits) {
         if (idx >= CODE_LENGTH) break;
         next[idx] = d;
         idx += 1;
-        }
+      }
 
-        const firstEmpty = next.findIndex((c) => c === '');
-        if (firstEmpty === -1) {
+      const firstEmpty = next.findIndex((c) => c === '');
+      if (firstEmpty === -1) {
         focusInput(CODE_LENGTH - 1);
-        } else {
+      } else {
         focusInput(Math.max(i + digits.length, i + 1, firstEmpty));
-        }
+      }
 
-        return next;
+      return next;
     });
-    };
+  };
 
-    const handleKeyPress = (i, e) => {
+  const handleKeyPress = (i, e) => {
     if (e.nativeEvent.key === 'Backspace') {
-        setCode((prev) => {
+      setCode((prev) => {
         const next = [...prev];
 
         if (next[i]) {
-            next[i] = '';
-            return next;
+          next[i] = '';
+          return next;
         }
         for (let j = i - 1; j >= 0; j--) {
-            if (next[j]) {
+          if (next[j]) {
             next[j] = '';
             focusInput(j);
             break;
-            } else if (j === 0) {
+          } else if (j === 0) {
             focusInput(0);
-            }
+          }
         }
         return next;
-        });
+      });
     }
-    };
+  };
 
-    const onFocus = (i) => {
+  const onFocus = (i) => {
     const firstEmpty = code.findIndex((c) => c === '');
     if (firstEmpty !== -1 && firstEmpty < i) {
-        focusInput(firstEmpty);
+      focusInput(firstEmpty);
     }
-    };
+  };
 
-    useEffect(() => {
+  useEffect(() => {
     if (!isCounting) return;
     const id = setInterval(() => {
-        setSecondsLeft((s) => {
+      setSecondsLeft((s) => {
         if (s <= 1) {
-            clearInterval(id);
-            setIsCounting(false);
-            return 0;
+          clearInterval(id);
+          setIsCounting(false);
+          return 0;
         }
         return s - 1;
-        });
+      });
     }, 1000);
     return () => clearInterval(id);
-    }, [isCounting]);
+  }, [isCounting]);
 
-    const timeLeft = useMemo(() => {
-        const m = Math.floor(secondsLeft / 60);
-        const s = secondsLeft % 60;
-        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-    }, [secondsLeft]);
+  const timeLeft = useMemo(() => {
+    const m = Math.floor(secondsLeft / 60);
+    const s = secondsLeft % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }, [secondsLeft]);
 
-    const handleResend = () => {
-        setSecondsLeft(INITIAL_SECONDS);
-        setIsCounting(true);
-    };
-    const verifyCode = () => {
-      if (!canConfirm) return;
+  const handleResend = () => {
+    dispatch(showLoading()); // Show modal during resend
+    setSecondsLeft(INITIAL_SECONDS);
+    setIsCounting(true);
+    // Simulate async resend (e.g., API call)
+    setTimeout(() => {
+      dispatch(hideLoading()); // Hide when done
+    }, 1000); // Replace with actual async logic
+  };
+
+  const verifyCode = () => {
+    if (!canConfirm) return;
+    dispatch(showLoading()); // Show modal during verification
+    // Simulate async verification (e.g., API call)
+    setTimeout(() => {
+      dispatch(hideLoading()); // Hide when done
       if (source === 'forgotPassword') {
-      navigation.replace('SetupPassword', { contact });
+        navigation.replace('SetupPassword', { contact });
       } else {
-      navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
+        navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
       }
-    };
-    useFocusEffect(
-        useCallback(() => {
-            setSecondsLeft(INITIAL_SECONDS);
-            setIsCounting(true);
-        }, [])
-    );
-    const rootStyle = {
+    }, 1000); // Replace with actual async logic
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      setSecondsLeft(INITIAL_SECONDS);
+      setIsCounting(true);
+    }, [])
+  );
+
+  const rootStyle = {
     ...styles.root,
     paddingTop: statusBarHeight
-    };
-    const cardStyle = {
+  };
+  const cardStyle = {
     ...styles.card,
     paddingBottom: bottomSafeHeight
-    };
+  };
 
-    return (
+  return (
     <View style={rootStyle}>
-        <View style={cardStyle}>
+      <View style={cardStyle}>
         <View style={styles.part1}>
-            <TouchableOpacity 
-                style={styles.BackArrow}
-                onPress={() => navigation.goBack()}
-            >
-                <BackArrow {...styles.backArrowIcon}/>
-            </TouchableOpacity>
-            <View style={styles.headers}>
-                <CustomText style={styles.verifyCode}>Verify Code</CustomText>
-                <CustomText style={styles.verifyCodeDesc}>{descriptionText}</CustomText>
-                <CustomText style={styles.contactType}>{maskedContact}</CustomText>
-            </View>
-            <View style={styles.verifyCodeInputs}>
-                {Array.from({ length: CODE_LENGTH }).map((_, i) => {
-                    const isFilled = code[i] !== '';
-                    const isSelected =
-                    !isFilled && (i === code.findIndex((c) => c === '') || (i === CODE_LENGTH - 1 && code.every((c) => c !== '')));
+          <TouchableOpacity 
+            style={styles.BackArrow}
+            onPress={() => navigation.goBack()}
+          >
+            <BackArrow {...styles.backArrowIcon}/>
+          </TouchableOpacity>
+          <View style={styles.headers}>
+            <CustomText style={styles.verifyCode}>Verify Code</CustomText>
+            <CustomText style={styles.verifyCodeDesc}>{descriptionText}</CustomText>
+            <CustomText style={styles.contactType}>{maskedContact}</CustomText>
+          </View>
+          <View style={styles.verifyCodeInputs}>
+            {Array.from({ length: CODE_LENGTH }).map((_, i) => {
+              const isFilled = code[i] !== '';
+              const isSelected = !isFilled && (i === code.findIndex((c) => c === '') || (i === CODE_LENGTH - 1 && code.every((c) => c !== '')));
 
-                    return (
-                    <CustomTextInput
-                        key={i}
-                        ref={inputsRef.current[i]}
-                        style={isSelected ? styles.selectedInput : styles.input}
-                        value={code[i]}
-                        keyboardType="number-pad"
-                        maxLength={1}
-                        textContentType="oneTimeCode"
-                        autoComplete="one-time-code"
-                        onFocus={() => onFocus(i)}
-                        onChangeText={(txt) => setDigit(i, txt)}
-                        onKeyPress={(e) => handleKeyPress(i, e)}
-                        accessibilityLabel={`Verification digit ${i + 1}`}
-                        returnKeyType="none"
-                    />
-                    );
-                })}
-            </View>
-            {isCounting ? (
+              return (
+                <CustomTextInput
+                  key={i}
+                  ref={inputsRef.current[i]}
+                  style={isSelected ? styles.selectedInput : styles.input}
+                  value={code[i]}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  textContentType="oneTimeCode"
+                  autoComplete="one-time-code"
+                  onFocus={() => onFocus(i)}
+                  onChangeText={(txt) => setDigit(i, txt)}
+                  onKeyPress={(e) => handleKeyPress(i, e)}
+                  accessibilityLabel={`Verification digit ${i + 1}`}
+                  returnKeyType="none"
+                />
+              );
+            })}
+          </View>
+          {isCounting ? (
             <View style={styles.resendCode}>
-                <CustomText style={styles.resendCodeTxt}>Resend Code in</CustomText>
-                <CustomText style={[styles.resendCodeValue, styles.blackColor]}>
+              <CustomText style={styles.resendCodeTxt}>Resend Code in</CustomText>
+              <CustomText style={[styles.resendCodeValue, styles.blackColor]}>
                 {timeLeft}
-                </CustomText>
+              </CustomText>
             </View>
-            ) : (
+          ) : (
             <View style={styles.resendCode}>
-                <CustomText style={styles.resendCodeTxt}>Not receive code yet?</CustomText>
-                <TouchableOpacity onPress={handleResend}>
+              <CustomText style={styles.resendCodeTxt}>Not receive code yet?</CustomText>
+              <TouchableOpacity onPress={handleResend}>
                 <CustomText style={[styles.resendCodeValue, styles.happyColor]}>
-                    Resend Code
+                  Resend Code
                 </CustomText>
-                </TouchableOpacity>
+              </TouchableOpacity>
             </View>
-            )}
+          )}
         </View>
         <View style={styles.part2}>
-            <View>
-                <TouchableOpacity
-                    style={[
-                        styles.confirmBtn,
-                        { opacity: canConfirm ? 1 : 0.5 }
-                    ]}
-                    onPress={() => {
-                        if (canConfirm) verifyCode()
-                        
-                    }}
-                    disabled={!canConfirm} 
-                >
-                    <CustomText style={styles.confirmBtnText}>Confirm</CustomText>
-                </TouchableOpacity>
-            </View>
+          <View>
+            <TouchableOpacity
+              style={[
+                styles.confirmBtn,
+                { opacity: canConfirm ? 1 : 0.5 }
+              ]}
+              onPress={verifyCode}
+              disabled={!canConfirm}
+            >
+              <CustomText style={styles.confirmBtnText}>Confirm</CustomText>
+            </TouchableOpacity>
+          </View>
         </View>
-        </View>
+      </View>
     </View>
-    );
+  );
 }

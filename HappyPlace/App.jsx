@@ -16,12 +16,13 @@ import Login from 'screens/Login';
 import ForgotPassword from 'screens/ForgotPassword';
 import SetupPassword from 'screens/SetupPassword';
 import PasswordReset from 'screens/PasswordReset';
+import Profile from 'screens/Profile';
 
 const Stack = createNativeStackNavigator();
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
-
+  
   return (
     <Provider store={store}>
       <SafeAreaProvider>
@@ -44,6 +45,7 @@ const App = () => {
             <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
             <Stack.Screen name="SetupPassword" component={SetupPassword} />
             <Stack.Screen name="PasswordReset" component={PasswordReset} />
+            <Stack.Screen name="Profile" component={Profile} />
           </Stack.Navigator>
           <LoadingModal />
         </NavigationContainer>

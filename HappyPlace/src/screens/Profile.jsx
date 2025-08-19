@@ -477,12 +477,7 @@ export default function Login() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
-  const emailValid = selectedSignInType === 'email' ? isEmail(email) : false;
-  const phoneValid = selectedSignInType === 'phone' ? phone.replace(/\D/g, '').length >= 10 : false;
-  const passwordValid = password.trim().length > 0;
-  const canLogin = passwordValid && (emailValid || phoneValid);
+    const [rememberMe, setRememberMe] = useState(false);
 
   const rootStyle = {
     ...styles.root,
@@ -503,7 +498,7 @@ export default function Login() {
             >
               <BackArrow {...styles.backArrowIcon}/>
             </TouchableOpacity>
-            <CustomText style={styles.signIn}>Sign in</CustomText>
+            <CustomText style={styles.signIn}>My Account</CustomText>
             <CustomText style={styles.signInDesc}>Sign In to your account</CustomText>
             <View style={styles.signInType}>
               <TouchableOpacity
@@ -586,15 +581,9 @@ export default function Login() {
         </View>
         <View style={styles.part2}>
             <View style={styles.login}>
-              <TouchableOpacity
-                style={[styles.loginBtn, !canLogin && { opacity: 0.5 }]}
-                disabled={!canLogin}
-                onPress={() => {
-                  if (canLogin) navigation.navigate('ChatGroups', { from: 'login' });
-                }}
-              >
+                <TouchableOpacity style={styles.loginBtn}>
                 <CustomText style={styles.loginBtnText}>Login</CustomText>
-              </TouchableOpacity>
+                </TouchableOpacity>
             </View>
             <View style={styles.dontHaveAccount}>
                 <CustomText style={styles.dontHaveAccountTxt}>Don't have an account?</CustomText>
