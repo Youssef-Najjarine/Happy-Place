@@ -293,10 +293,10 @@ export default function VerifyCode() {
   const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.loading.isLoading);
     // Show the modal permanently on this page (runs once on mount)
-  // useEffect(() => {
-  //   dispatch(showLoading());
-  //   return () => dispatch(hideLoading());
-  // }, [dispatch]);
+  useEffect(() => {
+    dispatch(showLoading());
+    return () => dispatch(hideLoading());
+  }, [dispatch]);
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();

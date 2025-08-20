@@ -1,26 +1,12 @@
 import React, { useRef } from 'react';
 import { Modal, View, StyleSheet, Platform, Animated, Easing } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { useSelector } from 'react-redux';
 import { useResponsiveStyles } from '../utils/useResponsiveStyles';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
-
-const useRotation = () => {
-  const rotation = useRef(new Animated.Value(0)).current;
-  React.useEffect(() => {
-    Animated.loop(
-      Animated.timing(rotation, {
-        toValue: 1,
-        duration: 1200,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
-  }, [rotation]);
-  return rotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-};
+import InnerArc from 'assets/images/loading/inner-arc.svg';
+import MiddleArc from 'assets/images/loading/middle-arc.svg';
+import OuterArc from 'assets/images/loading/outer-arc.svg';
 
 const phoneStyles = StyleSheet.create({
   overlay: {
@@ -30,8 +16,8 @@ const phoneStyles = StyleSheet.create({
     alignItems: 'center',
   },
   spinnerContainer: {
-    width: scaleWidth(96),
-    height: scaleHeight(96),
+    width: scaleWidth(136),
+    height: scaleHeight(136),
     borderRadius: scaleWidth(21.461),
     borderWidth: scaleWidth(1.341),
     borderColor: 'rgba(238, 238, 238, 0.40)',
@@ -41,69 +27,41 @@ const phoneStyles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 20.12,
     ...(Platform.OS === 'android' && { elevation: 10 }),
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
   },
-  arcBase: {
-    position: 'absolute',
-    top: '50%', // Center vertically
-    left: '50%', // Center horizontally
-    transform: [{ translateX: -scaleWidth(24) }, { translateY: -scaleHeight(12) }], // Adjust for half width/height
-  },
-  arcOuter: {
-    width: scaleWidth(48), // Diameter of 48px
-    height: scaleHeight(24), // Half circle height
-    borderTopWidth: 4, // Thickness
-    borderLeftWidth: 4,
-    borderRightWidth: 4,
-    borderBottomWidth: 0,
-    borderColor: '#FF69B4', // Dark pink
-    borderTopLeftRadius: scaleWidth(24), // Half of width for semi-circle
-    borderTopRightRadius: scaleWidth(24),
-  },
-  arcMiddle: {
-    width: scaleWidth(32), // Smaller diameter
-    height: scaleHeight(16),
-    borderTopWidth: 4,
-    borderLeftWidth: 4,
-    borderRightWidth: 4,
-    borderBottomWidth: 0,
-    borderColor: '#FFB6C1', // Medium pink
-    borderTopLeftRadius: scaleWidth(16),
-    borderTopRightRadius: scaleWidth(16),
-    top: scaleHeight(12), // 8px spacing from outer (12px total offset accounts for half height)
-  },
-  arcInner: {
-    width: scaleWidth(16), // Smallest diameter
-    height: scaleHeight(8),
-    borderTopWidth: 4,
-    borderLeftWidth: 4,
-    borderRightWidth: 4,
-    borderBottomWidth: 0,
-    borderColor: '#FFE4E1', // Light pink
-    borderTopLeftRadius: scaleWidth(8),
-    borderTopRightRadius: scaleWidth(8),
-    top: scaleHeight(20), // 8px spacing from middle (20px total offset)
-  },
+arcInner: {
+  width: scaleWidth(12),
+  height: scaleHeight(12),
+  position: 'absolute',
+  top: (scaleHeight(136 - 12)) / 2,
+  left: (scaleWidth((136 - 12) + 16)) / 2
+},
+arcMiddle: {
+  width: scaleWidth(28),
+  height: scaleHeight(28),
+  position: 'absolute',
+  top: (scaleHeight(136 - 28)) / 2,
+  left: (scaleWidth((136 - 28) + 8)) / 2
+},
+arcOuter: {
+  width: scaleWidth(42),
+  height: scaleHeight(42),
+  position: 'absolute',
+  top: (scaleHeight(136 -42)) / 2,
+  left: (scaleWidth(136 - 42)) / 2
+},
 });
 
 const tabletStyles = StyleSheet.create({});
-
 const LoadingModal = () => {
   const isLoading = useSelector((state) => state.loading.isLoading);
-  const rotation = useRotation(); // Optional animation
-
+const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   return (
     <Modal transparent visible={isLoading} animationType="fade" onRequestClose={() => {}}>
-      <View style={phoneStyles.overlay}>
-        <View style={phoneStyles.spinnerContainer}>
-          <Animated.View style={[phoneStyles.arcBase, phoneStyles.arcOuter, { transform: [{ rotate: rotation }] }]}>
-          </Animated.View>
-          <Animated.View style={[phoneStyles.arcBase, phoneStyles.arcMiddle, { transform: [{ rotate: rotation }] }]}>
-          </Animated.View>
-          <Animated.View style={[phoneStyles.arcBase, phoneStyles.arcInner, { transform: [{ rotate: rotation }] }]}>
-          </Animated.View>
+      <View style={styles.overlay}>
+        <View style={styles.spinnerContainer}>
+          <OuterArc {...styles.arcOuter}/>
+          <MiddleArc {...styles.arcMiddle}/>
+          <InnerArc {...styles.arcInner}/>
         </View>
       </View>
     </Modal>
