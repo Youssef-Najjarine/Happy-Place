@@ -113,6 +113,20 @@ const HELPERS_DATA = [
   { image: Image5, name: 'Demi' },
   { image: Image6, name: 'Brian' },
   { image: Image7, name: 'Jeffry Michael' },
+  { image: Image1, name: 'Jaydon' },
+  { image: Image2, name: 'Julia' },
+  { image: Image3, name: 'Mike' },
+  { image: Image4, name: 'Mia' },
+  { image: Image5, name: 'Demi' },
+  { image: Image6, name: 'Brian' },
+  { image: Image7, name: 'Jeffry Michael' },
+  { image: Image1, name: 'Jaydon' },
+  { image: Image2, name: 'Julia' },
+  { image: Image3, name: 'Mike' },
+  { image: Image4, name: 'Mia' },
+  { image: Image5, name: 'Demi' },
+  { image: Image6, name: 'Brian' },
+  { image: Image7, name: 'Jeffry Michael' }
 ];
 
 const CHAT_GROUPS_DATA = [
@@ -185,7 +199,8 @@ const phoneStyles = StyleSheet.create({
   profileImage: { 
     width: scaleWidth(44), 
     height: scaleHeight(44), 
-    borderRadius: scaleWidth(99) 
+    borderRadius: scaleWidth(99),
+    resizeMode: 'contain' 
   },
   loginBg: { 
     backgroundColor: '#F9F9F9' 
@@ -275,10 +290,10 @@ const phoneStyles = StyleSheet.create({
     height: scaleHeight(41),
     borderWidth: scaleWidth(1.5),
     borderRadius: scaleWidth(99),
+    gap: scaleWidth(6),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scaleWidth(6),
     borderColor: Black,
     backgroundColor: White
   },
@@ -423,7 +438,11 @@ const phoneStyles = StyleSheet.create({
     gap: scaleWidth(16) 
   },
   helperCard: { 
-    width: scaleWidth(50), 
+    width: scaleWidth(50)
+  },
+  helperCardBtn: {
+    width: '100%',
+    height: '100%',
     gap: scaleHeight(8),
     alignItems: 'center'
   },
@@ -480,7 +499,8 @@ const phoneStyles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     borderColor: White,
-    backgroundColor: White
+    backgroundColor: White,
+    resizeMode: 'contain'
   },
   extraHelpersCircle: {
     width: scaleWidth(36),
@@ -569,7 +589,8 @@ const phoneStyles = StyleSheet.create({
   },
   dropdownIcons: { 
     width: scaleWidth(24), 
-    height: scaleHeight(24) 
+    height: scaleHeight(24),
+    resizeMode: 'contain'
   },
   chatGroupDropdownOptions: { 
     paddingHorizontal: scaleWidth(16), 
@@ -599,8 +620,9 @@ const phoneStyles = StyleSheet.create({
   dropdownBlackTxt: {
     fontSize: scaleFont(16), 
     lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),color: Black,
-    fontWeight: 500
+    letterSpacing: scaleLetterSpacing(-0.16),
+    fontWeight: 500,
+    color: Black
   },
   dropdownRedTxt: { 
     fontSize: scaleFont(16), 
@@ -694,13 +716,569 @@ const phoneStyles = StyleSheet.create({
     zIndex: 1000,
     elevation: 1000,
     overflow: 'visible'
-  },
+  }
 });
 
-const tabletStyles = StyleSheet.create({});
+const tabletStyles = StyleSheet.create({
+  root: { 
+    backgroundColor: '#F9F5EA', 
+    height: '100%', 
+    width: '100%',
+    position: 'relative'
+  },
+  topNav: {
+    gap: scaleHeight(16.1),
+    paddingBottom: scaleHeight(20),
+    borderBottomLeftRadius: scaleWidth(32.192),
+    borderBottomRightRadius: scaleWidth(32.192),
+    marginBottom: scaleHeight(26.83),
+    width: '100%',
+    backgroundColor: White,
+    justifyContent: 'space-between'
+  },
+  profileAndLogin: {
+    height: 84,
+    paddingHorizontal: scaleWidth(24),
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  welcomeBackTxt: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    fontWeight: 600,
+    color: Black
+  },
+  profileImage: { 
+    width: 83.23, 
+    height: 83.23, 
+    borderRadius: scaleWidth(132.792),
+    resizeMode: 'contain' 
+  },
+  loginBg: { 
+    backgroundColor: '#F9F9F9' 
+  },
+  unlockAllFeaturesTxt: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    fontWeight: 600,
+    color: Black
+  },
+  loginView: { 
+    width: scaleWidth(79.192), 
+    height: scaleHeight(40.73067) 
+  },
+  loginBtn: {
+    borderRadius: scaleWidth(132.792),
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: HappyColor
+  },
+  loginBtnTxt: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    fontWeight: 600,
+    color: White
+  },
+  searchingView: {
+    height: scaleHeight(46),
+    paddingHorizontal: scaleWidth(24),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  searching: {
+    width: scaleWidth(102.461),
+    height: scaleHeight(34.73067),
+    borderRadius: scaleWidth(132.792),
+    backgroundColor: 'rgba(237, 83, 112, 0.20)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  searchingTxt: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    minWidth: scaleWidth(81),
+    fontWeight: 600,
+    color: Black
+  },
+  cancelView: { 
+    width: scaleWidth(109), 
+    height: scaleHeight(46), 
+    borderRadius: scaleWidth(132.792), 
+    backgroundColor: '#F9F9F9' 
+  },
+  cancelBtn: { 
+    width: '100%', 
+    height: '100%', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  cancelTxt: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    color: Black,
+    fontWeight: 600
+  },
+  helpView: {
+    height: scaleHeight(50.82),
+    paddingHorizontal: scaleWidth(24),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  topNavIcons: { 
+    width: scaleWidth(24), 
+    height: scaleHeight(24), 
+    resizeMode: 'contain' 
+  },
+  helpMeBtn: {
+    width: scaleWidth(344),
+    height: scaleHeight(50.82),
+    borderWidth: scaleWidth(1),
+    borderRadius: scaleWidth(99),
+    gap: scaleWidth(8),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderColor: Black,
+    backgroundColor: White
+  },
+  helpMeTxt: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    color: Black,
+    fontWeight: 600
+  },
+  iCanHelpBtn: {
+    width: scaleWidth(344),
+    height: scaleHeight(50.82),
+    borderRadius: scaleWidth(99),
+    gap: scaleWidth(8),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 0,
+    backgroundColor: HappyColor
+  },
+  iCanHelpTxt: { 
+    fontSize: scaleFont(16), 
+    lineHeight: scaleLineHeight(24), 
+    letterSpacing: scaleLetterSpacing(-0.16), 
+    color: White, 
+    fontWeight: 600 
+  },
+  searchAndSortRow: {
+    paddingHorizontal: scaleWidth(24),
+    height: scaleHeight(47),
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  search: { 
+    width: scaleWidth(532),
+    height: '100%' 
+  },
+  searchIcon: { 
+    top: scaleHeight(10), 
+    left: scaleWidth(12), 
+    position: 'absolute' 
+  },
+  searchInput: {
+    borderRadius: scaleWidth(132.792),
+    paddingLeft: scaleWidth(44),
+    paddingVertical: scaleHeight(10),
+    paddingRight: scaleWidth(12),
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    fontWeight: 500,
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#F9F9F9',
+    color: Black
+  },
+  sort: { 
+    width: scaleWidth(152), 
+    height: '100%' 
+  },
+  sortBtn: {
+    borderRadius: scaleWidth(132.792),
+    paddingVertical: scaleHeight(11.5),
+    paddingHorizontal: scaleWidth(12),
+    width: '100%',
+    height: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F9F9F9'
+  },
+  sortTxt: { 
+    fontSize: scaleFont(18), 
+    lineHeight: scaleLineHeight(27), 
+    letterSpacing: scaleLetterSpacing(-0.18), 
+    fontWeight: 600, 
+    color: Black 
+  },
+  sortByDropdown: {
+    top: scaleHeight(-42.57),
+    right: scaleWidth(24),
+    width: scaleWidth(152),
+    borderRadius: scaleWidth(21.461),
+    borderWidth: scaleWidth(1.341),
+    shadowColor: 'rgb(83, 26, 255)',
+    shadowOpacity: 0.10,             
+    shadowOffset: {
+      width:  scaleWidth(10.731),
+      height: scaleHeight(10.731),
+    },
+    shadowRadius: scaleWidth(40.24),
+    elevation: 16,
+    position: 'absolute',
+    borderColor: 'rgba(238, 238, 238, 0.40)',
+    backgroundColor: White,
+    zIndex: 2000
+  },
+  sortByOptions: { 
+    paddingHorizontal: scaleWidth(21.461), 
+    paddingVertical: scaleHeight(8), 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center' 
+  },
+  sortByDropdownTxt: { 
+    fontSize: scaleFont(18), 
+    lineHeight: scaleLineHeight(27), 
+    letterSpacing: scaleLetterSpacing(-0.18), 
+    fontWeight: 500 
+  },
+  sortByNotSelectedTxt: { 
+    color: Black 
+  },
+  sortBySelectedTxt: { 
+    color: HappyColor 
+  },
+  sortByOptionsBorderBottom: { 
+    borderBottomWidth: scaleHeight(0.671), 
+    borderBottomColor: 'rgba(0, 0, 0, 0.25)' 
+  },
+  mainContent: { 
+    flex: 1 
+  },
+  helpers: { 
+    paddingLeft: scaleWidth(24), 
+    height: scaleHeight(174), 
+    marginBottom: scaleHeight(20), 
+    width: '100%' 
+  },
+  availableHelpersTxt: { 
+    fontSize: scaleFont(20), 
+    lineHeight: scaleLineHeight(30), 
+    letterSpacing: scaleLetterSpacing(-0.2), 
+    color: Black, 
+    fontWeight: 600 
+  },
+  helpersListContent: { 
+    paddingTop: scaleHeight(16.16), 
+    gap: scaleWidth(24) 
+  },
+  helperCard: { 
+    width: scaleWidth(67.067)
+  },
+  helperCardBtn: {
+    width: '100%',
+    height: '100%',
+    gap: scaleHeight(10.73),
+    alignItems: 'center'
+  },
+  helperImage: { 
+    width: 93.03, 
+    height: 93.03, 
+    borderRadius: scaleWidth(67.067), 
+    resizeMode: 'cover' 
+  },
+  helperName: { 
+    fontSize: scaleFont(16), 
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16), 
+    height: scaleHeight(24),
+    color: Black
+  },
+  ChatGroups: { 
+    paddingHorizontal: scaleWidth(24), 
+    width: '100%', 
+    flex: 1 
+  },
+  chatGroupsListContent: { 
+    gap: scaleHeight(16.1),
+    width: '100%'
+  },
+  chatGroupCard: {
+    height: scaleHeight(212.11467),
+    maxHeight: scaleHeight(212.11467),
+    borderRadius: scaleWidth(21.461),
+    paddingVertical: scaleHeight(24),
+    paddingHorizontal: scaleWidth(24),
+    justifyContent: 'space-between',
+    width: '100%',
+    backgroundColor: White
+  },
+  chatGroupCardJoinedBorder: { 
+    borderWidth: scaleWidth(1.341), 
+    borderColor: HappyColor 
+  },
+  chatGroupHelpersWrapper: { 
+    height: scaleHeight(48.28799), 
+    overflow: 'visible' 
+  },
+  chatGroupHelpersStack: { 
+    height: 66.98, 
+    position: 'relative', 
+    overflow: 'visible' 
+  },
+  chatGroupHelperImage: {
+    width: 66.98,
+    height: 66.98,
+    borderWidth: scaleWidth(2.683),
+    borderRadius: scaleWidth(67.067),
+    position: 'absolute',
+    top: 0,
+    borderColor: White,
+    backgroundColor: White,
+    resizeMode: 'contain'
+  },
+  extraHelpersCircle: {
+    width: 66.98,
+    height: 66.98,
+    borderRadius: scaleWidth(67.067),
+    borderWidth: scaleWidth(2.683),
+    marginLeft: -scaleWidth(3),
+    borderColor: White,
+    backgroundColor: Black,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 0
+  },
+  extraHelpersText: { 
+    fontSize: scaleFont(16), 
+    lineHeight: scaleLineHeight(24), 
+    letterSpacing: scaleLetterSpacing(-0.16), 
+    color: White, 
+    fontWeight: 600 
+  },
+  chatPhotosHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    width: '100%' 
+  },
+  joinedEllipsisView: { 
+    width: scaleWidth(133.48), 
+    gap: scaleWidth(12), 
+    flexDirection: 'row', 
+    justifyContent: 'flex-end', 
+    alignItems: 'center' 
+  },
+  publicCircle: { 
+    width: scaleWidth(73.192), 
+    height: scaleHeight(34.73067), 
+    borderRadius: scaleWidth(132.792), 
+    justifyContent: 'center',
+    alignItems: 'center', 
+    backgroundColor: '#F9F9F9' 
+  },
+  publicAndPrivateLabel: { 
+    fontSize: scaleFont(16), 
+    lineHeight: scaleLineHeight(24), 
+    letterSpacing: scaleLetterSpacing(-0.16), 
+    fontWeight: 600, 
+    color: Black 
+  },
+  privateCircle: { 
+    width: scaleWidth(81.192), 
+    height: scaleHeight(34.73067), 
+    borderRadius: scaleWidth(132.792), 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    backgroundColor: 'rgba(237, 83, 112, 0.20)' 
+  },
+  ellipsisBackground: { 
+    width: 66.98, 
+    height: 66.98, 
+    borderRadius: scaleWidth(132.792), 
+    backgroundColor: '#F9F9F9', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  ellipsis: { 
+    width: scaleWidth(37.55733), 
+    height: scaleHeight(37.55733) 
+  },
+  chatGroupDropdown: {
+    top: scaleHeight(51.07),
+    right: scaleWidth(42.83),
+    width: scaleWidth(241.44),
+    borderRadius: scaleWidth(21.461),
+    borderWidth: scaleWidth(1.341),
+    shadowColor: 'rgb(83, 26, 255)', 
+    shadowOpacity: 0.10,
+    shadowOffset: {
+      width: scaleWidth(10.731),
+      height: scaleHeight(10.731),
+    },
+    shadowRadius: scaleWidth(40.24),
+    elevation: 16,
+    position: 'absolute',
+    borderColor: 'rgba(238, 238, 238, 0.40)',
+    backgroundColor: White,
+    zIndex: 2000,
+  },
+  dropdownIcons: { 
+    width: scaleWidth(32.192), 
+    height: scaleHeight(32.192),
+    resizeMode: 'contain'
+  },
+  chatGroupDropdownOptions: { 
+    paddingHorizontal: scaleWidth(21.46), 
+    paddingVertical: scaleHeight(13.41), 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center' 
+  },
+  chatGroupDropdownOptionsBorderBottom: { 
+    borderBottomWidth: scaleHeight(0.671), 
+    borderBottomColor: 'rgba(0, 0, 0, 0.25)' 
+  },
+  pendingMembersCircle: {
+    top: scaleHeight(6.71), 
+    right: scaleWidth(14.76), 
+    width: scaleWidth(18.779), 
+    height: scaleHeight(18.779), 
+    position: 'absolute' 
+  },
+  deleteOption: { 
+    paddingHorizontal: scaleWidth(21.46), 
+    paddingVertical: scaleHeight(14.08), 
+    flexDirection: 'row', 
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  dropdownBlackTxt: {
+    fontSize: scaleFont(18), 
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    fontWeight: 500,
+    color: Black
+  },
+  dropdownRedTxt: { 
+    fontSize: scaleFont(18), 
+    lineHeight: scaleLineHeight(27), 
+    letterSpacing: scaleLetterSpacing(-0.18), 
+    fontWeight: 500,
+    color: HappyColor
+  },
+  chatGroupTitleView: { 
+    width: '100%'
+  },
+  chatGroupTitle: {
+    fontSize: scaleFont(22),
+    lineHeight: scaleLineHeight(33),
+    letterSpacing: scaleLetterSpacing(-0.22),
+    color: Black,
+    fontWeight: 600
+  },
+  chatGroupOneBtnView: {
+    height: scaleHeight(50.82667),
+    width: '100%'
+  },
+  chatGroupTwoBtnView: {
+    height: scaleHeight(50.82667),
+    flexDirection: 'row',
+    justifyContent: 'space-between'
+  },
+  groupChatLeaveChatBtn: {
+    width: scaleWidth(316),
+    borderRadius: scaleWidth(132.792),
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderColor: 'none',
+    backgroundColor: 'rgba(237, 83, 112, 0.10)'
+  },
+  groupChatLeaveChatTxt: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    color: HappyColor, 
+    fontWeight: 600 
+  },
+  groupChatViewChatBtn: {
+    width: scaleWidth(316),
+    borderRadius: scaleWidth(132.792),
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderColor: 'none',
+    backgroundColor: HappyColor
+  },
+  groupChatViewChatTxt: { 
+    fontSize: scaleFont(16), 
+    lineHeight: scaleLineHeight(24), 
+    letterSpacing: scaleLetterSpacing(-0.16), 
+    fontWeight: 600, 
+    color: White 
+  },
+  groupChatRequestJoinBtn: { 
+    borderRadius: scaleWidth(132.792), 
+    width: '100%', height: '100%', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    borderColor: 'none', 
+    backgroundColor: 'rgba(237, 83, 112, 0.10)' 
+  },
+  groupChatRequestJoinTxt: { 
+    fontSize: scaleFont(16), 
+    lineHeight: scaleLineHeight(24), 
+    letterSpacing: scaleLetterSpacing(-0.16), 
+    fontWeight: 600, 
+    color: HappyColor 
+  },
+  groupChatJoinNowBtn: { 
+    borderRadius: scaleWidth(132.792), 
+    width: '100%', height: '100%', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    borderColor: 'none', 
+    backgroundColor: HappyColor 
+  },
+  groupChatJoinNowTxt: { 
+    fontSize: scaleFont(16), 
+    lineHeight: scaleLineHeight(22), 
+    letterSpacing: scaleLetterSpacing(-0.16), 
+    fontWeight: 600, 
+    color: White 
+  },
+ activeListCell: {
+    zIndex: 1000,
+    elevation: 1000,
+    overflow: 'visible'
+  }
+});
 
 export default function ChatGroups() {
-  const helpersTop = HELPERS_DATA;
+  const helpersTop = useMemo(
+    () => HELPERS_DATA.map((h, i) => ({ ...h, id: `${h.name}-${i}` })),
+    []
+  );
   const route = useRoute();
   const sortOptions = ['Popular', 'Latest', 'A - Z', 'Z - A'];
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -846,8 +1424,10 @@ export default function ChatGroups() {
   }, []);
   const renderHelper = useCallback(({ item }) => (
     <View style={styles.helperCard}>
-      <Image source={item.image} style={styles.helperImage} fadeDuration={0} />
-      <CustomText style={styles.helperName}>{item.name}</CustomText>
+      <TouchableOpacity style={styles.helperCardBtn}>
+        <Image source={item.image} style={styles.helperImage} fadeDuration={0} />
+        <CustomText style={styles.helperName}>{item.name}</CustomText>
+      </TouchableOpacity>
     </View>
   ), [styles]);
   const renderChatGroup = useCallback(({ item, index }) => {
@@ -1027,7 +1607,9 @@ export default function ChatGroups() {
           <View style={styles.profileAndLogin}>
             <CustomText style={styles.welcomeBackTxt}>Welcome Back!</CustomText>
             <View>
-              <Image source={Image1} style={styles.profileImage} fadeDuration={0} />
+              <TouchableOpacity>
+                <Image source={Image1} style={styles.profileImage} fadeDuration={0} />
+              </TouchableOpacity>
             </View>
           </View>
         ) : (
@@ -1107,7 +1689,7 @@ export default function ChatGroups() {
               onScroll={handleHelpersScroll}
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.helpersListContent}
-              keyExtractor={(item) => item.name}
+              keyExtractor={(item) => item.id}
               renderItem={renderHelper}
               horizontal
             />
