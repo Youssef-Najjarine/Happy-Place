@@ -1607,7 +1607,7 @@ export default function ChatGroups() {
           <View style={styles.profileAndLogin}>
             <CustomText style={styles.welcomeBackTxt}>Welcome Back!</CustomText>
             <View>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
                 <Image source={Image1} style={styles.profileImage} fadeDuration={0} />
               </TouchableOpacity>
             </View>
