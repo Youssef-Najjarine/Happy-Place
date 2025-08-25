@@ -480,7 +480,6 @@ export default function Profile() {
     name: 'Youssef Najjarine',
     friends: 48,
     bio: 'Sometimes the world feels heavy, and the colors fade to grey — but I’m here, still searching for the light. Life hasn’t been the easiest, and some days I carry more sadness than I’d like to admit. But I believe in the small magic that happens when people share a smile, a laugh, or even just a moment of kindness. Ready to heal, to open my heart, and to find happiness again — not just in myself, but in the warmth of others. If you’ve got a little sunshine to spare, I’d be glad to share it with you. Sometimes the world feels heavy, and the colors fade to grey — but I’m here, still searching for the light. Life hasn’t been the easiest, and some days I carry more sadness than I’d like to admit. But I believe in the small magic that happens when people share a smile, a laugh, or even just a moment of kindness. Ready to heal, to open my heart, and to find happiness again — not just in myself, but in the warmth of others. If you’ve got a little sunshine to spare, I’d be glad to share it with you.',
-
     phoneNumber: '',
     email: 'ynajjarine@gmail.com'
   }
@@ -608,7 +607,7 @@ export default function Profile() {
                 {profile.phoneNumber &&
                   <View>
                     <TouchableOpacity
-                      onPress={() => navigation.navigate('EditEmailOrPhone')}
+                      onPress={() => navigation.navigate('EditEmailOrPhone', { source: 'phone' })}
                     >
                       <EditRedIcon {...styles.iconsMatchingSize}/>
                     </TouchableOpacity>
@@ -620,7 +619,7 @@ export default function Profile() {
                   <View>
                     <TouchableOpacity 
                       style={styles.addInformationBtn}
-                      onPress={() => navigation.navigate('AddNewEmailOrPhone')}
+                      onPress={() => navigation.navigate('AddNewEmailOrPhone', { source: 'phone' })}
                     >
                       <CustomText style={styles.addInformationTxt}>Add Mobile Number</CustomText>
                     </TouchableOpacity>
@@ -649,7 +648,7 @@ export default function Profile() {
                 {profile.email &&
                   <View>
                     <TouchableOpacity
-                      onPress={() => navigation.navigate('EditEmailOrPhone')}
+                      onPress={() => navigation.navigate('EditEmailOrPhone', { source: 'email' })}
                     >
                       <EditRedIcon {...styles.iconsMatchingSize}/>
                     </TouchableOpacity>
@@ -661,7 +660,7 @@ export default function Profile() {
                   <View>
                     <TouchableOpacity 
                       style={styles.addInformationBtn}
-                      onPress={() => navigation.navigate('AddNewEmailOrPhone')}
+                      onPress={() => navigation.navigate('AddNewEmailOrPhone', { source: 'email' })}
                     >
                       <CustomText style={styles.addInformationTxt}>Add Email Address</CustomText>
                     </TouchableOpacity>

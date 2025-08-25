@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { HappyColor, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
@@ -51,61 +51,19 @@ const phoneStyles = StyleSheet.create({
     width: scaleWidth(28),
     height: scaleHeight(28),
   },
-  forgotPassword: {
+  addType: {
     fontSize: scaleFont(24),
     lineHeight: scaleLineHeight(36),
     marginBottom: scaleHeight(2),
     fontWeight: 700,
     color: Black,
   },
-  forgotPasswordDesc: {
+  addTypeDesc: {
     fontSize: scaleFont(16),
     lineHeight: scaleLineHeight(24),
     marginBottom: scaleHeight(24),
     fontWeight: 500,
     color: 'rgba(35, 35, 35, 0.50)',
-  },
-  forgotPasswordType: {
-    borderRadius: scaleWidth(67.067),
-    borderWidth: scaleWidth(1),
-    paddingHorizontal: scaleWidth(4),
-    marginBottom: scaleHeight(24),
-    height: scaleHeight(48),
-    width: '100%',
-    borderColor: '#F9F9F9',
-    backgroundColor: 'rgba(249, 249, 249, 0.30)',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  forgotPasswordTypeSelectedBtn: {
-    width: scaleWidth(159.5),
-    height: scaleHeight(40),
-    borderRadius: scaleWidth(99),
-    backgroundColor: HappyColor,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  forgotPasswordTypeSelectedtxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
-    fontWeight: 700,
-    color: White
-  },
-  forgotPasswordTypeNotSelectedBtn: {
-    width: scaleWidth(159.5),
-    height: scaleHeight(40),
-    borderRadius: scaleWidth(99),
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  forgotPasswordTypeNotSelectedTxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
-    fontWeight: 600,
-    color: '#1D1E25'
   },
   textBoxLabel: {
     fontSize: scaleFont(14),
@@ -140,7 +98,6 @@ const phoneStyles = StyleSheet.create({
   confirmBtn: {
     height: scaleHeight(45),
     borderRadius: scaleWidth(99),
-    backgroundColor: HappyColor,
     justifyContent: 'center',
     alignItems: 'center'
   },
@@ -192,61 +149,19 @@ const tabletStyles = StyleSheet.create({
     width: scaleWidth(37.557),
     height: scaleHeight(37.557),
   },
-  forgotPassword: {
+  addType: {
     fontSize: scaleFont(26),
     lineHeight: scaleLineHeight(39),
     marginBottom: scaleHeight(4),
     fontWeight: 700,
     color: Black,
   },
-  forgotPasswordDesc: {
+  addTypeDesc: {
     fontSize: scaleFont(18),
     lineHeight: scaleLineHeight(27),
     marginBottom: scaleHeight(32),
     fontWeight: 500,
     color: 'rgba(35, 35, 35, 0.50)',
-  },
-  forgotPasswordType: {
-    borderRadius: scaleWidth(89.959),
-    borderWidth: scaleWidth(1.341),
-    paddingHorizontal: scaleWidth(6),
-    marginBottom: scaleHeight(32),
-    height: scaleHeight(64),
-    width: '100%',
-    borderColor: '#F9F9F9',
-    backgroundColor: 'rgba(249, 249, 249, 0.30)',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  forgotPasswordTypeSelectedBtn: {
-    width: scaleWidth(336),
-    height: scaleHeight(52),
-    borderRadius: scaleWidth(99),
-    backgroundColor: HappyColor,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  forgotPasswordTypeSelectedtxt: {
-    fontSize: scaleFont(18),
-    lineHeight: scaleLineHeight(27),
-    letterSpacing: scaleLetterSpacing(-0.18),
-    fontWeight: 700,
-    color: White
-  },
-  forgotPasswordTypeNotSelectedBtn: {
-    width: scaleWidth(336),
-    height: scaleHeight(52),
-    borderRadius: scaleWidth(99),
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  forgotPasswordTypeNotSelectedTxt: {
-    fontSize: scaleFont(18),
-    lineHeight: scaleLineHeight(27),
-    letterSpacing: scaleLetterSpacing(-0.18),
-    fontWeight: 600,
-    color: '#1D1E25'
   },
   textBoxLabel: {
     fontSize: scaleFont(18),
@@ -281,7 +196,6 @@ const tabletStyles = StyleSheet.create({
   confirmBtn: {
     height: scaleHeight(59.192),
     borderRadius: scaleWidth(132.792),
-    backgroundColor: HappyColor,
     justifyContent: 'center',
     alignItems: 'center'
   },
@@ -298,97 +212,94 @@ export default function AddNewEmailOrPhone() {
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
-  const [selectedForgotPasswordType, setSelectedForgotPasswordType] = useState('email');
+  const route = useRoute();
+  const source = (route.params?.source === 'phone' || route.params?.source === 'email') ? route.params.source : 'email';
+  const isPhone = source === 'phone';
+  const isEmail = source === 'email';
+
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
-  const phoneValid = selectedForgotPasswordType === 'phone' ? phone.length >= 10 : false;
-  const emailValid = selectedForgotPasswordType === 'email' ? isEmail(email) : false;
-  const canConfirm = emailValid || phoneValid;
+
+  const emailTypeHeader = 'Email Address';
+  const phoneTypeHeader = 'Phone Number';
+  const emailTypeDesc = 'Please enter your email address so we can verify your profile with this method.';
+  const phoneTypeDesc = 'Please enter your phone number so we can verify your profile with this method.';
+
+  const validateEmail = (val) =>
+    /^\s*[^@\s]+@[^@\s]+\.[^@\s]+\s*$/.test(val);
+  const validatePhone = (val) =>
+    (val || '').replace(/\D/g, '').length === 10;
+
+  const canConfirm = useMemo(() => {
+    return isEmail ? validateEmail(email) : validatePhone(phone);
+  }, [isEmail, email, phone]);
+
+  const rootStyle = { ...styles.root, paddingTop: statusBarHeight };
+  const cardStyle = { ...styles.card, paddingBottom: bottomSafeHeight };
 
   const goToVerifyCode = () => {
-  if (!canConfirm) return;
-  const contact = selectedForgotPasswordType === 'email' ? email.trim() : phone;
-  navigation.navigate('VerifyCode', { contact });
-  navigation.navigate('VerifyCode', { contact, source: 'forgotPassword' });
-};
-  const rootStyle = {
-    ...styles.root,
-    paddingTop: statusBarHeight
-  };
-  const cardStyle = {
-    ...styles.card,
-    paddingBottom: bottomSafeHeight
+    if (!canConfirm) return;
+    const contact = isEmail ? email.trim() : phone;
+    navigation.navigate('VerifyCode', { contact, type: source });
   };
 
   return (
     <View style={rootStyle}>
       <View style={cardStyle}>
         <View style={styles.part1}>
-            <TouchableOpacity 
-              style={styles.BackArrow}
-              onPress={() => navigation.goBack()}
-            >
-              <BackArrow {...styles.backArrowIcon}/>
-            </TouchableOpacity>
-            <CustomText style={styles.forgotPassword}>AddNewEmailOrPhone</CustomText>
-            <CustomText style={styles.forgotPasswordDesc}>Enter your email or phone number to reset your password.</CustomText>
-            <View style={styles.forgotPasswordType}>
-              <TouchableOpacity
-                  style={selectedForgotPasswordType === 'email' ? styles.forgotPasswordTypeSelectedBtn : styles.forgotPasswordTypeNotSelectedBtn}
-                  onPress={() => setSelectedForgotPasswordType('email')}
-              >
-                  <CustomText style={selectedForgotPasswordType === 'email' ? styles.forgotPasswordTypeSelectedtxt : styles.forgotPasswordTypeNotSelectedTxt}>Email Address</CustomText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                  style={selectedForgotPasswordType === 'phone' ? styles.forgotPasswordTypeSelectedBtn : styles.forgotPasswordTypeNotSelectedBtn}
-                  onPress={() => setSelectedForgotPasswordType('phone')}
-              >
-                  <CustomText style={selectedForgotPasswordType === 'phone' ? styles.forgotPasswordTypeSelectedtxt : styles.forgotPasswordTypeNotSelectedTxt}>Phone Number</CustomText>
-              </TouchableOpacity>
-            </View>
-            {selectedForgotPasswordType === 'email' && (
-            <View style={styles.emailPhoneView}>
-                <CustomText style={styles.textBoxLabel}>Email</CustomText>
-                <View>
-                    <CustomTextInput
-                    style={styles.input}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    value={email}
-                    onChangeText={setEmail}
-                    />
-                    <EmailIcon {...styles.textBoxIcon}/>
-                </View>
-            </View>
-            )}
- {selectedForgotPasswordType === 'phone' && (
-   <View style={styles.emailPhoneView}>
-     <CustomText style={styles.textBoxLabel}>Phone Number</CustomText>
-     <View>
-        <CustomMaskedTextInput
-            style={styles.input}
-            mask="(999) 999-9999"
-            keyboardType="phone-pad"
-            value={phone}
-            onChangeText={(formatted, extracted) => setPhone(extracted || '')}
-        />
-       <PhoneIcon {...styles.textBoxIcon}/>
-     </View>
-   </View>
- )}
+          <TouchableOpacity style={styles.BackArrow} onPress={() => navigation.goBack()}>
+            <BackArrow {...styles.backArrowIcon}/>
+          </TouchableOpacity>
 
-        </View>
-        <View style={styles.part2}>
-            <View style={styles.confirm}>
-                <TouchableOpacity 
-                  style={[styles.confirmBtn, !canConfirm && { opacity: 0.5 }]}
-                  disabled={!canConfirm}
-                  onPress={goToVerifyCode}
-                >
-                <CustomText style={styles.confirmBtnText}>Confirm</CustomText>
-                </TouchableOpacity>
+          <CustomText style={styles.addType}>Add {isEmail ? emailTypeHeader : phoneTypeHeader}</CustomText>
+          <CustomText style={styles.addTypeDesc}>{isEmail ? emailTypeDesc : phoneTypeDesc}</CustomText>
+
+          {isEmail && (
+            <View style={styles.emailPhoneView}>
+              <CustomText style={styles.textBoxLabel}>Email</CustomText>
+              <View>
+                <CustomTextInput
+                  style={styles.input}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+                <EmailIcon {...styles.textBoxIcon}/>
+              </View>
             </View>
+          )}
+
+          {isPhone && (
+            <View style={styles.emailPhoneView}>
+              <CustomText style={styles.textBoxLabel}>Phone Number</CustomText>
+              <View>
+                <CustomMaskedTextInput
+                  style={styles.input}
+                  mask="(999) 999-9999"
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={(formatted, extracted) => setPhone(extracted || '')}
+                />
+                <PhoneIcon {...styles.textBoxIcon}/>
+              </View>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.part2}>
+          <View style={styles.confirm}>
+            <TouchableOpacity
+              style={[
+                styles.confirmBtn,
+                { backgroundColor: canConfirm ? HappyColor : 'rgba(237,83,112,0.4)' }
+              ]}
+              disabled={!canConfirm}
+              onPress={goToVerifyCode}
+            >
+              <CustomText style={styles.confirmBtnText}>Confirm</CustomText>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </View>
