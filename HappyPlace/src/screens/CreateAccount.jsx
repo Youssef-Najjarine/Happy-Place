@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { HappyColor, White, Black } from 'src/constants/colors';
@@ -25,7 +25,8 @@ const phoneStyles = StyleSheet.create({
     height: '100%',
     width: '100%'
   },
-  card: {
+  contentContainer: {
+    paddingBottom: scaleHeight(10),
     shadowRadius: scaleWidth(30),
     elevation: moderateScale(5),
     borderTopLeftRadius: 24,
@@ -33,8 +34,6 @@ const phoneStyles = StyleSheet.create({
     paddingTop: scaleHeight(20),
     paddingHorizontal: scaleWidth(20),
     width: '100%',
-    height: '100%',
-    flex: 1,
     backgroundColor: White,
     shadowColor: '#094173',
     shadowOffset: { width: 0, height: 8 },
@@ -155,7 +154,8 @@ const phoneStyles = StyleSheet.create({
     height: scaleHeight(24)
   },
   passwordRequirementsView: {
-    gap: scaleHeight(3)
+    gap: scaleHeight(8),
+    marginBottom: scaleHeight(64)
   },
   passwordRequirements: {
     gap: scaleWidth(12),
@@ -175,7 +175,7 @@ const phoneStyles = StyleSheet.create({
     color: Black
   },
   signUp: {
-    marginBottom: scaleHeight(5)
+    marginBottom: scaleHeight(10)
   },
   signUpBtn: {
     height: scaleHeight(45),
@@ -220,16 +220,15 @@ const tabletStyles = StyleSheet.create({
     height: '100%',
     width: '100%'
   },
-  card: {
+  contentContainer: {
     marginTop: scaleHeight(20),
     paddingTop: scaleHeight(26.83),
+    paddingBottom: scaleHeight(12),
     paddingHorizontal: scaleWidth(24),
     elevation: moderateScale(12),
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     width: '100%',
-    height: '100%',
-    flex: 1,
     backgroundColor: White,
     shadowColor: '#094173',
     shadowOpacity: 0.10,
@@ -351,7 +350,8 @@ const tabletStyles = StyleSheet.create({
     height: scaleHeight(32.19)
   },
   passwordRequirementsView: {
-    gap: scaleHeight(12)
+    gap: scaleHeight(12),
+    marginBottom: scaleHeight(61.88)
   },
   passwordRequirements: {
     gap: scaleWidth(16.1),
@@ -442,33 +442,36 @@ export default function CreateAccount() {
     match: password.length > 0 && password === confirmPassword,
   }), [password, confirmPassword]);
 
-const phoneValid = selectedCreateAccountType === 'phone' ? phone.replace(/\D/g, '').length >= 10 : false;
-const emailValid = selectedCreateAccountType === 'email' ? isEmail(email) : false;
+  const phoneValid = selectedCreateAccountType === 'phone' ? phone.replace(/\D/g, '').length >= 10 : false;
+  const emailValid = selectedCreateAccountType === 'email' ? isEmail(email) : false;
 
-const nameValid = name.trim().length > 0;
+  const nameValid = name.trim().length > 0;
 
-const canSubmit = nameValid &&
-  (emailValid || phoneValid) &&
-  rules.minLen && rules.number && 
-  rules.lowerUpper && rules.match;
+  const canSubmit = nameValid &&
+    (emailValid || phoneValid) &&
+    rules.minLen && rules.number && 
+    rules.lowerUpper && rules.match;
 
-const goToVerifyCode = () => {
-  const contact = selectedCreateAccountType === 'email' ? email : phone;
-  navigation.navigate('VerifyCode', { contact, source: 'createAccount' });
-};
+  const goToVerifyCode = () => {
+    const contact = selectedCreateAccountType === 'email' ? email : phone;
+    navigation.navigate('VerifyCode', { contact, source: 'createAccount' });
+  };
 
-const rootStyle = {
-...styles.root,
-paddingTop: statusBarHeight
-};
-const cardStyle = {
-...styles.card,
-paddingBottom: bottomSafeHeight
-};
+  const rootStyle = {
+  ...styles.root,
+  paddingTop: statusBarHeight
+  };
+  const contentContainer = {
+    ...styles.contentContainer,
+    paddingBottom: bottomSafeHeight + styles.contentContainer.paddingBottom
+  };
 
   return (
     <View style={rootStyle}>
-      <View style={cardStyle}>
+      <ScrollView 
+        style={{ flex: 1 }}
+        contentContainerStyle={contentContainer}
+      >
         <View style={styles.part1}>
             <TouchableOpacity 
                 style={styles.BackArrow}
@@ -592,16 +595,16 @@ paddingBottom: bottomSafeHeight
         </View>
         <View style={styles.part2}>
             <View style={styles.signUp}>
-            <TouchableOpacity
-                style={[
-                    styles.signUpBtn,
-                    !canSubmit && { opacity: 0.5 }
-                ]}
-                disabled={!canSubmit}
-                onPress={goToVerifyCode}
-            >
-                <CustomText style={styles.signUpBtnText}>Sign up</CustomText>
-            </TouchableOpacity>
+              <TouchableOpacity
+                  style={[
+                      styles.signUpBtn,
+                      !canSubmit && { opacity: 0.5 }
+                  ]}
+                  disabled={!canSubmit}
+                  onPress={goToVerifyCode}
+              >
+                  <CustomText style={styles.signUpBtnText}>Sign up</CustomText>
+              </TouchableOpacity>
             </View>
             <View style={styles.alreadyHaveAccount}>
                 <CustomText style={styles.alreadyHaveAccountTxt}>Already have an account?</CustomText>
@@ -610,7 +613,7 @@ paddingBottom: bottomSafeHeight
                 </TouchableOpacity>
             </View>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }

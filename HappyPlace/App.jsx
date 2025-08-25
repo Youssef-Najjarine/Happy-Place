@@ -17,6 +17,9 @@ import ForgotPassword from 'screens/ForgotPassword';
 import SetupPassword from 'screens/SetupPassword';
 import PasswordReset from 'screens/PasswordReset';
 import Profile from 'screens/Profile';
+import EditProfile from 'screens/EditProfile';
+import AddNewEmailOrPhone from 'screens/AddNewEmailOrPhone';
+import EditEmailOrPhone from 'screens/EditEmailOrPhone';
 
 const Stack = createNativeStackNavigator();
 
@@ -46,6 +49,9 @@ const App = () => {
             <Stack.Screen name="SetupPassword" component={SetupPassword} />
             <Stack.Screen name="PasswordReset" component={PasswordReset} />
             <Stack.Screen name="Profile" component={Profile} />
+            <Stack.Screen name="EditProfile" component={EditProfile} />
+            <Stack.Screen name="AddNewEmailOrPhone" component={AddNewEmailOrPhone} />
+            <Stack.Screen name="EditEmailOrPhone" component={EditEmailOrPhone} />
           </Stack.Navigator>
           <LoadingModal />
         </NavigationContainer>

@@ -522,6 +522,7 @@ export default function Profile() {
         <View style={styles.editAndLogout}>
           <TouchableOpacity
             style={styles.editProfile}
+            onPress={() => navigation.navigate('EditProfile')}
           >
             <EditRedIcon {...styles.iconsMatchingSize}/>
             <CustomText style={styles.editProfileTxt}>Edit Profile</CustomText>
@@ -606,7 +607,9 @@ export default function Profile() {
                 </View>
                 {profile.phoneNumber &&
                   <View>
-                    <TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('EditEmailOrPhone')}
+                    >
                       <EditRedIcon {...styles.iconsMatchingSize}/>
                     </TouchableOpacity>
                   </View>
@@ -615,7 +618,10 @@ export default function Profile() {
               {!profile.phoneNumber ?
                 (
                   <View>
-                    <TouchableOpacity style={styles.addInformationBtn}>
+                    <TouchableOpacity 
+                      style={styles.addInformationBtn}
+                      onPress={() => navigation.navigate('AddNewEmailOrPhone')}
+                    >
                       <CustomText style={styles.addInformationTxt}>Add Mobile Number</CustomText>
                     </TouchableOpacity>
                   </View>
@@ -642,7 +648,9 @@ export default function Profile() {
                 </View>
                 {profile.email &&
                   <View>
-                    <TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('EditEmailOrPhone')}
+                    >
                       <EditRedIcon {...styles.iconsMatchingSize}/>
                     </TouchableOpacity>
                   </View>
@@ -651,7 +659,10 @@ export default function Profile() {
               {!profile.email ?
                 (
                   <View>
-                    <TouchableOpacity style={styles.addInformationBtn}>
+                    <TouchableOpacity 
+                      style={styles.addInformationBtn}
+                      onPress={() => navigation.navigate('AddNewEmailOrPhone')}
+                    >
                       <CustomText style={styles.addInformationTxt}>Add Email Address</CustomText>
                     </TouchableOpacity>
                   </View>

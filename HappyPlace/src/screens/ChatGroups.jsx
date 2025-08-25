@@ -466,6 +466,7 @@ const phoneStyles = StyleSheet.create({
   },
   chatGroupsListContent: { 
     gap: scaleHeight(12),
+    paddingBottom: scaleHeight(60),
     width: '100%'
   },
   chatGroupCard: {
@@ -1021,6 +1022,7 @@ const tabletStyles = StyleSheet.create({
   },
   chatGroupsListContent: { 
     gap: scaleHeight(16.1),
+    paddingBottom: scaleHeight(100),
     width: '100%'
   },
   chatGroupCard: {
@@ -1599,7 +1601,10 @@ export default function ChatGroups() {
     () => ({ ...styles.topNav, paddingTop: statusBarHeight }),
     [styles.topNav, statusBarHeight]
   );
-  
+  const chatGroupsContentContainer = useMemo(() => ({
+    ...styles.chatGroupsListContent,
+    paddingBottom: bottomSafeHeight + styles.chatGroupsListContent.paddingBottom,
+  }), [styles.chatGroupsListContent, bottomSafeHeight]);
   return (
     <View style={styles.root} onTouchEndCapture={handleRootTouchEndCapture}>
       <View style={topNavStyle}>
@@ -1701,7 +1706,7 @@ export default function ChatGroups() {
               ref={chatGroupsRef}
               data={sortedChatGroups}
               {...listCommonProps}
-              contentContainerStyle={styles.chatGroupsListContent}
+              contentContainerStyle={chatGroupsContentContainer}
               showsVerticalScrollIndicator={false}
               keyExtractor={(item) => item.title}
               onScroll={handleChatGroupsScroll}

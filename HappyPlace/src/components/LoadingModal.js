@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { Modal, View, StyleSheet, Platform, Animated, Easing } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSelector } from 'react-redux';
-import { useResponsiveStyles } from '../utils/useResponsiveStyles';
+import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import InnerArc from 'assets/images/loading/inner-arc.svg';
 import MiddleArc from 'assets/images/loading/middle-arc.svg';
