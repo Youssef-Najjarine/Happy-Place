@@ -565,7 +565,10 @@ export default function Profile() {
           >
             {profile.name}
           </CustomText>
-          <TouchableOpacity style={styles.friends}>
+          <TouchableOpacity 
+            style={styles.friends}
+            onPress={() => navigation.navigate('Friends')}
+          >
             <CustomText style={styles.friendsTxt}>{profile.friends} Friends</CustomText>
           </TouchableOpacity>
         </View>
