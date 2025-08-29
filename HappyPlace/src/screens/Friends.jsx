@@ -327,8 +327,8 @@ const phoneStyles = StyleSheet.create({
     backgroundColor: '#F9F9F9'
   },
   xIcon: {
-    width: scaleWidth(24),
-    height: scaleHeight(24)
+    width: scaleWidth(28),
+    height: scaleHeight(28)
   }
 });
 const tabletStyles = StyleSheet.create({
@@ -354,9 +354,9 @@ const tabletStyles = StyleSheet.create({
     alignItems: 'center'
   },
   BackArrow: {
-      borderRadius: scaleWidth(132.792),
-      width: 78.14,
-      height: 78.14,
+    borderRadius: scaleWidth(132.792),
+    width: 78.14,
+    height: 78.14,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F9F9F9'
@@ -606,8 +606,8 @@ const tabletStyles = StyleSheet.create({
     backgroundColor: '#F9F9F9'
   },
   xIcon: {
-    width: scaleWidth(32.192),
-    height: scaleHeight(32.192)
+    width: scaleWidth(37.557),
+    height: scaleHeight(37.557)
   }
 });
 export default function Friends() {
@@ -1070,7 +1070,10 @@ export default function Friends() {
                     </View>
                 </View>
                 <View style={styles.addFriend}>
-                    <TouchableOpacity style={styles.addFriendBtn}>
+                    <TouchableOpacity 
+                        style={styles.addFriendBtn}
+                        onPress={() => navigation.navigate('AddFriends')}
+                    >
                         <PlusIcon {...styles.plusIcon}/>
                         <CustomText style={styles.addFriendTxt}>Add Friend</CustomText>
                     </TouchableOpacity>
