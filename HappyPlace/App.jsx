@@ -22,6 +22,7 @@ import AddNewEmailOrPhone from 'screens/AddNewEmailOrPhone';
 import EditEmailOrPhone from 'screens/EditEmailOrPhone';
 import Friends from 'screens/Friends';
 import AddFriends from 'screens/AddFriends';
+import Members from 'screens/Members';
 
 const Stack = createNativeStackNavigator();
 
@@ -56,6 +57,7 @@ const App = () => {
             <Stack.Screen name="EditEmailOrPhone" component={EditEmailOrPhone} />
             <Stack.Screen name="Friends" component={Friends} />
             <Stack.Screen name="AddFriends" component={AddFriends} />
+            <Stack.Screen name="Members" component={Members} />
           </Stack.Navigator>
           <LoadingModal />
         </NavigationContainer>

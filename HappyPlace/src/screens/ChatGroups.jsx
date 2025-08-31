@@ -5,6 +5,9 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { HappyColor, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
+import EditChatNameModal from 'src/components/EditChatNameModal';
+import DeleteChatGroupModal from 'src/components/DeleteChatGroupModal';
+import LeaveChatGroupModal from 'src/components/LeaveChatGroupModal';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import { tabletBreakpoint } from 'src/constants/breakpoints';
@@ -131,6 +134,7 @@ const HELPERS_DATA = [
 
 const CHAT_GROUPS_DATA = [
   {
+    id: 'grp-1',
     helpers: [{ image: Image7 }, { image: Image8 }, { image: Image9 }, { image: Image10 }, { image: Image11 }, { image: Image12 }, { image: Image13 }],
     joined: true,
     owner: true,
@@ -139,6 +143,7 @@ const CHAT_GROUPS_DATA = [
     title: 'Happy in Paddleboarding 🔥',
   },
   {
+    id: 'grp-2',
     helpers: [{ image: Image12 }, { image: Image13 }, { image: Image14 }, { image: Image15 }],
     joined: false,
     owner: false,
@@ -147,6 +152,7 @@ const CHAT_GROUPS_DATA = [
     title: 'I’m depressed!',
   },
   {
+    id: 'grp-3',
     helpers: [{ image: Image16 }, { image: Image17 }, { image: Image18 }, { image: Image19 }, { image: Image20 }, { image: Image1 }, { image: Image2 }, { image: Image2 }, { image: Image3 }, { image: Image4 }, { image: Image5 }, { image: Image6 }],
     joined: false,
     owner: true,
@@ -155,13 +161,14 @@ const CHAT_GROUPS_DATA = [
     title: 'I failed my Final Exams.',
   },
   {
+    id: 'grp-4',
     helpers: [{ image: Image16 }],
     joined: true,
     owner: false,
     public: false,
     pendingMembers: false,
     title: 'I just got cheated on.',
-  },
+  }
 ];
 
 const phoneStyles = StyleSheet.create({
@@ -1288,6 +1295,11 @@ export default function ChatGroups() {
   const [showSearching, setShowSearching] = useState(false);
   const [activeDropdownIndex, setActiveDropdownIndex] = useState(null);
   const [search, setSearch] = useState('');
+  const [chatGroups, setChatGroups] = useState(CHAT_GROUPS_DATA);
+  const [selectedChatGroupId, setSelectedChatGroupId] = useState(null);
+  const [showEditChatNameModal, setShowEditChatNameModal] = useState(false);
+  const [showDeleteChatGroupModal, setShowDeleteChatGroupModal] = useState(false);
+  const [showLeaveChatGroupModal, setShowLeaveChatGroupModal] = useState(false);
   const ellipsisRefs = useRef([]);
   const chatGroupsRef = useRef(null);
   const sortBtnRef = useRef(null);
@@ -1327,7 +1339,7 @@ export default function ChatGroups() {
     );
   });
   const sortedChatGroups = useMemo(() => {
-    const arr = [...CHAT_GROUPS_DATA];
+    const arr = [...chatGroups];
     switch (sortBy) {
       case 'Popular':
         return arr.sort((a, b) => (b.helpers?.length || 0) - (a.helpers?.length || 0));
@@ -1339,7 +1351,11 @@ export default function ChatGroups() {
       default:
         return arr;
     }
-  }, [sortBy]);
+  }, [chatGroups, sortBy]);
+  const selectedChat = useMemo(
+   () => chatGroups.find(g => g.id === selectedChatGroupId) ?? null,
+   [chatGroups, selectedChatGroupId]
+  );
   const measureToRect = useCallback((ref, key) => {
     if (!ref?.current) {
       rectsRef.current[key] = null;
@@ -1412,18 +1428,60 @@ export default function ChatGroups() {
     closeAllMenus();
     navigation.navigate('LoginOptions');
   }, [closeAllMenus, navigation]);
-  const handleEditNamePressIn = useCallback((index) => {
+  const handleEditNamePressIn = useCallback((id) => {
+    swallowNextCloseRef.current = true;
+    setSelectedChatGroupId(id);
+    setShowEditChatNameModal(true);
+  }, []);
+  const handleConfirmEditName = useCallback((newName) => {
+    if (!selectedChatGroupId) return;
+    setChatGroups(prev =>
+      prev.map(g => g.id === selectedChatGroupId ? { ...g, title: newName } : g)
+    );
+    setShowEditChatNameModal(false);
+    setSelectedChatGroupId(null);
+  }, [selectedChatGroupId]);
+  const handleMembersPressIn = useCallback((id) => {
+    swallowNextCloseRef.current = true;
+    navigation.navigate('Members');
+  }, []);
+  const handleMakeChatPrivatePressIn = useCallback((id) => {
     swallowNextCloseRef.current = true;
   }, []);
-  const handleMembersPressIn = useCallback((index) => {
-    swallowNextCloseRef.current = true;
+  const handleDeleteChatPressIn = useCallback((id) => {
+    swallowNextCloseRef.current = true;      
+    setSelectedChatGroupId(id);                
+    setShowDeleteChatGroupModal(true);       
   }, []);
-  const handleMakeChatPrivatePressIn = useCallback((index) => {
-    swallowNextCloseRef.current = true;
-  }, []);
-  const handleDeleteChatPressIn = useCallback((index) => {
-    swallowNextCloseRef.current = true;
-  }, []);
+  const handleConfirmDeleteChatGroup = useCallback(() => {
+    if (!selectedChatGroupId) return;
+    setChatGroups(prev => prev.filter(g => g.id !== selectedChatGroupId));
+    setShowDeleteChatGroupModal(false);
+    setSelectedChatGroupId(null);
+  }, [selectedChatGroupId]);
+ const handleConfirmLeaveChatGroup = useCallback(() => {
+    if (!selectedChatGroupId) return;
+    setChatGroups(prev =>
+      prev.map(g => g.id === selectedChatGroupId ? { ...g, joined: false } : g)
+    );
+    setShowLeaveChatGroupModal(false);
+    setSelectedChatGroupId(null);
+  }, [selectedChatGroupId]);
+  const handleLeaveChatGroupPress = useCallback((id) => {
+    closeAllMenus();
+    setSelectedChatGroupId(id);
+    setShowLeaveChatGroupModal(true);
+  }, [closeAllMenus]);
+  function handleViewChatGroupPress() {
+    closeAllMenus();
+  }
+  function handleRequestJoinChatGroupPress() {
+    closeAllMenus();
+  }
+  function handleJoinChatGroupPress() {
+    closeAllMenus();
+  }
+
   const renderHelper = useCallback(({ item }) => (
     <View style={styles.helperCard}>
       <TouchableOpacity style={styles.helperCardBtn}>
@@ -1480,22 +1538,34 @@ export default function ChatGroups() {
 
           {item.joined ? (
             <View style={styles.chatGroupTwoBtnView}>
-              <TouchableOpacity style={styles.groupChatLeaveChatBtn} onPress={() => { closeAllMenus();}}>
+              <TouchableOpacity 
+                style={styles.groupChatLeaveChatBtn} 
+                onPress={() => handleLeaveChatGroupPress(item.id)}
+              >
                 <CustomText style={styles.groupChatLeaveChatTxt}>Leave Chat</CustomText>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.groupChatViewChatBtn} onPress={() => { closeAllMenus();}}>
+              <TouchableOpacity 
+                style={styles.groupChatViewChatBtn} 
+                onPress={() => { handleViewChatGroupPress();}}
+              >
                 <CustomText style={styles.groupChatViewChatTxt}>View Chat</CustomText>
               </TouchableOpacity>
             </View>
           ) : !item.public && !item.joined ? (
             <View style={styles.chatGroupOneBtnView}>
-              <TouchableOpacity style={styles.groupChatRequestJoinBtn} onPress={() => { closeAllMenus();}}>
+              <TouchableOpacity 
+                style={styles.groupChatRequestJoinBtn} 
+                onPress={() => { handleRequestJoinChatGroupPress();}}
+              >
                 <CustomText style={styles.groupChatRequestJoinTxt}>Request Join</CustomText>
               </TouchableOpacity>
             </View>
           ) : item.public && !item.joined ? (
             <View style={styles.chatGroupOneBtnView}>
-              <TouchableOpacity style={styles.groupChatJoinNowBtn} onPress={() => { closeAllMenus();}}>
+              <TouchableOpacity 
+                style={styles.groupChatJoinNowBtn} 
+                onPress={() => { handleJoinChatGroupPress();}}
+              >
                 <CustomText style={styles.groupChatJoinNowTxt}>Join Now</CustomText>
               </TouchableOpacity>
             </View>
@@ -1509,7 +1579,7 @@ export default function ChatGroups() {
             >
               {item.owner && (
                 <TouchableOpacity
-                  onPressIn={() => handleEditNamePressIn(index)}
+                  onPressIn={() => handleEditNamePressIn(item.id)}
                   onPressOut={closeAllMenus}
                   style={[styles.chatGroupDropdownOptions, styles.chatGroupDropdownOptionsBorderBottom]}
                 >
@@ -1519,7 +1589,7 @@ export default function ChatGroups() {
               )}
 
               <TouchableOpacity
-                onPressIn={() => handleMembersPressIn(index)}
+                onPressIn={() => handleMembersPressIn(item.id)}
                 onPressOut={closeAllMenus}
                 style={[styles.chatGroupDropdownOptions, item.owner ? styles.chatGroupDropdownOptionsBorderBottom : null]}
               >
@@ -1530,7 +1600,7 @@ export default function ChatGroups() {
 
               {item.owner && item.public && (
                 <TouchableOpacity
-                  onPressIn={() => handleMakeChatPrivatePressIn(index)}
+                  onPressIn={() => handleMakeChatPrivatePressIn(item.id)}
                   onPressOut={closeAllMenus}
                   style={[styles.chatGroupDropdownOptions, styles.chatGroupDropdownOptionsBorderBottom]}
                 >
@@ -1541,7 +1611,7 @@ export default function ChatGroups() {
 
               {item.owner && (
                 <TouchableOpacity
-                  onPressIn={() => handleDeleteChatPressIn(index)}
+                  onPressIn={() => handleDeleteChatPressIn(item.id)}
                   onPressOut={closeAllMenus}
                   style={styles.deleteOption}
                 >
@@ -1606,155 +1676,174 @@ export default function ChatGroups() {
     paddingBottom: bottomSafeHeight + styles.chatGroupsListContent.paddingBottom,
   }), [styles.chatGroupsListContent, bottomSafeHeight]);
   return (
-    <View style={styles.root} onTouchEndCapture={handleRootTouchEndCapture}>
-      <View style={topNavStyle}>
-        {cameFromLogin ? (
-          <View style={styles.profileAndLogin}>
-            <CustomText style={styles.welcomeBackTxt}>Welcome Back!</CustomText>
-            <View>
-              <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-                <Image source={Image1} style={styles.profileImage} fadeDuration={0} />
-              </TouchableOpacity>
+    <>
+      <View style={styles.root} onTouchEndCapture={handleRootTouchEndCapture}>
+        <View style={topNavStyle}>
+          {cameFromLogin ? (
+            <View style={styles.profileAndLogin}>
+              <CustomText style={styles.welcomeBackTxt}>Welcome Back!</CustomText>
+              <View>
+                <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                  <Image source={Image1} style={styles.profileImage} fadeDuration={0} />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        ) : (
-          <View style={[styles.profileAndLogin, styles.loginBg]}>
-            <View>
-              <CustomText style={styles.unlockAllFeaturesTxt}>Unlock all features!</CustomText>
-            </View>
-            <View style={styles.loginView}>
-              <TouchableOpacity
-                style={styles.loginBtn}
-                onPressIn={handleLoginPressIn}
-              >
-                <CustomText style={styles.loginBtnTxt}>Login</CustomText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {showSearching ? (
-          <SearchingView />
-        ) : (
-          <View style={styles.helpView}>
-            <TouchableOpacity
-              style={styles.helpMeBtn}
-              onPressIn={handleHelpMePressIn}
-            >
-              <SadEmoji {...styles.topNavIcons} />
-              <CustomText style={styles.helpMeTxt}>HELP ME</CustomText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.iCanHelpBtn}
-              onPressIn={handleICanHelpPressIn}
-            >
-              <HappyEmoji {...styles.topNavIcons} />
-              <CustomText style={styles.iCanHelpTxt}>I CAN HELP</CustomText>
-            </TouchableOpacity>
-          </View>
-        )}
-        <View style={styles.searchAndSortRow}>
-          <View style={styles.search}>
-            <CustomTextInput
-              style={styles.searchInput}
-              keyboardType="default"
-              autoCapitalize="none"
-              autoCorrect={false}
-              textContentType="none"
-              autoComplete="off"
-              importantForAutofill="no"
-              returnKeyType="search"
-              value={search}
-              onChangeText={setSearch}
-              onFocus={handleSearchFocusOrTouch}
-              onTouchStart={handleSearchFocusOrTouch}
-            />
-            <SearchIcon {...StyleSheet.flatten([styles.topNavIcons, styles.searchIcon])} />
-          </View>
-          <View style={styles.sort}>
-            <TouchableOpacity
-              style={styles.sortBtn}
-              ref={sortBtnRef}
-              onPressIn={handleSortPressIn}
-            >
-              <SortIcon {...styles.topNavIcons} />
-              <CustomText style={styles.sortTxt}>{sortBy}</CustomText>
-              <DownArrowIcon {...styles.topNavIcons} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-      <View style={styles.mainContent}>
-        {helpersTop.length > 0 && (
-          <View style={styles.helpers}>
-            <CustomText style={styles.availableHelpersTxt}>Available Helpers</CustomText>
-            <FlatList
-              data={helpersTop}
-              {...listCommonProps}
-              onScroll={handleHelpersScroll}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.helpersListContent}
-              keyExtractor={(item) => item.id}
-              renderItem={renderHelper}
-              horizontal
-            />
-          </View>
-        )}
-        <View style={styles.ChatGroups}>
-          <ActiveIndexContext.Provider value={activeDropdownIndex}>
-            <FlatList
-              ref={chatGroupsRef}
-              data={sortedChatGroups}
-              {...listCommonProps}
-              contentContainerStyle={chatGroupsContentContainer}
-              showsVerticalScrollIndicator={false}
-              keyExtractor={(item) => item.title}
-              onScroll={handleChatGroupsScroll}
-              scrollEventThrottle={16}
-              removeClippedSubviews={false}
-              extraData={activeDropdownIndex}
-              renderItem={renderChatGroup}
-              CellRendererComponent={ActiveListCell}
-            />
-          </ActiveIndexContext.Provider>
-        </View>
-        {isSortOpen && (
-          <View
-            ref={sortDropdownRef}
-            onLayout={() => measureToRect(sortDropdownRef, 'sortDropdown')}
-            style={styles.sortByDropdown}
-          >
-            {sortOptions.map((opt, idx) => (
-              <TouchableOpacity
-                key={opt}
-                onPressIn={() => handleSortOptionPressIn(opt)}
-                onPressOut={closeAllMenus}
-                style={[styles.sortByOptions, idx < sortOptions.length - 1 && styles.sortByOptionsBorderBottom]}
-              >
-                <CustomText
-                  style={[
-                    styles.sortByDropdownTxt,
-                    sortBy === opt ? styles.sortBySelectedTxt : styles.sortByNotSelectedTxt,
-                  ]}
+          ) : (
+            <View style={[styles.profileAndLogin, styles.loginBg]}>
+              <View>
+                <CustomText style={styles.unlockAllFeaturesTxt}>Unlock all features!</CustomText>
+              </View>
+              <View style={styles.loginView}>
+                <TouchableOpacity
+                  style={styles.loginBtn}
+                  onPressIn={handleLoginPressIn}
                 >
-                  {opt}
-                </CustomText>
+                  <CustomText style={styles.loginBtnTxt}>Login</CustomText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {showSearching ? (
+            <SearchingView />
+          ) : (
+            <View style={styles.helpView}>
+              <TouchableOpacity
+                style={styles.helpMeBtn}
+                onPressIn={handleHelpMePressIn}
+              >
+                <SadEmoji {...styles.topNavIcons} />
+                <CustomText style={styles.helpMeTxt}>HELP ME</CustomText>
               </TouchableOpacity>
-            ))}
+              <TouchableOpacity
+                style={styles.iCanHelpBtn}
+                onPressIn={handleICanHelpPressIn}
+              >
+                <HappyEmoji {...styles.topNavIcons} />
+                <CustomText style={styles.iCanHelpTxt}>I CAN HELP</CustomText>
+              </TouchableOpacity>
+            </View>
+          )}
+          <View style={styles.searchAndSortRow}>
+            <View style={styles.search}>
+              <CustomTextInput
+                style={styles.searchInput}
+                keyboardType="default"
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="none"
+                autoComplete="off"
+                importantForAutofill="no"
+                returnKeyType="search"
+                value={search}
+                onChangeText={setSearch}
+                onFocus={handleSearchFocusOrTouch}
+                onTouchStart={handleSearchFocusOrTouch}
+              />
+              <SearchIcon {...StyleSheet.flatten([styles.topNavIcons, styles.searchIcon])} />
+            </View>
+            <View style={styles.sort}>
+              <TouchableOpacity
+                style={styles.sortBtn}
+                ref={sortBtnRef}
+                onPressIn={handleSortPressIn}
+              >
+                <SortIcon {...styles.topNavIcons} />
+                <CustomText style={styles.sortTxt}>{sortBy}</CustomText>
+                <DownArrowIcon {...styles.topNavIcons} />
+              </TouchableOpacity>
+            </View>
           </View>
-        )}
+        </View>
+        <View style={styles.mainContent}>
+          {helpersTop.length > 0 && (
+            <View style={styles.helpers}>
+              <CustomText style={styles.availableHelpersTxt}>Available Helpers</CustomText>
+              <FlatList
+                data={helpersTop}
+                {...listCommonProps}
+                onScroll={handleHelpersScroll}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.helpersListContent}
+                keyExtractor={(item) => item.id}
+                renderItem={renderHelper}
+                horizontal
+              />
+            </View>
+          )}
+          <View style={styles.ChatGroups}>
+            <ActiveIndexContext.Provider value={activeDropdownIndex}>
+              <FlatList
+                ref={chatGroupsRef}
+                data={sortedChatGroups}
+                {...listCommonProps}
+                contentContainerStyle={chatGroupsContentContainer}
+                showsVerticalScrollIndicator={false}
+                keyExtractor={(item) => item.id}
+                onScroll={handleChatGroupsScroll}
+                scrollEventThrottle={16}
+                removeClippedSubviews={false}
+                extraData={{ activeDropdownIndex, chatGroups }}
+                renderItem={renderChatGroup}
+                CellRendererComponent={ActiveListCell}
+              />
+            </ActiveIndexContext.Provider>
+          </View>
+          {isSortOpen && (
+            <View
+              ref={sortDropdownRef}
+              onLayout={() => measureToRect(sortDropdownRef, 'sortDropdown')}
+              style={styles.sortByDropdown}
+            >
+              {sortOptions.map((opt, idx) => (
+                <TouchableOpacity
+                  key={opt}
+                  onPressIn={() => handleSortOptionPressIn(opt)}
+                  onPressOut={closeAllMenus}
+                  style={[styles.sortByOptions, idx < sortOptions.length - 1 && styles.sortByOptionsBorderBottom]}
+                >
+                  <CustomText
+                    style={[
+                      styles.sortByDropdownTxt,
+                      sortBy === opt ? styles.sortBySelectedTxt : styles.sortByNotSelectedTxt,
+                    ]}
+                  >
+                    {opt}
+                  </CustomText>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+        <LinearGradient
+          pointerEvents="none"
+          colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.7)']}
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: bottomSafeHeight + scaleHeight(50),
+          }}
+        />
       </View>
-      <LinearGradient
-        pointerEvents="none"
-        colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.7)']}
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: bottomSafeHeight + scaleHeight(50),
-        }}
+      <EditChatNameModal
+        visible={showEditChatNameModal}
+        initialName={selectedChat?.title ?? ''}
+        maxLen={100}
+        onConfirm={handleConfirmEditName}
+        onCancel={() => { setShowEditChatNameModal(false); setSelectedChatGroupId(null); }}
       />
-    </View>
+      <DeleteChatGroupModal
+        visible={showDeleteChatGroupModal}
+        onConfirm={handleConfirmDeleteChatGroup}
+        onCancel={() => { setShowDeleteChatGroupModal(false); setSelectedChatGroupId(null); }}
+      /> 
+      <LeaveChatGroupModal
+        visible={showLeaveChatGroupModal}
+        onConfirm={handleConfirmLeaveChatGroup}
+        onCancel={() => { setShowLeaveChatGroupModal(false); setSelectedChatGroupId(null); }}
+      />                 
+    </>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
-import { View, TouchableOpacity, StyleSheet, Image, FlatList, useWindowDimensions, Pressable } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image, FlatList, useWindowDimensions, Pressable, ScrollView } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
@@ -8,15 +8,11 @@ import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import CustomText from 'src/components/FontFamilyText';
-import CustomTextInput from 'src/components/FontFamilyTextInput';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
-import SearchIcon from 'assets/images/global/search-icon.svg';
 import EllipsisIcon from 'assets/images/global/three-dots-icon.svg';
-import ProfileIcon from 'assets/images/friends/profile-black-icon.svg';
-import ChatIcon from 'assets/images/friends/chat-bubble-icon.svg';
-import UnfriendIcon from 'assets/images/friends/unfriend-icon.svg';
+import RemoveIcon from 'assets/images/global/leave-and-remove-chat-icon.svg';
 import XIcon from 'assets/images/global/black-x-icon.svg';
-import PlusIcon from 'assets/images/global/white-plus-icon.svg';
+import InviteIcon from 'assets/images/members/invite-white-icon.svg';
 import Image1 from 'assets/images/placeholderProfiles/profile-1.png';
 import Image2 from 'assets/images/placeholderProfiles/profile-2.png';
 import Image3 from 'assets/images/placeholderProfiles/profile-3.png';
@@ -37,12 +33,10 @@ import Image17 from 'assets/images/placeholderProfiles/profile-17.jpg';
 import Image18 from 'assets/images/placeholderProfiles/profile-18.jpg';
 import Image19 from 'assets/images/placeholderProfiles/profile-19.jpg';
 import Image20 from 'assets/images/placeholderProfiles/profile-20.jpg';
-
 const ActiveIndexContext = React.createContext(-1);
 const stylesActive = StyleSheet.create({
   zLift: { zIndex: 1000, elevation: 1000, overflow: 'visible' },
 });
-
 function ActiveListCell({ children, index, style, ...props }) {
   const activeIndex = React.useContext(ActiveIndexContext);
   const isActive = index === activeIndex;
@@ -52,7 +46,6 @@ function ActiveListCell({ children, index, style, ...props }) {
     </View>
   );
 }
-
 const phoneStyles = StyleSheet.create({
   root: {
     paddingTop: scaleHeight(12),
@@ -62,15 +55,14 @@ const phoneStyles = StyleSheet.create({
     width: '100%',
   },
   topNav: {
-    gap: scaleHeight(12),
     paddingBottom: scaleHeight(16),
     marginBottom: scaleHeight(20)
   },
-  friendsHeaderRow: {
+  membersHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between'
   },
-  backArrowAndfriendsRow: {
+  backArrowAndMembersRow: {
     gap: scaleWidth(12),
     flexDirection: 'row',
     alignItems: 'center'
@@ -87,21 +79,21 @@ const phoneStyles = StyleSheet.create({
     width: scaleWidth(28),
     height: scaleHeight(28),
   },
-  friendsTxt: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
+  membersTxt: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
     fontWeight: 600,
     color: Black
   },
-  addFriend: {
-    width: scaleWidth(126),
+  invite: {
+    width: scaleWidth(93),
     height: scaleHeight(42),
     borderRadius: scaleWidth(99)
   },
-  addFriendBtn: {
-      borderRadius: scaleWidth(99),
-      gap: scaleWidth(4),
+  inviteBtn: {
+    borderRadius: scaleWidth(99),
+    gap: scaleWidth(6),
     width: '100%',
     height: '100%',
     flexDirection: 'row',
@@ -109,111 +101,61 @@ const phoneStyles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: HappyColor
   },
-  plusIcon: {
-    width: scaleWidth(24),
-    height: scaleHeight(24)
+  inviteIcon: {
+    width: scaleWidth(20),
+    height: scaleHeight(20)
   },
-  addFriendTxt: {
+  inviteTxt: {
     fontSize: scaleFont(16),
     lineHeight: scaleLineHeight(24),
     letterSpacing: scaleLetterSpacing(-0.16),
     fontWeight: 600,
     color: White
   },
-  friendsViewType: {
-    paddingVertical: scaleHeight(2),
-    paddingHorizontal: scaleWidth(2),
-    borderRadius: scaleWidth(67.067),
-    height: scaleHeight(39),
-    width: '100%',
-    backgroundColor: '#F9F9F9',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  friendsViewTypeSelectedBtn: {
-    width: scaleWidth(164.5),
-    height: scaleHeight(34),
-    borderRadius: scaleWidth(99),
-    backgroundColor: HappyColor,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  friendsViewTypeSelectedtxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
-    fontWeight: 600,
-    color: White
-  },
-  friendsViewTypeNotSelectedBtn: {
-    width: scaleWidth(164.5),
-    height: scaleHeight(35),
-    borderRadius: scaleWidth(99),
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  friendsViewTypeNotSelectedTxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
-    fontWeight: 600,
-    color: Black
-  },
-  search: {
-    height: scaleHeight(39),
-    width: '100%'
-  },
-  searchIcon: {
-    width: scaleWidth(20),
-    height: scaleHeight(20),
-    top: scaleHeight(9),
-    left: scaleWidth(10),
-    position: 'absolute'
-  },
-  searchInput: {
-    borderRadius: scaleWidth(99),
-    paddingLeft: scaleWidth(38),
-    paddingVertical: scaleHeight(9),
-    paddingRight: scaleWidth(16),
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
-    fontWeight: 500,
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#F9F9F9',
-    color: Black
-  },
-  friendsBody: {
+  membersBody: {
     flex: 1
   },
-  friendsListContent: {
-    gap: scaleHeight(16),
-    paddingBottom: scaleHeight(110)
+  sectionHeader: {
+    marginBottom: scaleHeight(16)
   },
-  friendCard: {
+  sectionHeaderTxt: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    fontWeight: 600,
+    opacity: 0.6,
+    color: Black
+  },
+  pendingMembersListContent: {
+    gap: scaleHeight(12),
+    paddingBottom: scaleHeight(20)
+  },
+  currentMembersListContent: {
+    gap: scaleHeight(12),
+    paddingBottom: scaleHeight(40)
+  },
+  memberCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
   },
-  friendImageAndName: {
+  memberImageAndName: {
     gap: scaleWidth(8),
     flexDirection: 'row',
     alignItems: 'center'
   },
-  friendImage: {
+  memberImage: {
     width: scaleWidth(42),
     height: scaleHeight(42),
     borderRadius: scaleWidth(50)
   },
-  friendPhoto: {
+  memberPhoto: {
     borderRadius: scaleWidth(50),
     width: '100%',
     height: '100%',
     resizeMode: 'contain'
   },
-  friendFullName: {
+  memberFullName: {
     width: scaleWidth(153),
     fontSize: scaleFont(16),
     lineHeight: scaleLineHeight(24),
@@ -221,7 +163,7 @@ const phoneStyles = StyleSheet.create({
     fontWeight: 600,
     color: Black
   },
-  friendUsername: {
+  memberUsername: {
     width: scaleWidth(153),
     fontSize: scaleFont(12),
     lineHeight: scaleLineHeight(18),
@@ -243,16 +185,16 @@ const phoneStyles = StyleSheet.create({
     width: scaleWidth(28),
     height: scaleHeight(28)
   },
-  friendDropdown: {
+  memberDropdown: {
     top: scaleHeight(21),
     right: scaleWidth(20),
-    width: scaleWidth(161),
+    width: scaleWidth(180),
     borderRadius: scaleWidth(16),
     borderWidth: scaleWidth(1),
     shadowRadius: scaleWidth(15),
-    shadowOffset: { 
-      width: scaleWidth(8), 
-      height: scaleHeight(8) 
+    shadowOffset: {
+      width: scaleWidth(8),
+      height: scaleHeight(8)
     },
     shadowOpacity: 1,
     shadowColor: 'rgba(83, 26, 255, 0.1)',
@@ -262,44 +204,26 @@ const phoneStyles = StyleSheet.create({
     backgroundColor: White,
     zIndex: 2000,
   },
-  dropdownIcons: { 
-    width: scaleWidth(24), 
+  dropdownIcon: {
+    width: scaleWidth(24),
     height: scaleHeight(24),
     resizeMode: 'contain'
   },
-  friendDropdownOptions: { 
-    paddingHorizontal: scaleWidth(16), 
-    paddingVertical: scaleHeight(10), 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center' 
-  },
-  friendDropdownOptionsBorderBottom: { 
-    borderBottomWidth: scaleHeight(0.5), 
-    borderBottomColor: 'rgba(0, 0, 0, 0.25)' 
-  },
-  unfriendOption: { 
-    paddingHorizontal: scaleWidth(16), 
-    paddingVertical: scaleHeight(10.5), 
-    flexDirection: 'row', 
+  memberDropdownOption: {
+    paddingHorizontal: scaleWidth(16),
+    paddingVertical: scaleHeight(10.5),
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
   },
-  dropdownBlackTxt: {
-    fontSize: scaleFont(16), 
+  dropdownRedTxt: {
+    fontSize: scaleFont(16),
     lineHeight: scaleLineHeight(24),
     letterSpacing: scaleLetterSpacing(-0.16),
     fontWeight: 500,
-    color: Black
-  },
-  dropdownRedTxt: {
-    fontSize: scaleFont(16), 
-    lineHeight: scaleLineHeight(24), 
-    letterSpacing: scaleLetterSpacing(-0.16), 
-    fontWeight: 500,
     color: HappyColor
   },
-  requestOptions: {
+  pendingOptions: {
     flexDirection: 'row',
     gap: scaleWidth(8)
   },
@@ -340,15 +264,14 @@ const tabletStyles = StyleSheet.create({
     width: '100%',
   },
   topNav: {
-    gap: scaleHeight(16.1),
     paddingBottom: scaleHeight(21.46),
     marginBottom: scaleHeight(26.83)
   },
-  friendsHeaderRow: {
+  membersHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between'
   },
-  backArrowAndfriendsRow: {
+  backArrowAndMembersRow: {
     gap: scaleWidth(16.1),
     flexDirection: 'row',
     alignItems: 'center'
@@ -365,19 +288,19 @@ const tabletStyles = StyleSheet.create({
     width: scaleWidth(37.557),
     height: scaleHeight(37.557),
   },
-  friendsTxt: {
+  membersTxt: {
     fontSize: scaleFont(22),
     lineHeight: scaleLineHeight(33),
     letterSpacing: scaleLetterSpacing(-0.22),
     fontWeight: 600,
     color: Black
   },
-  addFriend: {
-    width: scaleWidth(168.43533),
+  invite: {
+    width: scaleWidth(121.432),
     height: scaleHeight(56.336),
     borderRadius: scaleWidth(132.792)
   },
-  addFriendBtn: {
+  inviteBtn: {
     borderRadius: scaleWidth(132.792),
     gap: scaleWidth(8.05),
     width: '100%',
@@ -387,111 +310,61 @@ const tabletStyles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: HappyColor
   },
-  plusIcon: {
+  inviteIcon: {
     width: scaleWidth(26.83),
     height: scaleHeight(26.83)
-  },  
-  addFriendTxt: {
+  },
+  inviteTxt: {
     fontSize: scaleFont(20),
     lineHeight: scaleLineHeight(30),
     letterSpacing: scaleLetterSpacing(-0.2),
     fontWeight: 600,
     color: White
   },
-  friendsViewType: {
-    paddingVertical: scaleHeight(4),
-    paddingHorizontal: scaleWidth(4),
-    borderRadius: scaleWidth(132.792),
-    height: scaleHeight(56.34),
-    width: '100%',
-    backgroundColor: '#F9F9F9',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  friendsViewTypeSelectedBtn: {
-    width: scaleWidth(344),
-    height: scaleHeight(48.34),
-    borderRadius: scaleWidth(132.792),
-    backgroundColor: HappyColor,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  friendsViewTypeSelectedtxt: {
-    fontSize: scaleFont(18),
-    lineHeight: scaleLineHeight(27),
-    letterSpacing: scaleLetterSpacing(-0.18),
-    fontWeight: 600,
-    color: White
-  },
-  friendsViewTypeNotSelectedBtn: {
-    width: scaleWidth(344),
-    height: scaleHeight(48.34),
-    borderRadius: scaleWidth(132.792),
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  friendsViewTypeNotSelectedTxt: {
-    fontSize: scaleFont(18),
-    lineHeight: scaleLineHeight(27),
-    letterSpacing: scaleLetterSpacing(-0.18),
-    fontWeight: 600,
-    color: '#1D1E25'
-  },
-  search: {
-    height: scaleHeight(51),
-    width: '100%'
-  },
-  searchIcon: {
-    width: scaleWidth(24),
-    height: scaleHeight(24),
-    top: scaleHeight(12),
-    left: scaleWidth(14),
-    position: 'absolute'
-  },
-  searchInput: {
-    borderRadius: scaleWidth(132.792),
-    paddingLeft: scaleWidth(46),
-    paddingVertical: scaleHeight(12),
-    paddingRight: scaleWidth(14),
-    fontSize: scaleFont(18),
-    lineHeight: scaleLineHeight(27),
-    letterSpacing: scaleLetterSpacing(-0.18),
-    fontWeight: 500,
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#F9F9F9',
-    color: Black
-  },
-  friendsBody: {
+  membersBody: {
     flex: 1
   },
-  friendsListContent: {
-    gap: scaleHeight(16.1),
-    paddingBottom: scaleHeight(130)
+  sectionHeader: {
+    marginBottom: scaleHeight(21.46)
   },
-  friendCard: {
+  sectionHeaderTxt: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    fontWeight: 600,
+    opacity: 0.6,
+    color: Black
+  },
+  pendingMembersListContent: {
+    gap: scaleHeight(16.1),
+    paddingBottom: scaleHeight(26.83)
+  },
+  currentMembersListContent: {
+    gap: scaleHeight(16.1),
+    paddingBottom: scaleHeight(40)
+  },
+  memberCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
   },
-  friendImageAndName: {
+  memberImageAndName: {
     gap: scaleWidth(10.73),
     flexDirection: 'row',
     alignItems: 'center'
   },
-  friendImage: {
+  memberImage: {
       borderRadius: scaleWidth(67.067),
     width: 78.14,
     height: 78.14
   },
-  friendPhoto: {
+  memberPhoto: {
     borderRadius: scaleWidth(67.067),
     width: '100%',
     height: '100%',
     resizeMode: 'contain'
   },
-  friendFullName: {
+  memberFullName: {
     width: scaleWidth(450.291),
     fontSize: scaleFont(20),
     lineHeight: scaleLineHeight(30),
@@ -499,7 +372,7 @@ const tabletStyles = StyleSheet.create({
     fontWeight: 600,
     color: Black
   },
-  friendUsername: {
+  memberUsername: {
     width: scaleWidth(450.291),
     fontSize: scaleFont(16),
     lineHeight: scaleLineHeight(24),
@@ -521,16 +394,16 @@ const tabletStyles = StyleSheet.create({
     width: scaleWidth(37.557),
     height: scaleHeight(37.557)
   },
-  friendDropdown: {
-    top: scaleHeight(27.95),
+  memberDropdown: {
+    top: scaleHeight(28.17),
     right: scaleWidth(26.83),
-    width: scaleWidth(215.995),
+    width: scaleWidth(241.44),
     borderRadius: scaleWidth(21.461),
     borderWidth: scaleWidth(1.341),
     shadowRadius: scaleWidth(40.24),
-    shadowOffset: { 
-        width: scaleWidth(10.731), 
-        height: scaleHeight(10.731) 
+    shadowOffset: {
+        width: scaleWidth(10.731),
+        height: scaleHeight(10.731)
     },
     shadowColor: 'rgba(83, 26, 255, 1)',
     shadowOpacity: 0.1,
@@ -541,44 +414,27 @@ const tabletStyles = StyleSheet.create({
     backgroundColor: White,
     zIndex: 2000,
   },
-  dropdownIcons: { 
-    width: scaleWidth(32.192), 
+  dropdownIcon: {
+    width: scaleWidth(32.192),
     height: scaleHeight(32.192),
     resizeMode: 'contain'
   },
-  friendDropdownOptions: { 
-    paddingHorizontal: scaleWidth(21.46), 
-    paddingVertical: scaleHeight(13.41), 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center' 
-  },
-  friendDropdownOptionsBorderBottom: { 
-    borderBottomWidth: scaleHeight(1.341), 
-    borderBottomColor: 'rgba(0, 0, 0, 0.25)' 
-  },
-  unfriendOption: { 
-    paddingHorizontal: scaleWidth(21.46), 
-    paddingVertical: scaleHeight(14.08), 
-    flexDirection: 'row', 
+  memberDropdownOption: {
+      paddingVertical: scaleHeight(14.08),
+    paddingLeft: scaleWidth(20),
+    paddingRight: scaleWidth(16),
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
   },
-  dropdownBlackTxt: {
-    fontSize: scaleFont(18), 
+  dropdownRedTxt: {
+    fontSize: scaleFont(18),
     lineHeight: scaleLineHeight(27),
     letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 500,
-    color: Black
-  },
-  dropdownRedTxt: {
-    fontSize: scaleFont(18), 
-    lineHeight: scaleLineHeight(27), 
-    letterSpacing: scaleLetterSpacing(-0.18), 
-    fontWeight: 500,
     color: HappyColor
   },
-  requestOptions: {
+  pendingOptions: {
     flexDirection: 'row',
     gap: scaleWidth(10.73)
   },
@@ -598,9 +454,9 @@ const tabletStyles = StyleSheet.create({
     color: White
   },
   xBtn: {
-      borderRadius: scaleWidth(132.792),
-      width: 78.14,
-      height: 78.14,
+    borderRadius: scaleWidth(132.792),
+    width: 78.14,
+    height: 78.14,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F9F9F9'
@@ -610,31 +466,30 @@ const tabletStyles = StyleSheet.create({
     height: scaleHeight(37.557)
   }
 });
-export default function Friends() {
+export default function Members() {
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
-  const [friendsViewType, setSelectedFriendType] = useState('friends');
   const [search, setSearch] = useState('');
   const [activeDropdownIndex, setActiveDropdownIndex] = useState(null);
   const ellipsisRefs = useRef([]);
-  const friendsRef = useRef(null);
-  const friendsDropdownRef = useRef(null);
+  const membersRef = useRef(null);
+  const memberDropdownRef = useRef(null);
   const swallowNextCloseRef = useRef(false);
   const rectsRef = useRef({
-    friendsDropdown: null,
+    membersDropdown: null,
     ellipsisBtn: null,
   });
   const listCommonProps = useMemo(
-    () => ({ keyboardShouldPersistTaps: 'always', onScrollBeginDrag: closeAllMenus }),
-    [closeAllMenus]
+    () => ({ keyboardShouldPersistTaps: 'always' }),
+    []
   );
-  const friends = {
-    friends: [
+  const members = {
+    members: [
         {
             photo: Image1,
-            name: "Jaydon HerWitzJaydon HerWitzJaydon HerWitz",
-            username: "jaydon671jaydon671jaydon671jaydon671jaydon671",
+            name: "Jaydon HerWitzJaydon HerWitzJaydon HerWitz HerWitzJaydon HerWitz",
+            username: "jaydon671jaydon671jaydon671jaydon671jaydon671 HerWitzJaydon HerWitz",
         },
         {
             photo: Image2,
@@ -690,7 +545,7 @@ export default function Friends() {
             photo: Image12,
             name: "Jaydon HerWitz",
             username: "jaydon671",
-        },   
+        },
         {
             photo: Image1,
             name: "Jaydon HerWitz",
@@ -750,13 +605,13 @@ export default function Friends() {
             photo: Image12,
             name: "Jaydon HerWitz",
             username: "jaydon671",
-        },                          
+        },
     ],
-    requests: [
+    pending: [
         {
             photo: Image13,
-            name: "Jaydon HerWitz Jaydon HerWitz",
-            username: "jaydon671 Jaydon HerWitzJaydon HerWitz",
+            name: "Jaydon HerWitz Jaydon HerWitz HerWitzJaydon HerWitz",
+            username: "jaydon671 Jaydon HerWitzJaydon HerWitz HerWitzJaydon HerWitz",
         },
         {
             photo: Image14,
@@ -777,115 +632,12 @@ export default function Friends() {
             photo: Image17,
             name: "Jaydon HerWitz",
             username: "jaydon671",
-        },
-        {
-            photo: Image18,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image19,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image20,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image1,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image2,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image3,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image4,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },   
-        {
-            photo: Image5,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image6,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image7,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image8,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image9,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image10,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image11,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image12,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image13,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image14,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image15,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image16,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image17,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },                 
+        }
     ]
   };
   const closeAllMenus = useCallback(() => {
     setActiveDropdownIndex(null);
   }, []);
-  const handleFriendsScroll = useCallback(() => {
-    if (activeDropdownIndex !== null) setActiveDropdownIndex(null);
-  }, [activeDropdownIndex]);
   const handleEllipsisPress = useCallback((index) => {
     swallowNextCloseRef.current = true;
     setActiveDropdownIndex((curr) => (curr === index ? null : index));
@@ -900,9 +652,9 @@ export default function Friends() {
     }
     if (activeDropdownIndex === null) return;
     const { pageX: x, pageY: y } = e.nativeEvent;
-    const { friendsDropdown, ellipsisBtn } = rectsRef.current;
+    const { membersDropdown, ellipsisBtn } = rectsRef.current;
     if (
-      pointInRect(x, y, friendsDropdown) ||
+      pointInRect(x, y, membersDropdown) ||
       pointInRect(x, y, ellipsisBtn)
     ) {
       return;
@@ -921,24 +673,18 @@ export default function Friends() {
       rectsRef.current[key] = { x, y, width, height };
     });
   }, []);
-  const handleViewProfilePressIn = useCallback((index) => {
+  const handleRemovePressIn = useCallback((index) => {
     swallowNextCloseRef.current = true;
   }, []);
-  const handleMessagePressIn = useCallback((index) => {
-    swallowNextCloseRef.current = true;
-  }, []);
-  const handleUnfriendPressIn = useCallback((index) => {
-    swallowNextCloseRef.current = true;
-  }, []);
-  const friendsListContent = useMemo(() => ({
-    ...styles.friendsListContent,
-    paddingBottom: bottomSafeHeight + styles.friendsListContent.paddingBottom,
-  }), [styles.friendsListContent, bottomSafeHeight]);
+  const scrollableMembersListContent = useMemo(() => ({
+    paddingBottom: bottomSafeHeight
+  }), [bottomSafeHeight]);
+ 
   useEffect(() => {
-    ellipsisRefs.current = Array(friends.friends.length)
+    ellipsisRefs.current = Array(members.members.length)
       .fill(null)
       .map((_, i) => ellipsisRefs.current[i] ?? React.createRef());
-  }, [friends.friends.length]);
+  }, [members.members.length]);
   useEffect(() => {
     if (activeDropdownIndex !== null) {
       const ellipsisRef = ellipsisRefs.current[activeDropdownIndex];
@@ -948,31 +694,31 @@ export default function Friends() {
             rectsRef.current.ellipsisBtn = { x, y, width, height };
           });
         }
-        if (friendsDropdownRef.current) {
-          measureToRect(friendsDropdownRef, 'friendsDropdown');
+        if (memberDropdownRef.current) {
+          measureToRect(memberDropdownRef, 'membersDropdown');
         }
       });
     } else {
       rectsRef.current.ellipsisBtn = null;
-      rectsRef.current.friendsDropdown = null;
+      rectsRef.current.membersDropdown = null;
     }
   }, [activeDropdownIndex, measureToRect]);
-  const renderFriend = useCallback(({ item, index }) => {
+  const renderMember = useCallback(({ item, index }) => {
     const isActive = activeDropdownIndex === index;
     return (
-      <View style={styles.friendCard}>
-        <View style={styles.friendImageAndName}>
-          <View style={styles.friendImage}>
+      <View style={styles.memberCard}>
+        <View style={styles.memberImageAndName}>
+          <View style={styles.memberImage}>
             <Image
               source={item.photo}
-              style={styles.friendPhoto}
+              style={styles.memberPhoto}
               accessible={true}
-              accessibilityLabel="Friend photo"
+              accessibilityLabel="Member photo"
             />
           </View>
           <View>
-            <CustomText style={styles.friendFullName} numberOfLines={1} ellipsizeMode="tail">{item.name}</CustomText>
-            <CustomText style={styles.friendUsername} numberOfLines={1} ellipsizeMode="tail">@{item.username}</CustomText>
+            <CustomText style={styles.memberFullName} numberOfLines={1} ellipsizeMode="tail">{item.name}</CustomText>
+            <CustomText style={styles.memberUsername} numberOfLines={1} ellipsizeMode="tail">@{item.username}</CustomText>
           </View>
         </View>
         <View>
@@ -986,58 +732,41 @@ export default function Friends() {
         </View>
         {isActive && (
           <Pressable
-            ref={friendsDropdownRef}
-            onLayout={() => measureToRect(friendsDropdownRef, 'friendsDropdown')}
-            style={styles.friendDropdown}
+            ref={memberDropdownRef}
+            onLayout={() => measureToRect(memberDropdownRef, 'membersDropdown')}
+            style={styles.memberDropdown}
           >
             <TouchableOpacity
-              onPressIn={() => handleViewProfilePressIn(index)}
-              onPressOut={closeAllMenus}
-              style={[styles.friendDropdownOptions,styles.friendDropdownOptionsBorderBottom]}
+                onPressIn={() => handleRemovePressIn(index)}
+                onPressOut={closeAllMenus}
+                style={styles.memberDropdownOption}
             >
-              <CustomText style={styles.dropdownBlackTxt}>View Profile</CustomText>
-              <ProfileIcon {...styles.dropdownIcons} />
-            </TouchableOpacity>
-            <TouchableOpacity
-            onPressIn={() => handleMessagePressIn(index)}
-            onPressOut={closeAllMenus}
-            style={[styles.friendDropdownOptions, styles.friendDropdownOptionsBorderBottom]}
-            >
-            <CustomText style={styles.dropdownBlackTxt}>Message</CustomText>
-            <ChatIcon {...styles.dropdownIcons} />
-            </TouchableOpacity>
-            <TouchableOpacity
-            onPressIn={() => handleUnfriendPressIn(index)}
-            onPressOut={closeAllMenus}
-            style={styles.unfriendOption}
-            >
-                <CustomText style={styles.dropdownRedTxt}>Unfriend</CustomText>
-                <UnfriendIcon {...styles.dropdownIcons} />
+                <CustomText style={styles.dropdownRedTxt}>Remove</CustomText>
+                <RemoveIcon {...styles.dropdownIcon} />
             </TouchableOpacity>
           </Pressable>
         )}
       </View>
     );
   }, [activeDropdownIndex, styles, closeAllMenus]);
-  const renderRequest = useCallback(({ item, index }) => {
-    const isActive = activeDropdownIndex === index;
+  const renderPending = useCallback(({ item, index }) => {
     return (
-      <View style={styles.friendCard}>
-        <View style={styles.friendImageAndName}>
-          <View style={styles.friendImage}>
+      <View style={styles.memberCard}>
+        <View style={styles.memberImageAndName}>
+          <View style={styles.memberImage}>
             <Image
               source={item.photo}
-              style={styles.friendPhoto}
+              style={styles.memberPhoto}
               accessible={true}
-              accessibilityLabel="Request photo"
+              accessibilityLabel="Pending photo"
             />
           </View>
           <View>
-            <CustomText style={styles.friendFullName} numberOfLines={1} ellipsizeMode="tail">{item.name}</CustomText>
-            <CustomText style={styles.friendUsername} numberOfLines={1} ellipsizeMode="tail">@{item.username}</CustomText>
+            <CustomText style={styles.memberFullName} numberOfLines={1} ellipsizeMode="tail">{item.name}</CustomText>
+            <CustomText style={styles.memberUsername} numberOfLines={1} ellipsizeMode="tail">@{item.username}</CustomText>
           </View>
         </View>
-        <View style={styles.requestOptions}>
+        <View style={styles.pendingOptions}>
             <TouchableOpacity style={styles.acceptBtn}>
                 <CustomText style={styles.acceptTxt}>Accept</CustomText>
             </TouchableOpacity>
@@ -1047,16 +776,16 @@ export default function Friends() {
         </View>
       </View>
     );
-  }, [activeDropdownIndex, styles, closeAllMenus]);
+  }, [styles]);
   const rootStyle = {
-  ...styles.root,
-  paddingTop: statusBarHeight + styles.root.paddingTop
+    ...styles.root,
+    paddingTop: statusBarHeight + styles.root.paddingTop
   };
   return (
     <View style={rootStyle} onTouchEndCapture={handleRootTouchEndCapture}>
         <View style={styles.topNav}>
-            <View style={styles.friendsHeaderRow}>
-                <View style={styles.backArrowAndfriendsRow}>
+            <View style={styles.membersHeaderRow}>
+                <View style={styles.backArrowAndMembersRow}>
                     <View>
                         <TouchableOpacity
                             style={styles.BackArrow}
@@ -1066,75 +795,58 @@ export default function Friends() {
                         </TouchableOpacity>
                     </View>
                     <View>
-                        <CustomText style={styles.friendsTxt}>Friends ({friends.friends.length})</CustomText>
+                        <CustomText style={styles.membersTxt}>Members</CustomText>
                     </View>
                 </View>
-                <View style={styles.addFriend}>
-                    <TouchableOpacity 
-                        style={styles.addFriendBtn}
+                <View style={styles.invite}>
+                    <TouchableOpacity
+                        style={styles.inviteBtn}
                         onPress={() => navigation.navigate('AddFriends')}
                     >
-                        <PlusIcon {...styles.plusIcon}/>
-                        <CustomText style={styles.addFriendTxt}>Add Friend</CustomText>
+                        <InviteIcon {...styles.inviteIcon}/>
+                        <CustomText style={styles.inviteTxt}>Invite</CustomText>
                     </TouchableOpacity>
                 </View>
             </View>
-            <View style={styles.friendsViewType}>
-              <TouchableOpacity
-                style={friendsViewType === 'friends' ? styles.friendsViewTypeSelectedBtn : styles.friendsViewTypeNotSelectedBtn}
-                onPress={() => {
-                    setSelectedFriendType('friends');
-                    setSearch('');
-                }}
-              >
-                  <CustomText style={friendsViewType === 'friends' ? styles.friendsViewTypeSelectedtxt : styles.friendsViewTypeNotSelectedTxt}>Friends ({friends.friends.length})</CustomText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={friendsViewType === 'requests' ? styles.friendsViewTypeSelectedBtn : styles.friendsViewTypeNotSelectedBtn}
-                onPress={() => {
-                    setSelectedFriendType('requests');
-                    setSearch('');
-                }}
-              >
-                  <CustomText style={friendsViewType === 'requests' ? styles.friendsViewTypeSelectedtxt : styles.friendsViewTypeNotSelectedTxt}>Requests ({friends.requests.length})</CustomText>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.search}>
-                <CustomTextInput
-                style={styles.searchInput}
-                keyboardType="default"
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="none"
-                autoComplete="off"
-                importantForAutofill="no"
-                returnKeyType="search"
-                value={search}
-                onChangeText={setSearch}
-                onFocus={handleSearchFocusOrTouch}
-                onTouchStart={handleSearchFocusOrTouch}
-                />
-                <SearchIcon {...styles.searchIcon} />
-            </View>
         </View>
-        <View style={styles.friendsBody}>
+        <ScrollView 
+          style={styles.membersBody} 
+          contentContainerStyle={scrollableMembersListContent}
+          onScrollBeginDrag={closeAllMenus}
+          showsVerticalScrollIndicator={false}
+        >
+            <View style={styles.sectionHeader}>
+    <CustomText style={styles.sectionHeaderTxt}>Pending</CustomText>
+            </View>
+          <FlatList
+            data={members.pending}
+            contentContainerStyle={styles.pendingMembersListContent}
+            showsVerticalScrollIndicator={false}
+            keyExtractor={(item, index) => `pending-${index}`}
+            removeClippedSubviews={false}
+            renderItem={renderPending}
+            scrollEnabled={false}
+            {...listCommonProps}
+          />
+          <View style={styles.sectionHeader}>
+            <CustomText style={styles.sectionHeaderTxt}>Current</CustomText>
+          </View>
           <ActiveIndexContext.Provider value={activeDropdownIndex}>
             <FlatList
-              ref={friendsRef}
-              data={friendsViewType === 'friends' ? friends.friends : friends.requests}
-              contentContainerStyle={friendsListContent}
+              ref={membersRef}
+              data={members.members}
+              contentContainerStyle={styles.currentMembersListContent}
               showsVerticalScrollIndicator={false}
-              keyExtractor={(item, index) => `${friendsViewType}-${index}`}
-              onScroll={handleFriendsScroll}
-              scrollEventThrottle={16}
+              keyExtractor={(item, index) => `member-${index}`}
               removeClippedSubviews={false}
               extraData={activeDropdownIndex}
-              renderItem={friendsViewType === 'friends' ? renderFriend : renderRequest}
+              renderItem={renderMember}
               CellRendererComponent={ActiveListCell}
+              scrollEnabled={false}
               {...listCommonProps}
             />
           </ActiveIndexContext.Provider>
-        </View>
+        </ScrollView>
         <LinearGradient
             pointerEvents="none"
             colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.7)']}
