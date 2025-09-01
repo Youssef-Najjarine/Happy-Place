@@ -27,22 +27,28 @@ const phoneStyles = StyleSheet.create({
     ...(Platform.OS === 'android' && { elevation: 10 }),
   },
 arcInner: {
-  width: scaleWidth(12),
-  height: scaleHeight(12),
+  // width: scaleWidth(12),
+  // height: scaleHeight(12),
+  width: scaleWidth(22),
+  height: scaleHeight(22),
   position: 'absolute',
   top: (scaleHeight(136 - 12)) / 2,
   left: (scaleWidth(136 - 12)) / 2
 },
 arcMiddle: {
-  width: scaleWidth(52),
-  height: scaleHeight(52),
+  // width: scaleWidth(52),
+  // height: scaleHeight(52),
+  width: scaleWidth(51.333),
+  height: scaleHeight(51.333),
   position: 'absolute',
   top: (scaleHeight(136 - 52)) / 2,
   left: (scaleWidth(136 - 52)) / 2
 },
 arcOuter: {
-  width: scaleWidth(112),
-  height: scaleHeight(112),
+  // width: scaleWidth(112),
+  // height: scaleHeight(112),
+  width: scaleWidth(77),
+  height: scaleHeight(77),
   position: 'absolute',
   top: (scaleHeight(136 - 112)) / 2,
   left: (scaleWidth(136 - 112)) / 2
