@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
-import { View, TouchableOpacity, StyleSheet, Image, FlatList, useWindowDimensions, Pressable, ScrollView } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image, FlatList, Pressable, ScrollView } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
@@ -470,7 +470,6 @@ export default function Members() {
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
-  const [search, setSearch] = useState('');
   const [activeDropdownIndex, setActiveDropdownIndex] = useState(null);
   const ellipsisRefs = useRef([]);
   const membersRef = useRef(null);
@@ -642,9 +641,6 @@ export default function Members() {
     swallowNextCloseRef.current = true;
     setActiveDropdownIndex((curr) => (curr === index ? null : index));
   }, []);
-  const handleSearchFocusOrTouch = useCallback(() => {
-    closeAllMenus();
-  }, [closeAllMenus]);
   const handleRootTouchEndCapture = useCallback((e) => {
     if (swallowNextCloseRef.current) {
       swallowNextCloseRef.current = false;

@@ -529,8 +529,8 @@ const tabletStyles = StyleSheet.create({
     borderWidth: scaleWidth(1.341),
     shadowRadius: scaleWidth(40.24),
     shadowOffset: { 
-        width: scaleWidth(10.731), 
-        height: scaleHeight(10.731) 
+      width: scaleWidth(10.731), 
+      height: scaleHeight(10.731) 
     },
     shadowColor: 'rgba(83, 26, 255, 1)',
     shadowOpacity: 0.1,

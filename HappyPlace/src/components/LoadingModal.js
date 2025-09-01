@@ -1,13 +1,11 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Modal, View, StyleSheet, Platform, Animated, Easing } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { useSelector } from 'react-redux';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import InnerArc from 'assets/images/loading/inner-arc.svg';
 import MiddleArc from 'assets/images/loading/middle-arc.svg';
 import OuterArc from 'assets/images/loading/outer-arc.svg';
-
 const phoneStyles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -33,39 +31,101 @@ arcInner: {
   height: scaleHeight(12),
   position: 'absolute',
   top: (scaleHeight(136 - 12)) / 2,
-  left: (scaleWidth((136 - 12) + 16)) / 2
+  left: (scaleWidth(136 - 12)) / 2
 },
 arcMiddle: {
-  width: scaleWidth(28),
-  height: scaleHeight(28),
+  width: scaleWidth(52),
+  height: scaleHeight(52),
   position: 'absolute',
-  top: (scaleHeight(136 - 28)) / 2,
-  left: (scaleWidth((136 - 28) + 8)) / 2
+  top: (scaleHeight(136 - 52)) / 2,
+  left: (scaleWidth(136 - 52)) / 2
 },
 arcOuter: {
-  width: scaleWidth(42),
-  height: scaleHeight(42),
+  width: scaleWidth(112),
+  height: scaleHeight(112),
   position: 'absolute',
-  top: (scaleHeight(136 -42)) / 2,
-  left: (scaleWidth(136 - 42)) / 2
+  top: (scaleHeight(136 - 112)) / 2,
+  left: (scaleWidth(136 - 112)) / 2
 },
 });
-
 const tabletStyles = StyleSheet.create({});
 const LoadingModal = () => {
   const isLoading = useSelector((state) => state.loading.isLoading);
 const styles = useResponsiveStyles(phoneStyles, tabletStyles);
+  const outerRotate = useRef(new Animated.Value(0)).current;
+  const middleRotate = useRef(new Animated.Value(0)).current;
+  const innerRotate = useRef(new Animated.Value(0)).current;
+
+  const outerDeg = outerRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '-360deg'],
+  });
+
+  const middleDeg = middleRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const innerDeg = innerRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '-360deg'],
+  });
+
+  useEffect(() => {
+    const animOuter = Animated.loop(
+      Animated.timing(outerRotate, {
+        toValue: 1,
+        duration: 2000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+
+    const animMiddle = Animated.loop(
+      Animated.timing(middleRotate, {
+        toValue: 1,
+        duration: 2000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+
+    const animInner = Animated.loop(
+      Animated.timing(innerRotate, {
+        toValue: 1,
+        duration: 2000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+
+    animOuter.start();
+    animMiddle.start();
+    animInner.start();
+
+    return () => {
+      animOuter.stop();
+      animMiddle.stop();
+      animInner.stop();
+    };
+  }, [outerRotate, middleRotate, innerRotate]);
+
   return (
     <Modal transparent visible={isLoading} animationType="fade" onRequestClose={() => {}}>
       <View style={styles.overlay}>
         <View style={styles.spinnerContainer}>
-          <OuterArc {...styles.arcOuter}/>
-          <MiddleArc {...styles.arcMiddle}/>
-          <InnerArc {...styles.arcInner}/>
+          <Animated.View style={{ ...styles.arcOuter, transform: [{ rotate: outerDeg }] }}>
+            <OuterArc />
+          </Animated.View>
+          <Animated.View style={{ ...styles.arcMiddle, transform: [{ rotate: middleDeg }] }}>
+            <MiddleArc />
+          </Animated.View>
+          <Animated.View style={{ ...styles.arcInner, transform: [{ rotate: innerDeg }] }}>
+            <InnerArc />
+          </Animated.View>
         </View>
       </View>
     </Modal>
   );
 };
-
 export default LoadingModal;

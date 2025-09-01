@@ -1,11 +1,11 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { HappyColor, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight, moderateScale} from 'src/utils/scaleLayout';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import CustomText from 'src/components/FontFamilyText';
 import Logo from 'assets/images/global/logo.png';
 import HappyEmoji from 'assets/images/global/happy-emoji.svg';
@@ -346,6 +346,14 @@ const tabletStyles = StyleSheet.create({
 
 export default function Home() {
   const dispatch = useDispatch();
+  //   useFocusEffect(
+  //   useCallback(() => {
+  //     dispatch(showLoading());
+  //     return () => {
+  //       dispatch(hideLoading());
+  //     };
+  //   }, [dispatch])
+  // );
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();

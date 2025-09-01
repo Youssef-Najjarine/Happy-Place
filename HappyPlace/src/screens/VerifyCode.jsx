@@ -292,7 +292,14 @@ const tabletStyles = StyleSheet.create({
 export default function VerifyCode() {
   const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.loading.isLoading);
-
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     dispatch(showLoading());
+  //     return () => {
+  //       dispatch(hideLoading()); // hide when navigating away
+  //     };
+  //   }, [dispatch])
+  // );
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
 
