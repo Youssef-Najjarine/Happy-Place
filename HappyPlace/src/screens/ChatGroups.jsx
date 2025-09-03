@@ -17,9 +17,10 @@ import SadEmoji from 'assets/images/global/sad-emoji.svg';
 import HappyEmoji from 'assets/images/global/happy-emoji.svg';
 import SearchIcon from 'assets/images/global/search-icon.svg';
 import SortIcon from 'assets/images/chatGroups/sort-icon.svg';
-import DownArrowIcon from 'assets/images/chatGroups/arrow-down-icon.svg';
+import LinkIcon from 'assets/images/chatGroups/share-chat-link-icon.svg';
 import EllipsisIcon from 'assets/images/global/three-dots-icon.svg';
 import EditIcon from 'assets/images/global/edit-icon.svg';
+import DownArrowIcon from 'assets/images/global/arrow-down-icon.svg';
 import MembersIcon from 'assets/images/global/members-icon.svg';
 import PendingMembersCircle from 'assets/images/global/pending-members-circle.svg';
 import PrivateIcon from 'assets/images/global/private-chat-icon.svg';
@@ -139,8 +140,9 @@ const CHAT_GROUPS_DATA = [
     joined: true,
     owner: true,
     public: true,
+    joinRequest: false,
     pendingMembers: true,
-    title: 'Happy in Paddleboarding 🔥',
+    title: 'Happy in Paddleboarding 🔥'
   },
   {
     id: 'grp-2',
@@ -148,8 +150,9 @@ const CHAT_GROUPS_DATA = [
     joined: false,
     owner: false,
     public: false,
+    joinRequest: true,
     pendingMembers: false,
-    title: 'I’m depressed!',
+    title: 'I’m depressed!'
   },
   {
     id: 'grp-3',
@@ -157,8 +160,9 @@ const CHAT_GROUPS_DATA = [
     joined: false,
     owner: true,
     public: true,
+    joinRequest: false,
     pendingMembers: false,
-    title: 'I failed my Final Exams.',
+    title: 'I failed my Final Exams.'
   },
   {
     id: 'grp-4',
@@ -166,9 +170,20 @@ const CHAT_GROUPS_DATA = [
     joined: true,
     owner: false,
     public: false,
+    joinRequest: false,
     pendingMembers: false,
-    title: 'I just got cheated on.',
-  }
+    title: 'I just got cheated on.'
+  },
+  {
+    id: 'grp-5',
+    helpers: [{ image: Image17 }, { image: Image1 }, { image: Image19 }],
+    joined: false,
+    owner: false,
+    public: false,
+    joinRequest: false,
+    pendingMembers: false,
+    title: "I can't pass my my driving test."
+  }  
 ];
 
 const phoneStyles = StyleSheet.create({
@@ -473,7 +488,7 @@ const phoneStyles = StyleSheet.create({
   },
   chatGroupsListContent: { 
     gap: scaleHeight(12),
-    paddingBottom: scaleHeight(60),
+    paddingBottom: scaleHeight(100),
     width: '100%'
   },
   chatGroupCard: {
@@ -692,7 +707,8 @@ const phoneStyles = StyleSheet.create({
   },
   groupChatRequestJoinBtn: { 
     borderRadius: scaleWidth(99), 
-    width: '100%', height: '100%', 
+    width: '100%', 
+    height: '100%', 
     justifyContent: 'center', 
     alignItems: 'center', 
     borderColor: 'none', 
@@ -704,6 +720,22 @@ const phoneStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.14), 
     fontWeight: 600, 
     color: HappyColor 
+  },
+  groupChatCancelRequestBtn: {
+    borderRadius: scaleWidth(99), 
+    width: '100%', 
+    height: '100%', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    borderColor: 'none', 
+    backgroundColor: '#F9F9F9' 
+  },
+  groupChatCancelRequestTxt: {
+    fontSize: scaleFont(14), 
+    lineHeight: scaleLineHeight(21), 
+    letterSpacing: scaleLetterSpacing(-0.14), 
+    fontWeight: 600, 
+    color: Black
   },
   groupChatJoinNowBtn: { 
     borderRadius: scaleWidth(99), 
@@ -1029,7 +1061,7 @@ const tabletStyles = StyleSheet.create({
   },
   chatGroupsListContent: { 
     gap: scaleHeight(16.1),
-    paddingBottom: scaleHeight(100),
+    paddingBottom: scaleHeight(140),
     width: '100%'
   },
   chatGroupCard: {
@@ -1261,6 +1293,22 @@ const tabletStyles = StyleSheet.create({
     fontWeight: 600, 
     color: HappyColor 
   },
+   groupChatCancelRequestBtn: {
+    borderRadius: scaleWidth(132.792), 
+    width: '100%', 
+    height: '100%', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    borderColor: 'none', 
+    backgroundColor: '#F9F9F9' 
+  },
+  groupChatCancelRequestTxt: {
+    fontSize: scaleFont(16), 
+    lineHeight: scaleLineHeight(24), 
+    letterSpacing: scaleLetterSpacing(-0.16), 
+    fontWeight: 600, 
+    color: Black
+  }, 
   groupChatJoinNowBtn: { 
     borderRadius: scaleWidth(132.792), 
     width: '100%', height: '100%', 
@@ -1446,8 +1494,22 @@ export default function ChatGroups() {
     navigation.navigate('Members');
   }, []);
   const handleMakeChatPrivatePressIn = useCallback((id) => {
+    closeAllMenus();
     swallowNextCloseRef.current = true;
+    setChatGroups(prev =>
+      prev.map(g => g.id === id ? { ...g, public: false } : g)
+    );
   }, []);
+  const handleMakeChatPublicPressIn = useCallback((id) => {
+    closeAllMenus();
+    swallowNextCloseRef.current = true;
+    setChatGroups(prev =>
+      prev.map(g => g.id === id ? { ...g, public: true } : g)
+    );
+  }, []);
+  const handleShareChatPressIn = useCallback((id) => {
+    swallowNextCloseRef.current = true;
+  }, []);  
   const handleDeleteChatPressIn = useCallback((id) => {
     swallowNextCloseRef.current = true;      
     setSelectedChatGroupId(id);                
@@ -1474,14 +1536,26 @@ export default function ChatGroups() {
   }, [closeAllMenus]);
   function handleViewChatGroupPress() {
     closeAllMenus();
+    navigation.navigate('ChatGroup')
   }
-  function handleRequestJoinChatGroupPress() {
+  const handleRequestJoinChatGroupPress = useCallback((id) => {
     closeAllMenus();
-  }
-  function handleJoinChatGroupPress() {
+    setChatGroups(prev =>
+      prev.map(g => g.id === id ? { ...g, joinRequest: true } : g)
+    );
+  }, [closeAllMenus]);
+  const handleCancelJoinRequestPress = useCallback((id) => {
     closeAllMenus();
-  }
-
+    setChatGroups(prev =>
+      prev.map(g => g.id === id ? { ...g, joinRequest: false } : g)
+    );
+  }, [closeAllMenus]);
+  const handleJoinChatGroupPress = useCallback((id) => {
+    closeAllMenus();
+    setChatGroups(prev =>
+      prev.map(g => g.id === id ? { ...g, joined: true } : g)
+    );
+  }, [closeAllMenus]);
   const renderHelper = useCallback(({ item }) => (
     <View style={styles.helperCard}>
       <TouchableOpacity style={styles.helperCardBtn}>
@@ -1551,20 +1625,29 @@ export default function ChatGroups() {
                 <CustomText style={styles.groupChatViewChatTxt}>View Chat</CustomText>
               </TouchableOpacity>
             </View>
-          ) : !item.public && !item.joined ? (
+          ) : !item.public && !item.joined && !item.joinRequest ? (
             <View style={styles.chatGroupOneBtnView}>
               <TouchableOpacity 
                 style={styles.groupChatRequestJoinBtn} 
-                onPress={() => { handleRequestJoinChatGroupPress();}}
+                onPress={() => handleRequestJoinChatGroupPress(item.id)}
               >
-                <CustomText style={styles.groupChatRequestJoinTxt}>Request Join</CustomText>
+                <CustomText style={styles.groupChatRequestJoinTxt}>Request to Join</CustomText>
+              </TouchableOpacity>
+            </View>
+          ) : !item.public && !item.joined && item.joinRequest ? (
+            <View style={styles.chatGroupOneBtnView}>
+              <TouchableOpacity 
+                style={styles.groupChatCancelRequestBtn} 
+                onPress={() => handleCancelJoinRequestPress(item.id)}
+              >
+                <CustomText style={styles.groupChatCancelRequestTxt}>Cancel Request</CustomText>
               </TouchableOpacity>
             </View>
           ) : item.public && !item.joined ? (
             <View style={styles.chatGroupOneBtnView}>
               <TouchableOpacity 
                 style={styles.groupChatJoinNowBtn} 
-                onPress={() => { handleJoinChatGroupPress();}}
+                onPress={() => handleJoinChatGroupPress(item.id)}
               >
                 <CustomText style={styles.groupChatJoinNowTxt}>Join Now</CustomText>
               </TouchableOpacity>
@@ -1591,7 +1674,7 @@ export default function ChatGroups() {
               <TouchableOpacity
                 onPressIn={() => handleMembersPressIn(item.id)}
                 onPressOut={closeAllMenus}
-                style={[styles.chatGroupDropdownOptions, item.owner ? styles.chatGroupDropdownOptionsBorderBottom : null]}
+                style={[styles.chatGroupDropdownOptions, styles.chatGroupDropdownOptionsBorderBottom]}
               >
                 <CustomText style={styles.dropdownBlackTxt}>Members</CustomText>
                 <MembersIcon {...styles.dropdownIcons} />
@@ -1608,7 +1691,24 @@ export default function ChatGroups() {
                   <PrivateIcon {...styles.dropdownIcons} />
                 </TouchableOpacity>
               )}
-
+              {item.owner && !item.public && (
+                <TouchableOpacity
+                  onPressIn={() => handleMakeChatPublicPressIn(item.id)}
+                  onPressOut={closeAllMenus}
+                  style={[styles.chatGroupDropdownOptions, styles.chatGroupDropdownOptionsBorderBottom]}
+                >
+                  <CustomText style={styles.dropdownBlackTxt}>Make Chat Public</CustomText>
+                  <PrivateIcon {...styles.dropdownIcons} />
+                </TouchableOpacity>
+              )}              
+                <TouchableOpacity
+                  onPressIn={() => handleShareChatPressIn(item.id)}
+                  onPressOut={closeAllMenus}
+                  style={[styles.chatGroupDropdownOptions, item.owner ? styles.chatGroupDropdownOptionsBorderBottom : null]}
+                >
+                  <CustomText style={styles.dropdownBlackTxt}>Share Chat</CustomText>
+                  <LinkIcon {...styles.dropdownIcons} />
+                </TouchableOpacity>
               {item.owner && (
                 <TouchableOpacity
                   onPressIn={() => handleDeleteChatPressIn(item.id)}
@@ -1691,7 +1791,7 @@ export default function ChatGroups() {
           ) : (
             <View style={[styles.profileAndLogin, styles.loginBg]}>
               <View>
-                <CustomText style={styles.unlockAllFeaturesTxt}>Unlock all features!</CustomText>
+                <CustomText style={styles.unlockAllFeaturesTxt}>Login to unlock all features!</CustomText>
               </View>
               <View style={styles.loginView}>
                 <TouchableOpacity

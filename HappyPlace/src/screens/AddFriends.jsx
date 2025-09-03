@@ -11,8 +11,9 @@ import { tabletBreakpoint } from 'src/constants/breakpoints';
 import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
+import DownArrowIcon from 'assets/images/global/arrow-down-icon.svg';
+import UpArrowIcon from 'assets/images/addFriends/arrow-up-icon.svg';
 import SearchIcon from 'assets/images/global/search-icon.svg';
-import PlusIcon from 'assets/images/global/white-plus-icon.svg';
 import Image1 from 'assets/images/placeholderProfiles/profile-1.png';
 import Image2 from 'assets/images/placeholderProfiles/profile-2.png';
 import Image3 from 'assets/images/placeholderProfiles/profile-3.png';
@@ -51,10 +52,6 @@ const phoneStyles = StyleSheet.create({
     paddingBottom: scaleHeight(16),
     marginBottom: scaleHeight(20)
   },
-  friendsHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
   backArrowAndfriendsRow: {
     gap: scaleWidth(12),
     flexDirection: 'row',
@@ -78,27 +75,6 @@ const phoneStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.16),
     fontWeight: 600,
     color: Black
-  },
-  sentRequests: {
-    width: scaleWidth(153),
-    height: scaleHeight(42),
-    borderRadius: scaleWidth(99)
-  },
-  sentRequestsBtn: {
-    borderRadius: scaleWidth(99),
-    width: '100%',
-    height: '100%',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: HappyColor
-  },
-  sentRequestsTxt: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
-    fontWeight: 600,
-    color: White
   },
   search: {
     height: scaleHeight(39),
@@ -125,8 +101,11 @@ const phoneStyles = StyleSheet.create({
     backgroundColor: '#F9F9F9',
     color: Black
   },
-  suggestions: {
-    marginBottom: scaleHeight(16)
+  suggestionsAndRequests: {
+    marginBottom: scaleHeight(16),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   },
   suggestionsTxt: {
     fontSize: scaleFont(16),
@@ -135,6 +114,32 @@ const phoneStyles = StyleSheet.create({
     fontWeight: 600,
     opacity: 0.6,
     color: Black
+  },
+  sentRequests: {
+    width: scaleWidth(138),
+    height: scaleHeight(39),
+    borderRadius: scaleWidth(99)
+  },
+  sentRequestsBtn: {
+    borderRadius: scaleWidth(99),
+    gap: scaleWidth(8),
+    width: '100%',
+    height: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9F9F9'
+  },
+  sentRequestsTxt: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    fontWeight: 600,
+    color: Black
+  },
+  sentRequestArrows: {
+    width: scaleWidth(20),
+    height: scaleHeight(20)
   },
   friendsBody: {
     flex: 1
@@ -225,10 +230,6 @@ const tabletStyles = StyleSheet.create({
     paddingBottom: scaleHeight(21.46),
     marginBottom: scaleHeight(26.83)
   },
-  friendsHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
   backArrowAndfriendsRow: {
     gap: scaleWidth(16.1),
     flexDirection: 'row',
@@ -251,6 +252,45 @@ const tabletStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(33),
     letterSpacing: scaleLetterSpacing(-0.22),
     fontWeight: 600,
+    color: Black
+  },
+  search: {
+    height: scaleHeight(51),
+    width: '100%'
+  },
+  searchIcon: {
+    width: scaleWidth(24),
+    height: scaleHeight(24),
+    top: scaleHeight(12),
+    left: scaleWidth(14),
+    position: 'absolute'
+  },
+  searchInput: {
+    borderRadius: scaleWidth(132.792),
+    paddingLeft: scaleWidth(46),
+    paddingVertical: scaleHeight(12),
+    paddingRight: scaleWidth(14),
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    fontWeight: 500,
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#F9F9F9',
+    color: Black
+  },
+  suggestionsAndRequests: {
+    marginBottom: scaleHeight(21.46),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  suggestionsTxt: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    fontWeight: 600,
+    opacity: 0.6,
     color: Black
   },
   sentRequests: {
@@ -278,43 +318,7 @@ const tabletStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.2),
     fontWeight: 600,
     color: White
-  },
-  search: {
-    height: scaleHeight(51),
-    width: '100%'
-  },
-  searchIcon: {
-    width: scaleWidth(24),
-    height: scaleHeight(24),
-    top: scaleHeight(12),
-    left: scaleWidth(14),
-    position: 'absolute'
-  },
-  searchInput: {
-    borderRadius: scaleWidth(132.792),
-    paddingLeft: scaleWidth(46),
-    paddingVertical: scaleHeight(12),
-    paddingRight: scaleWidth(14),
-    fontSize: scaleFont(18),
-    lineHeight: scaleLineHeight(27),
-    letterSpacing: scaleLetterSpacing(-0.18),
-    fontWeight: 500,
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#F9F9F9',
-    color: Black
-  },
-  suggestions: {
-    marginBottom: scaleHeight(21.46)
-  },
-  suggestionsTxt: {
-    fontSize: scaleFont(20),
-    lineHeight: scaleLineHeight(30),
-    letterSpacing: scaleLetterSpacing(-0.2),
-    fontWeight: 600,
-    opacity: 0.6,
-    color: Black
-  },
+  },  
   friendsBody: {
     flex: 1
   },
@@ -391,13 +395,167 @@ const tabletStyles = StyleSheet.create({
     color: White
   }
 });
+const SEED_SUGGESTIONS = [
+        {
+            photo: Image13,
+            requestSent: true,
+            name: "Jaydon HerWitz Jaydon HerWitz",
+            username: "jaydon671 Jaydon HerWitzJaydon HerWitz",
+        },
+        {
+            photo: Image14,
+            requestSent: false,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image15,
+            requestSent: true,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image16,
+            requestSent: false,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image17,
+            requestSent: true,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image18,
+            requestSent: false,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image19,
+            requestSent: true,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image20,
+            requestSent: true,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image1,
+            requestSent: true,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image2,
+            requestSent: false,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image3,
+            requestSent: false,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image4,
+            requestSent: true,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },   
+        {
+            photo: Image5,
+            requestSent: false,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image6,
+            requestSent: true,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image7,
+            requestSent: true,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image8,
+            requestSent: true,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image9,
+            requestSent: false,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image10,
+            requestSent: true,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image11,
+            requestSent: false,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image12,
+            requestSent: false,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image13,
+            requestSent: false,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image14,
+            requestSent: true,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image15,
+            requestSent: false,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image16,
+            requestSent: true,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },
+        {
+            photo: Image17,
+            requestSent: true,
+            name: "Jaydon HerWitz",
+            username: "jaydon671",
+        },                 
+];
 export default function AddFriends() {
-  const { width } = useWindowDimensions();
-  const isTablet = width >= tabletBreakpoint;
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
   const [search, setSearch] = useState('');
+  const [sentRequestsTop, setSentRequestsTop] = useState(false);
+  const [suggestions, setSuggestions] = useState(() =>
+  SEED_SUGGESTIONS.map((s, i) => ({ ...s, id: `s-${i}`, _i: i }))
+);
   const friendsRef = useRef(null);
   const listCommonProps = useMemo(
     () => ({ keyboardShouldPersistTaps: 'always'}),
@@ -556,10 +714,36 @@ export default function AddFriends() {
         },                 
     ]
   };
+  const suggestionsSorted = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const filtered = q
+      ? suggestions.filter(
+          s =>
+            s.name.toLowerCase().includes(q) ||
+            s.username.toLowerCase().includes(q)
+        )
+      : suggestions;
+
+    return [...filtered].sort((a, b) => {
+      if (a.requestSent !== b.requestSent) {
+        // sent requests at bottom by default; at top when toggled
+        return sentRequestsTop
+          ? (a.requestSent ? -1 : 1)
+          : (a.requestSent ? 1 : -1);
+      }
+      return a._i - b._i; // stable tie-break
+    });
+  }, [suggestions, search, sentRequestsTop]);
   const friendsListContent = useMemo(() => ({
     ...styles.friendsListContent,
     paddingBottom: bottomSafeHeight
   }), [styles.friendsListContent, bottomSafeHeight]);
+  const handleAddFriend = useCallback((id) => {
+    setSuggestions(prev => prev.map(p => p.id === id ? { ...p, requestSent: true } : p));
+  }, []);
+  const handleCancelRequest = useCallback((id) => {
+    setSuggestions(prev => prev.map(p => p.id === id ? { ...p, requestSent: false } : p));
+  }, []);
   const renderFriend = useCallback(({ item }) => {
     return (
       <View style={styles.friendCard}>
@@ -568,33 +752,40 @@ export default function AddFriends() {
             <Image
               source={item.photo}
               style={styles.friendPhoto}
-              accessible={true}
+              accessible
               accessibilityLabel="Add Friends photo"
             />
           </View>
           <View>
-            <CustomText style={styles.friendFullName} numberOfLines={1} ellipsizeMode="tail">{item.name}</CustomText>
-            <CustomText style={styles.friendUsername} numberOfLines={1} ellipsizeMode="tail">@{item.username}</CustomText>
+            <CustomText style={styles.friendFullName} numberOfLines={1} ellipsizeMode="tail">
+              {item.name}
+            </CustomText>
+            <CustomText style={styles.friendUsername} numberOfLines={1} ellipsizeMode="tail">
+              @{item.username}
+            </CustomText>
           </View>
         </View>
+
         <View>
-            {item.requestSent ?
-                (
-                    <TouchableOpacity style={styles.cancelRequestBtn}>
-                        <CustomText style={styles.cancelRequestTxt}>Cancel Request</CustomText>
-                    </TouchableOpacity>
-                )
-            : 
-                (
-                    <TouchableOpacity style={styles.addFriendBtn}>
-                        <CustomText style={styles.addFriendTxt}>Add Friend</CustomText>
-                    </TouchableOpacity>
-                )
-            }
+          {item.requestSent ? (
+            <TouchableOpacity
+              style={styles.cancelRequestBtn}
+              onPress={() => handleCancelRequest(item.id)}
+            >
+              <CustomText style={styles.cancelRequestTxt}>Cancel Request</CustomText>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.addFriendBtn}
+              onPress={() => handleAddFriend(item.id)}
+            >
+              <CustomText style={styles.addFriendTxt}>Add Friend</CustomText>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
-  }, [styles]);
+  }, [styles, handleAddFriend, handleCancelRequest]);
   const rootStyle = {
   ...styles.root,
   paddingTop: statusBarHeight + styles.root.paddingTop
@@ -602,55 +793,62 @@ export default function AddFriends() {
   return (
     <View style={rootStyle}>
         <View style={styles.topNav}>
-            <View style={styles.friendsHeaderRow}>
-                <View style={styles.backArrowAndfriendsRow}>
-                    <View>
-                        <TouchableOpacity
-                            style={styles.BackArrow}
-                            onPress={() => navigation.goBack()}
-                        >
-                            <BackArrow {...styles.backArrowIcon}/>
-                        </TouchableOpacity>
-                    </View>
-                    <View>
-                        <CustomText style={styles.addFriendsTxt}>Add Friends</CustomText>
-                    </View>
-                </View>
-                <View style={styles.sentRequests}>
-                    <TouchableOpacity style={styles.sentRequestsBtn}>
-                        {isTablet &&
-                            (<PlusIcon {...styles.plusIcon}/>)
-                        }
-                        <CustomText style={styles.sentRequestsTxt}>Sent Requests</CustomText>
-                    </TouchableOpacity>
-                </View>
+          <View>
+            <View style={styles.backArrowAndfriendsRow}>
+              <View>
+                <TouchableOpacity
+                  style={styles.BackArrow}
+                  onPress={() => navigation.goBack()}
+                >
+                  <BackArrow {...styles.backArrowIcon}/>
+                </TouchableOpacity>
+              </View>
+              <View>
+                <CustomText style={styles.addFriendsTxt}>Add Friends</CustomText>
+              </View>
             </View>
-            <View style={styles.search}>
-                <CustomTextInput
-                style={styles.searchInput}
-                keyboardType="default"
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="none"
-                autoComplete="off"
-                importantForAutofill="no"
-                returnKeyType="search"
-                value={search}
-                onChangeText={setSearch}
-                />
-                <SearchIcon {...styles.searchIcon} />
-            </View>
+          </View>
+          <View style={styles.search}>
+            <CustomTextInput
+              style={styles.searchInput}
+              keyboardType="default"
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="none"
+              autoComplete="off"
+              importantForAutofill="no"
+              returnKeyType="search"
+              value={search}
+              onChangeText={setSearch}
+            />
+            <SearchIcon {...styles.searchIcon} />
+          </View>
         </View>
-        <View style={styles.suggestions}>
+        <View style={styles.suggestionsAndRequests}>
+          <View>
             <CustomText style={styles.suggestionsTxt}>Suggestions</CustomText>
+          </View>
+          <View style={styles.sentRequests}>
+            <TouchableOpacity
+              style={styles.sentRequestsBtn}
+              onPress={() => setSentRequestsTop(v => !v)}
+            >
+              <CustomText style={styles.sentRequestsTxt}>Sent Requests</CustomText>
+              {!sentRequestsTop ? (
+                <DownArrowIcon {...styles.sentRequestArrows} />
+              ) : (
+                <UpArrowIcon {...styles.sentRequestArrows} />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
         <View style={styles.friendsBody}>
             <FlatList
             ref={friendsRef}
-            data={friends.suggestions}
+            data={suggestionsSorted}
             contentContainerStyle={friendsListContent}
             showsVerticalScrollIndicator={false}
-            keyExtractor={(item, index) => `suggestion-${index}`}
+            keyExtractor={(item) => item.id} 
             renderItem={renderFriend}
             {...listCommonProps}
             />

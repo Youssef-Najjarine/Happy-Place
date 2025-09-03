@@ -33,7 +33,7 @@ const phoneStyles = StyleSheet.create({
     gap: scaleHeight(12),
     alignItems: 'center'
   },
-  trashIcon: {
+  leaveChatIcon: {
     width: scaleWidth(60),
     height: scaleHeight(60)
   },
@@ -74,7 +74,7 @@ const phoneStyles = StyleSheet.create({
     fontWeight: 600,
     color: Black,
   },
-  deleteBtn: {
+  leaveBtn: {
     borderRadius: scaleWidth(99),
     width: scaleWidth(145.5),
     height: '100%',
@@ -82,7 +82,7 @@ const phoneStyles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: HappyColor
   },
-  deleteTxt: {
+  leaveTxt: {
     fontSize: scaleFont(16),
     lineHeight: scaleLineHeight(24),
     letterSpacing: scaleLetterSpacing(-0.16),
@@ -117,7 +117,7 @@ const tabletStyles = StyleSheet.create({
     gap: scaleHeight(16.1),
     alignItems: 'center'
   },
-  trashIcon: {
+  leaveChatIcon: {
     width: scaleWidth(80.48),
     height: scaleHeight(80.48)
   },
@@ -158,7 +158,7 @@ const tabletStyles = StyleSheet.create({
     fontWeight: 600,
     color: Black,
   },
-  deleteBtn: {
+  leaveBtn: {
     borderRadius: scaleWidth(132.792),
     width: scaleWidth(192.625),
     height: '100%',
@@ -166,7 +166,7 @@ const tabletStyles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: HappyColor
   },
-  deleteTxt: {
+  leaveTxt: {
     fontSize: scaleFont(20),
     lineHeight: scaleLineHeight(30),
     letterSpacing: scaleLetterSpacing(-0.2),
@@ -187,16 +187,17 @@ const LeaveChatGroupModal = ({ visible, onConfirm, onCancel }) => {
         <View style={styles.modalContainer}>
             <View style={styles.logoAndBodyText}>
                 <View>
-                    <LeaveChatIcon {...styles.trashIcon}/>
+                    <LeaveChatIcon {...styles.leaveChatIcon}/>
                 </View>
                 <View>
-                    <CustomText style={styles.headerTxt}>Leave Chat?</CustomText>
+                    <CustomText style={styles.headerTxt}>Leave Group?</CustomText>
                 </View>
                 <View>
                     <CustomText style={styles.messageTxt}>
-                      You're about to delete this group and all its chat 
-                      history. This action cannot be undone. Are you sure 
-                      you want to continue?
+                      You’re about to leave this group chat. 
+                      You’ll no longer receive messages or updates 
+                      from this group. You can rejoin anytime if 
+                      it’s still active.
                     </CustomText>
                 </View>
             </View>
@@ -204,8 +205,8 @@ const LeaveChatGroupModal = ({ visible, onConfirm, onCancel }) => {
                 <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
                     <CustomText style={styles.cancelTxt}>Cancel</CustomText>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.deleteBtn} onPress={onConfirm}>
-                    <CustomText style={styles.deleteTxt}>Delete</CustomText>
+                <TouchableOpacity style={styles.leaveBtn} onPress={onConfirm}>
+                    <CustomText style={styles.leaveTxt}>Leave</CustomText>
                 </TouchableOpacity>                
             </View>
         </View>
