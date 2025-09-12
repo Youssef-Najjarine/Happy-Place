@@ -783,24 +783,21 @@ export default function Members() {
             <View style={styles.membersHeaderRow}>
                 <View style={styles.backArrowAndMembersRow}>
                     <View>
-                        <TouchableOpacity
-                            style={styles.BackArrow}
-                            onPress={() => navigation.goBack()}
-                        >
-                            <BackArrow {...styles.backArrowIcon}/>
-                        </TouchableOpacity>
+                      <TouchableOpacity
+                          style={styles.BackArrow}
+                          onPress={() => navigation.goBack()}
+                      >
+                          <BackArrow {...styles.backArrowIcon}/>
+                      </TouchableOpacity>
                     </View>
                     <View>
-                        <CustomText style={styles.membersTxt}>Members</CustomText>
+                      <CustomText style={styles.membersTxt}>Members</CustomText>
                     </View>
                 </View>
                 <View style={styles.invite}>
-                    <TouchableOpacity
-                        style={styles.inviteBtn}
-                        onPress={() => navigation.navigate('AddFriends')}
-                    >
-                        <InviteIcon {...styles.inviteIcon}/>
-                        <CustomText style={styles.inviteTxt}>Invite</CustomText>
+                    <TouchableOpacity style={styles.inviteBtn}>
+                      <InviteIcon {...styles.inviteIcon}/>
+                      <CustomText style={styles.inviteTxt}>Invite</CustomText>
                     </TouchableOpacity>
                 </View>
             </View>
