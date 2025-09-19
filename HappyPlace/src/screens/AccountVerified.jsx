@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import { HappyColor, White, Black } from 'src/constants/colors';
+import { HappyColor, White, Black, TranslucentWhite } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
@@ -61,7 +61,7 @@ const phoneStyles = StyleSheet.create({
     borderWidth: scaleWidth(1.5),
     borderRadius: scaleWidth(8),
      borderColor: White,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)'
+    backgroundColor: TranslucentWhite
   },
   checkboxSelected: {
     width: scaleWidth(20),
@@ -154,7 +154,7 @@ const tabletStyles = StyleSheet.create({
     borderWidth: scaleWidth(2),
     borderRadius: scaleWidth(10.731),
      borderColor: White,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)'
+    backgroundColor: TranslucentWhite
   },
   checkboxSelected: {
     width: 37.21,

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
-import { HappyColor, White, Black } from 'src/constants/colors';
+import { HappyColor, White, Black, LightGray, VeryLightGray, SoftGray, SemiTransparentCharcoal, VeryLightLavenderTint, VividBlueViolet } from 'src/constants/colors';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
 import CustomText from 'src/components/FontFamilyText';
@@ -11,7 +11,7 @@ const phoneStyles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(35, 35, 35, 0.30)',
+    backgroundColor: SemiTransparentCharcoal,
   },
   modalContainer: {
     width: scaleWidth(335),
@@ -19,12 +19,12 @@ const phoneStyles = StyleSheet.create({
     paddingHorizontal: scaleWidth(16),
     borderRadius: scaleWidth(16),
     borderWidth: scaleWidth(1),
-    shadowColor: 'rgba(83, 26, 255, 0.10)',
+    shadowColor: VeryLightLavenderTint,
     shadowOffset: { width: scaleWidth(8), height: scaleHeight(8) },
     shadowOpacity: 1,
     shadowRadius: scaleWidth(30),
     elevation: 8, 
-    borderColor: 'rgba(238, 238, 238, 0.40)',
+    borderColor: SoftGray,
     backgroundColor: White,
   },
   headerView: {
@@ -50,7 +50,7 @@ const phoneStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(24),
     letterSpacing: scaleLetterSpacing(-0.16),
     fontWeight: 600,
-    borderColor: 'rgba(35, 35, 35, 0.10)',
+    borderColor: LightGray,
     backgroundColor: White,
     color: Black
   },
@@ -79,7 +79,7 @@ const phoneStyles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   cancelTxt: {
     fontSize: scaleFont(16),
@@ -112,7 +112,7 @@ const tabletStyles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(35, 35, 35, 0.30)',
+    backgroundColor: SemiTransparentCharcoal,
   },
   modalContainer: {
     width: scaleWidth(449.347),
@@ -121,12 +121,12 @@ const tabletStyles = StyleSheet.create({
     paddingHorizontal: scaleWidth(24),
     borderRadius: scaleWidth(21.461),
     borderWidth: scaleWidth(1.341),
-    shadowColor: 'rgb(83, 26, 255)',
+    shadowColor: VividBlueViolet,
     shadowOffset: { width: scaleWidth(10.731), height: scaleHeight(10.731) },
     shadowRadius: scaleWidth(40.24),
     shadowOpacity: 0.10,
     elevation: 11, 
-    borderColor: 'rgba(238, 238, 238, 0.40)',
+    borderColor: SoftGray,
     backgroundColor: White,
   },
   headerView: {
@@ -152,7 +152,7 @@ const tabletStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(27),
     letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 600,
-    borderColor: 'rgba(35, 35, 35, 0.10)',
+    borderColor: LightGray,
     backgroundColor: White,
     color: Black
   },
@@ -181,7 +181,7 @@ const tabletStyles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   cancelTxt: {
     fontSize: scaleFont(20),

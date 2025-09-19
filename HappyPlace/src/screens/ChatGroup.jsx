@@ -3,7 +3,20 @@ import { View, TouchableOpacity, StyleSheet, Image, FlatList, SectionList, useWi
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import { HappyColor, White, Black } from 'src/constants/colors';
+import { 
+    HappyColor, 
+    White, 
+    Black, 
+    VeryLightGray, 
+    SoftGray, 
+    Charcoal, 
+    VividBlueViolet, 
+    WarmIvory, 
+    SoftRosePink, 
+    VeryLightLavenderTint, 
+    TranslucentBlack,
+    WhiteScrim
+} from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import EditChatNameModal from 'src/components/EditChatNameModal';
 import DeleteChatGroupModal from 'src/components/DeleteChatGroupModal';
@@ -52,7 +65,7 @@ import Image20 from 'assets/images/placeholderProfiles/profile-20.jpg';
 
 const phoneStyles = StyleSheet.create({
     root: { 
-        backgroundColor: '#F9F5EA', 
+        backgroundColor: WarmIvory, 
         height: '100%', 
         width: '100%',
         position: 'relative'
@@ -88,7 +101,7 @@ const phoneStyles = StyleSheet.create({
         resizeMode: 'contain' 
     },
     loginBg: { 
-        backgroundColor: '#F9F9F9' 
+        backgroundColor: VeryLightGray
     },
     unlockAllFeaturesTxt: {
         fontSize: scaleFont(14),
@@ -133,7 +146,7 @@ const phoneStyles = StyleSheet.create({
         borderRadius: scaleWidth(99),
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F9F9F9'
+        backgroundColor: VeryLightGray
     },
     chatNameAndMembers: {
         gap: scaleHeight(2)
@@ -161,7 +174,7 @@ const phoneStyles = StyleSheet.create({
         fontWeight: 500
     },
     lightMembersColor: {
-        color: 'rgba(35, 35, 35, 0.50)'
+        color: Charcoal
     },
     blackMembersColor: {
         color: Black
@@ -179,10 +192,10 @@ const phoneStyles = StyleSheet.create({
         alignItems: 'center'
     },
     publicBackgroundColor: {
-        backgroundColor: '#F9F9F9'
+        backgroundColor: VeryLightGray
     },
     privateBackgroundColor: {
-        backgroundColor: 'rgba(237, 83, 112, 0.20)'
+        backgroundColor: SoftRosePink
     },
     privacyLabelTxt: {
         fontSize: scaleFont(14),
@@ -195,7 +208,7 @@ const phoneStyles = StyleSheet.create({
         width: scaleWidth(42), 
         height: scaleHeight(42), 
         borderRadius: scaleWidth(99), 
-        backgroundColor: '#F9F9F9', 
+        backgroundColor: VeryLightGray, 
         justifyContent: 'center', 
         alignItems: 'center' 
     },
@@ -211,9 +224,9 @@ const phoneStyles = StyleSheet.create({
             height: scaleHeight(8) 
         },
         position: 'absolute',
-        borderColor: 'rgba(238, 238, 238, 0.40)',
+        borderColor: SoftGray,
         backgroundColor: White,
-        shadowColor: 'rgba(83, 26, 255, 0.1)',
+        shadowColor: VeryLightLavenderTint,
         shadowOpacity: 1,
         elevation: 12,
         zIndex: 2000
@@ -232,7 +245,7 @@ const phoneStyles = StyleSheet.create({
     },
     chatGroupDropdownOptionsBorderBottom: { 
         borderBottomWidth: scaleHeight(0.5), 
-        borderBottomColor: 'rgba(0, 0, 0, 0.25)' 
+        borderBottomColor: TranslucentBlack 
     },
     pendingMembersCircle: {
         top: scaleHeight(5), 
@@ -272,11 +285,11 @@ const phoneStyles = StyleSheet.create({
             width: scaleWidth(8), 
             height: scaleHeight(8) 
         },
-        shadowColor: 'rgba(83, 26, 255, 0.1)',
+        shadowColor: VeryLightLavenderTint,
         shadowOpacity: 1,
         elevation: 12,
         position: 'absolute',
-        borderColor: 'rgba(238, 238, 238, 0.40)',
+        borderColor: SoftGray,
         zIndex: 2000,
     },
     requestToJoinRow: {
@@ -346,7 +359,7 @@ const phoneStyles = StyleSheet.create({
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F9F9F9'
+        backgroundColor: VeryLightGray
     },
     xIcon: {
         width: scaleWidth(42),
@@ -413,7 +426,7 @@ const phoneStyles = StyleSheet.create({
         lineHeight: scaleLineHeight(18),
         letterSpacing: scaleLetterSpacing(-0.12),
         fontWeight: 500,
-        color: 'rgba(255, 255, 255, 0.50)' 
+        color: WhiteScrim
     },
     helperChatMessageView: {
         gap: scaleWidth(6),
@@ -462,7 +475,7 @@ const phoneStyles = StyleSheet.create({
         lineHeight: scaleLineHeight(18),
         letterSpacing: scaleLetterSpacing(-0.12),
         fontWeight: 500,
-        color: 'rgba(35, 35, 35, 0.50)' 
+        color: Charcoal 
     },
     helperReadMoreTxt: {
         fontSize: scaleFont(16),
@@ -519,7 +532,7 @@ const phoneStyles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(35, 35, 35, 0.50)'
+        backgroundColor: Charcoal
 
     },
     chatMessageImageTimeStampTxt: {
@@ -592,7 +605,7 @@ const phoneStyles = StyleSheet.create({
 
 const tabletStyles = StyleSheet.create({
     root: { 
-        backgroundColor: '#F9F5EA', 
+        backgroundColor: WarmIvory, 
         height: '100%', 
         width: '100%',
         position: 'relative'
@@ -628,7 +641,7 @@ const tabletStyles = StyleSheet.create({
         resizeMode: 'contain' 
     },
     loginBg: { 
-        backgroundColor: '#F9F9F9' 
+        backgroundColor: VeryLightGray
     },
     unlockAllFeaturesTxt: {
         fontSize: scaleFont(16),
@@ -673,7 +686,7 @@ const tabletStyles = StyleSheet.create({
         borderRadius: scaleWidth(132.792),
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F9F9F9'
+        backgroundColor: VeryLightGray
     },
     chatNameAndMembers: {
         gap: scaleHeight(2.68)
@@ -701,7 +714,7 @@ const tabletStyles = StyleSheet.create({
         fontWeight: 500
     },
     lightMembersColor: {
-        color: 'rgba(35, 35, 35, 0.50)'
+        color: Charcoal
     },
     blackMembersColor: {
         color: Black
@@ -719,10 +732,10 @@ const tabletStyles = StyleSheet.create({
         alignItems: 'center'
     },
     publicBackgroundColor: {
-        backgroundColor: '#F9F9F9'
+        backgroundColor: VeryLightGray
     },
     privateBackgroundColor: {
-        backgroundColor: 'rgba(237, 83, 112, 0.20)'
+        backgroundColor: SoftRosePink
     },
     privacyLabelTxt: {
         fontSize: scaleFont(16),
@@ -735,7 +748,7 @@ const tabletStyles = StyleSheet.create({
         width: 68.42,
         height: 68.42,
         borderRadius: scaleWidth(132.792), 
-        backgroundColor: '#F9F9F9', 
+        backgroundColor: VeryLightGray, 
         justifyContent: 'center', 
         alignItems: 'center' 
     },
@@ -745,7 +758,7 @@ const tabletStyles = StyleSheet.create({
         width: scaleWidth(241.44),
         borderRadius: scaleWidth(21.461),
         borderWidth: scaleWidth(1.341),
-        shadowColor: 'rgb(83, 26, 255)', 
+        shadowColor: VividBlueViolet, 
         shadowOpacity: 0.10,
         shadowOffset: {
         width: scaleWidth(10.731),
@@ -754,7 +767,7 @@ const tabletStyles = StyleSheet.create({
         shadowRadius: scaleWidth(40.24),
         elevation: 16,
         position: 'absolute',
-        borderColor: 'rgba(238, 238, 238, 0.40)',
+        borderColor: SoftGray,
         backgroundColor: White,
         zIndex: 2000,
     },
@@ -772,7 +785,7 @@ const tabletStyles = StyleSheet.create({
     },
     chatGroupDropdownOptionsBorderBottom: { 
         borderBottomWidth: scaleHeight(0.671), 
-        borderBottomColor: 'rgba(0, 0, 0, 0.25)' 
+        borderBottomColor: TranslucentBlack 
     },
     pendingMembersCircle: {
         top: scaleHeight(6.71), 
@@ -812,11 +825,11 @@ const tabletStyles = StyleSheet.create({
             width: scaleWidth(8), 
             height: scaleHeight(8) 
         },
-        shadowColor: 'rgba(83, 26, 255, 0.1)',
+        shadowColor: VeryLightLavenderTint,
         shadowOpacity: 1,
         elevation: 12,
         position: 'absolute',
-        borderColor: 'rgba(238, 238, 238, 0.40)',
+        borderColor: SoftGray,
         zIndex: 2000,
     },
     requestToJoinRow: {
@@ -886,7 +899,7 @@ const tabletStyles = StyleSheet.create({
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F9F9F9'
+        backgroundColor: VeryLightGray
     },
     xIcon: {
         width: scaleWidth(50),
@@ -953,7 +966,7 @@ const tabletStyles = StyleSheet.create({
         lineHeight: scaleLineHeight(24),
         letterSpacing: scaleLetterSpacing(-0.16),
         fontWeight: 500,
-        color: 'rgba(255, 255, 255, 0.50)' 
+        color: WhiteScrim 
     },
     helperChatMessageView: {
         gap: scaleWidth(8),
@@ -1002,7 +1015,7 @@ const tabletStyles = StyleSheet.create({
         lineHeight: scaleLineHeight(24),
         letterSpacing: scaleLetterSpacing(-0.16),
         fontWeight: 500,
-        color: 'rgba(35, 35, 35, 0.50)' 
+        color: Charcoal 
     },
     helperReadMoreTxt: {
         fontSize: scaleFont(18),
@@ -1059,7 +1072,7 @@ const tabletStyles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(35, 35, 35, 0.50)'
+        backgroundColor: Charcoal
 
     },
     chatMessageImageTimeStampTxt: {

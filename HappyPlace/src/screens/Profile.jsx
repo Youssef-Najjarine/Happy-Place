@@ -2,7 +2,14 @@ import React, { useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Image, FlatList, Pressable, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import { HappyColor, White, Black } from 'src/constants/colors';
+import { 
+  HappyColor, 
+  White, 
+  Black, 
+  VeryLightGray, 
+  WarmIvory,
+  Rosewater
+} from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
@@ -17,7 +24,7 @@ import ProfileBg from 'assets/images/placeholderProfiles/profile-bg.jpg';
 import Image1 from 'assets/images/placeholderProfiles/profile-1.png';
 const phoneStyles = StyleSheet.create({
   root: {
-    backgroundColor: '#F9F5EA',
+    backgroundColor: WarmIvory,
     width: '100%',
     height: '100%'
   },
@@ -38,7 +45,7 @@ const phoneStyles = StyleSheet.create({
     position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   iconsMatchingSize: {
     width: scaleWidth(20),
@@ -97,7 +104,7 @@ const phoneStyles = StyleSheet.create({
     bottom: scaleHeight(-50),
     right: scaleWidth(137.5),
     position: 'absolute',
-    borderColor: '#F9F5EA'
+    borderColor: WarmIvory
   },
   profilePhoto: {
     borderRadius: scaleWidth(99),
@@ -112,7 +119,7 @@ const phoneStyles = StyleSheet.create({
     top: scaleHeight(69),
     right: scaleWidth(0.5),
     position: 'absolute',
-    borderColor: '#F9F5EA',
+    borderColor: WarmIvory,
       justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: HappyColor
@@ -230,7 +237,7 @@ const phoneStyles = StyleSheet.create({
     height: scaleHeight(37),
     borderRadius: scaleWidth(99),
     width: '100%',
-    backgroundColor: 'rgba(237, 83, 112, 0.10)',
+    backgroundColor: Rosewater,
     justifyContent: 'center',
     alignItems: 'center'
   },
@@ -244,7 +251,7 @@ const phoneStyles = StyleSheet.create({
 });
 const tabletStyles = StyleSheet.create({
   root: {
-    backgroundColor: '#F9F5EA',
+    backgroundColor: WarmIvory,
     width: '100%',
     height: '100%'
   },
@@ -265,7 +272,7 @@ const tabletStyles = StyleSheet.create({
     position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   iconsMatchingSize: {
     width: scaleWidth(26.827),
@@ -324,7 +331,7 @@ const tabletStyles = StyleSheet.create({
     bottom: -93.03,
     right: scaleWidth(304.93),
     position: 'absolute',
-    borderColor: '#F9F5EA'
+    borderColor: WarmIvory
   },
   profilePhoto: {
     borderRadius: scaleWidth(132.792),
@@ -339,7 +346,7 @@ const tabletStyles = StyleSheet.create({
     top: scaleHeight(92.55),
     right: scaleWidth(0.67),
     position: 'absolute',
-    borderColor: '#F9F5EA',
+    borderColor: WarmIvory,
       justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: HappyColor
@@ -457,7 +464,7 @@ const tabletStyles = StyleSheet.create({
     height: scaleHeight(48.46133),
     borderRadius: scaleWidth(132.792),
     width: '100%',
-    backgroundColor: 'rgba(237, 83, 112, 0.10)',
+    backgroundColor: Rosewater,
     justifyContent: 'center',
     alignItems: 'center'
   },

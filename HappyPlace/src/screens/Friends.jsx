@@ -3,7 +3,16 @@ import { View, TouchableOpacity, StyleSheet, Image, FlatList, useWindowDimension
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import { HappyColor, White, Black } from 'src/constants/colors';
+import { 
+  HappyColor, 
+  White, 
+  Black, 
+  VeryLightGray, 
+  SoftGray, 
+  VeryLightLavenderTint,
+  TranslucentBlack,
+  CharcoalNavy
+} from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
@@ -81,7 +90,7 @@ const phoneStyles = StyleSheet.create({
     borderRadius: scaleWidth(99),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   backArrowIcon: {
     width: scaleWidth(28),
@@ -126,7 +135,7 @@ const phoneStyles = StyleSheet.create({
     borderRadius: scaleWidth(67.067),
     height: scaleHeight(39),
     width: '100%',
-    backgroundColor: '#F9F9F9',
+    backgroundColor: VeryLightGray,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
@@ -182,7 +191,7 @@ const phoneStyles = StyleSheet.create({
     fontWeight: 500,
     width: '100%',
     height: '100%',
-    backgroundColor: '#F9F9F9',
+    backgroundColor: VeryLightGray,
     color: Black
   },
   friendsBody: {
@@ -235,7 +244,7 @@ const phoneStyles = StyleSheet.create({
     width: scaleWidth(42),
     height: scaleHeight(42),
     borderRadius: scaleWidth(99),
-    backgroundColor: '#F9F9F9',
+    backgroundColor: VeryLightGray,
     justifyContent: 'center',
     alignItems: 'center'
   },
@@ -255,10 +264,10 @@ const phoneStyles = StyleSheet.create({
       height: scaleHeight(8) 
     },
     shadowOpacity: 1,
-    shadowColor: 'rgba(83, 26, 255, 0.1)',
+    shadowColor: VeryLightLavenderTint,
     elevation: 12,
     position: 'absolute',
-    borderColor: 'rgba(238, 238, 238, 0.40)',
+    borderColor: SoftGray,
     backgroundColor: White,
     zIndex: 2000,
   },
@@ -276,7 +285,7 @@ const phoneStyles = StyleSheet.create({
   },
   friendDropdownOptionsBorderBottom: { 
     borderBottomWidth: scaleHeight(0.5), 
-    borderBottomColor: 'rgba(0, 0, 0, 0.25)' 
+    borderBottomColor: TranslucentBlack 
   },
   unfriendOption: { 
     paddingHorizontal: scaleWidth(16), 
@@ -324,7 +333,7 @@ const phoneStyles = StyleSheet.create({
     borderRadius: scaleWidth(99),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   xIcon: {
     width: scaleWidth(28),
@@ -359,7 +368,7 @@ const tabletStyles = StyleSheet.create({
     height: 78.14,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   backArrowIcon: {
     width: scaleWidth(37.557),
@@ -404,7 +413,7 @@ const tabletStyles = StyleSheet.create({
     borderRadius: scaleWidth(132.792),
     height: scaleHeight(56.34),
     width: '100%',
-    backgroundColor: '#F9F9F9',
+    backgroundColor: VeryLightGray,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
@@ -436,7 +445,7 @@ const tabletStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(27),
     letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 600,
-    color: '#1D1E25'
+    color: CharcoalNavy
   },
   search: {
     height: scaleHeight(51),
@@ -460,7 +469,7 @@ const tabletStyles = StyleSheet.create({
     fontWeight: 500,
     width: '100%',
     height: '100%',
-    backgroundColor: '#F9F9F9',
+    backgroundColor: VeryLightGray,
     color: Black
   },
   friendsBody: {
@@ -513,7 +522,7 @@ const tabletStyles = StyleSheet.create({
       borderRadius: scaleWidth(132.792),
       width: 78.14,
       height: 78.14,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: VeryLightGray,
     justifyContent: 'center',
     alignItems: 'center'
   },
@@ -532,12 +541,11 @@ const tabletStyles = StyleSheet.create({
       width: scaleWidth(10.731), 
       height: scaleHeight(10.731) 
     },
-    shadowColor: 'rgba(83, 26, 255, 1)',
     shadowOpacity: 0.1,
     elevation: 16,
-    shadowColor: 'rgba(83, 26, 255, 0.1)',
+    shadowColor: VeryLightLavenderTint,
     position: 'absolute',
-    borderColor: 'rgba(238, 238, 238, 0.40)',
+    borderColor: SoftGray,
     backgroundColor: White,
     zIndex: 2000,
   },
@@ -555,7 +563,7 @@ const tabletStyles = StyleSheet.create({
   },
   friendDropdownOptionsBorderBottom: { 
     borderBottomWidth: scaleHeight(1.341), 
-    borderBottomColor: 'rgba(0, 0, 0, 0.25)' 
+    borderBottomColor: TranslucentBlack 
   },
   unfriendOption: { 
     paddingHorizontal: scaleWidth(21.46), 
@@ -603,7 +611,7 @@ const tabletStyles = StyleSheet.create({
       height: 78.14,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   xIcon: {
     width: scaleWidth(37.557),

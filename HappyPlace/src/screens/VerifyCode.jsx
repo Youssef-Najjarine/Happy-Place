@@ -2,7 +2,17 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import { HappyColor, White, Black } from 'src/constants/colors';
+import { 
+  HappyColor, 
+  White, 
+  Black, 
+  VeryLightGray, 
+  Charcoal, 
+  IndigoDye, 
+  FrostedWhite,
+  Rosewater,
+  Graphite
+} from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
@@ -29,7 +39,7 @@ const phoneStyles = StyleSheet.create({
     height: '100%',
     flex: 1,
     backgroundColor: White,
-    shadowColor: '#094173',
+    shadowColor: IndigoDye,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     justifyContent: 'space-between'
@@ -49,7 +59,7 @@ const phoneStyles = StyleSheet.create({
     borderRadius: scaleWidth(99),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   backArrowIcon: {
     width: scaleWidth(28),
@@ -65,7 +75,7 @@ const phoneStyles = StyleSheet.create({
     fontSize: scaleFont(16),
     lineHeight: scaleLineHeight(24),
     fontWeight: 500,
-    color: 'rgba(35, 35, 35, 0.50)',
+    color: Charcoal,
   },
   contactType: {
     fontSize: scaleFont(16),
@@ -89,8 +99,8 @@ const phoneStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.16),
     fontWeight: 600,
     borderColor: HappyColor,
-    backgroundColor: 'rgba(237, 83, 112, 0.10)',
-    color: 'rgba(35, 35, 35, 0.80)',
+    backgroundColor: Rosewater,
+    color: Graphite,
     textAlign: 'center'
   },
   input: {
@@ -104,9 +114,9 @@ const phoneStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(24),
     letterSpacing: scaleLetterSpacing(-0.16),
     fontWeight: 600,
-    borderColor: '#F9F9F9',
-    backgroundColor: 'rgba(249, 249, 249, 0.30)',
-    color: 'rgba(35, 35, 35, 0.80)',
+    borderColor: VeryLightGray,
+    backgroundColor: FrostedWhite,
+    color: Graphite,
     textAlign: 'center'
   },
   resendCode: {
@@ -120,7 +130,7 @@ const phoneStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(24),
     letterSpacing: scaleLetterSpacing(-0.16),
     fontWeight: 500,
-    color: 'rgba(35, 35, 35, 0.50)'
+    color: Charcoal
   },
   resendCodeValue: {
     fontSize: scaleFont(16),
@@ -167,7 +177,7 @@ const tabletStyles = StyleSheet.create({
     height: '100%',
     flex: 1,
     backgroundColor: White,
-    shadowColor: '#094173',
+    shadowColor: IndigoDye,
     shadowOpacity: 0.10,
     shadowOffset: { width: 0, height: 10.731 },
     shadowRadius: 20.12,
@@ -188,7 +198,7 @@ const tabletStyles = StyleSheet.create({
     height: 78,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   backArrowIcon: {
     width: scaleWidth(37.557),
@@ -204,7 +214,7 @@ const tabletStyles = StyleSheet.create({
     fontSize: scaleFont(18),
     lineHeight: scaleLineHeight(27),
     fontWeight: 500,
-    color: 'rgba(35, 35, 35, 0.50)',
+    color: Charcoal,
   },
   contactType: {
     fontSize: scaleFont(18),
@@ -228,8 +238,8 @@ const tabletStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.2),
     fontWeight: 600,
     borderColor: HappyColor,
-    backgroundColor: 'rgba(237, 83, 112, 0.10)',
-    color: 'rgba(35, 35, 35, 0.80)',
+    backgroundColor: Rosewater,
+    color: Graphite,
     textAlign: 'center'
   },
   input: {
@@ -243,9 +253,9 @@ const tabletStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(30),
     letterSpacing: scaleLetterSpacing(-0.2),
     fontWeight: 600,
-    borderColor: '#F9F9F9',
-    backgroundColor: 'rgba(249, 249, 249, 0.30)',
-    color: 'rgba(35, 35, 35, 0.80)',
+    borderColor: VeryLightGray,
+    backgroundColor: FrostedWhite,
+    color: Graphite,
     textAlign: 'center'
   },
   resendCode: {
@@ -259,7 +269,7 @@ const tabletStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(32.192),
     letterSpacing: scaleLetterSpacing(-0.215),
     fontWeight: 500,
-    color: 'rgba(35, 35, 35, 0.50)'
+    color: Charcoal
   },
   resendCodeValue: {
     fontSize: scaleFont(21.461),

@@ -3,7 +3,7 @@ import { View, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import DeleteAccountModal from 'src/components/DeleteAccountModal';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import { HappyColor, White, Black } from 'src/constants/colors';
+import { HappyColor, White, Black, VeryLightGray, FrostedWhite } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
@@ -48,7 +48,7 @@ const phoneStyles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   backArrowIcon: {
     width: scaleWidth(28),
@@ -124,8 +124,8 @@ const phoneStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(21),
     letterSpacing: scaleLetterSpacing(-0.14),
     fontWeight: 500,
-    borderColor: '#F9F9F9',
-    backgroundColor: 'rgba(249, 249, 249, 0.30)',
+    borderColor: VeryLightGray,
+    backgroundColor: FrostedWhite,
     color: Black
   },
   bioTextArea: {
@@ -138,15 +138,15 @@ const phoneStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(21),
     letterSpacing: scaleLetterSpacing(-0.14),
     fontWeight: 500,
-    borderColor: '#F9F9F9',
-    backgroundColor: 'rgba(249, 249, 249, 0.30)',
+    borderColor: VeryLightGray,
+    backgroundColor: FrostedWhite,
     color: Black
   },
   line: {
     marginVertical: scaleHeight(20),
     height: scaleHeight(1),
     width: '100%',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   changePassword: {
     marginBottom: scaleHeight(16)
@@ -255,7 +255,7 @@ const tabletStyles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   backArrowIcon: {
     width: scaleWidth(37.557),
@@ -336,8 +336,8 @@ const tabletStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(27),
     letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 500,
-    borderColor: '#F9F9F9',
-    backgroundColor: 'rgba(249, 249, 249, 0.30)',
+    borderColor: VeryLightGray,
+    backgroundColor: FrostedWhite,
     color: Black
   },
   bioTextArea: {
@@ -350,15 +350,15 @@ const tabletStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(27),
     letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 500,
-    borderColor: '#F9F9F9',
-    backgroundColor: 'rgba(249, 249, 249, 0.30)',
+    borderColor: VeryLightGray,
+    backgroundColor: FrostedWhite,
     color: Black
   },
   line: {
     marginVertical: scaleHeight(20),
     height: scaleHeight(1.341),
     width: '100%',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   changePassword: {
     marginBottom: scaleHeight(16)

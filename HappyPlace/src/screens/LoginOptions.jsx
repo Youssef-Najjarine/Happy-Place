@@ -2,10 +2,19 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import { HappyColor, HappyColorFade, White, Black } from 'src/constants/colors';
+import { 
+  HappyColor, 
+  HappyColorFade, 
+  White, Black, 
+  Charcoal, 
+  IndigoDye, 
+  SoftRosePink,
+  RaspberryRed,
+  GraphiteMist
+} from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
-import { scaleWidth, scaleHeight, moderateScale} from 'src/utils/scaleLayout';
+import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
 import CustomText from 'src/components/FontFamilyText';
 import BackArrow from 'assets/images/loginOptions/back-arrow-white-icon.svg';
 import Logo from 'assets/images/global/logo.png';
@@ -41,7 +50,7 @@ const phoneStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
-    backgroundColor: '#D84863'
+    backgroundColor: RaspberryRed
   },
   backArrowIcon: {
     width: scaleWidth(28),
@@ -63,7 +72,7 @@ const phoneStyles = StyleSheet.create({
     width: '100%',
     height: '78.7%',
     backgroundColor: White,
-    shadowColor: '#094173',
+    shadowColor: IndigoDye,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     alignItems: 'center',
@@ -108,7 +117,7 @@ const phoneStyles = StyleSheet.create({
   subhead: {
     fontSize: scaleFont(16),
     lineHeight: scaleLineHeight(24),
-    color: 'rgba(35, 35, 35, 0.50)',
+    color: Charcoal,
     fontWeight: 500
   },
   loginOption1Btn: {
@@ -120,7 +129,7 @@ const phoneStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderColor: 'rgba(237, 83, 112, 0.20)',
+    borderColor: SoftRosePink,
     backgroundColor: HappyColorFade
   },
   icons: {
@@ -138,7 +147,7 @@ const phoneStyles = StyleSheet.create({
   line: {
     width: scaleWidth(153),
     height: scaleHeight(1),
-    backgroundColor: 'rgba(35, 35, 35, 0.20)',
+    backgroundColor: GraphiteMist,
     opacity: 0.6
   },
   or: {
@@ -209,7 +218,7 @@ const tabletStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
-    backgroundColor: '#D84863'
+    backgroundColor: RaspberryRed
   },
   backArrowIcon: {
     width: scaleWidth(37.55733),
@@ -228,7 +237,7 @@ const tabletStyles = StyleSheet.create({
     flex: 1,
     height: '76.6%',
     backgroundColor: White,
-    shadowColor: '#094173',
+    shadowColor: IndigoDye,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     borderTopLeftRadius: 32,
@@ -275,7 +284,7 @@ const tabletStyles = StyleSheet.create({
   subhead: {
     fontSize: scaleFont(18),
     lineHeight: scaleLineHeight(27),
-    color: 'rgba(35, 35, 35, 0.50)',
+    color: Charcoal,
     fontWeight: 500,
   },
   loginOption1Btn: {
@@ -287,7 +296,7 @@ const tabletStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderColor: 'rgba(237, 83, 112, 0.20)',
+    borderColor: SoftRosePink,
     backgroundColor: HappyColorFade
   },
   icons: {
@@ -305,7 +314,7 @@ const tabletStyles = StyleSheet.create({
   line: {
     width: scaleWidth(328.76935),
     height: scaleHeight(1.341),
-    backgroundColor: 'rgba(35, 35, 35, 0.20)',
+    backgroundColor: GraphiteMist,
     opacity: 0.6
   },
   or: {

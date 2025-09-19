@@ -3,7 +3,14 @@ import { View, TouchableOpacity, StyleSheet, Image, FlatList, Pressable, ScrollV
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import { HappyColor, White, Black } from 'src/constants/colors';
+import { 
+  HappyColor, 
+  White, 
+  Black, 
+  VeryLightGray, 
+  SoftGray, 
+  VeryLightLavenderTint
+} from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
@@ -73,7 +80,7 @@ const phoneStyles = StyleSheet.create({
     borderRadius: scaleWidth(99),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   backArrowIcon: {
     width: scaleWidth(28),
@@ -177,7 +184,7 @@ const phoneStyles = StyleSheet.create({
     width: scaleWidth(42),
     height: scaleHeight(42),
     borderRadius: scaleWidth(99),
-    backgroundColor: '#F9F9F9',
+    backgroundColor: VeryLightGray,
     justifyContent: 'center',
     alignItems: 'center'
   },
@@ -197,10 +204,10 @@ const phoneStyles = StyleSheet.create({
       height: scaleHeight(8)
     },
     shadowOpacity: 1,
-    shadowColor: 'rgba(83, 26, 255, 0.1)',
+    shadowColor: VeryLightLavenderTint,
     elevation: 12,
     position: 'absolute',
-    borderColor: 'rgba(238, 238, 238, 0.40)',
+    borderColor: SoftGray,
     backgroundColor: White,
     zIndex: 2000,
   },
@@ -248,7 +255,7 @@ const phoneStyles = StyleSheet.create({
     borderRadius: scaleWidth(99),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   xIcon: {
     width: scaleWidth(28),
@@ -282,7 +289,7 @@ const tabletStyles = StyleSheet.create({
     height: 78.14,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   backArrowIcon: {
     width: scaleWidth(37.557),
@@ -386,7 +393,7 @@ const tabletStyles = StyleSheet.create({
       borderRadius: scaleWidth(132.792),
       width: 78.14,
       height: 78.14,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: VeryLightGray,
     justifyContent: 'center',
     alignItems: 'center'
   },
@@ -405,12 +412,11 @@ const tabletStyles = StyleSheet.create({
         width: scaleWidth(10.731),
         height: scaleHeight(10.731)
     },
-    shadowColor: 'rgba(83, 26, 255, 1)',
     shadowOpacity: 0.1,
     elevation: 16,
-    shadowColor: 'rgba(83, 26, 255, 0.1)',
+    shadowColor: VeryLightLavenderTint,
     position: 'absolute',
-    borderColor: 'rgba(238, 238, 238, 0.40)',
+    borderColor: SoftGray,
     backgroundColor: White,
     zIndex: 2000,
   },
@@ -459,7 +465,7 @@ const tabletStyles = StyleSheet.create({
     height: 78.14,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   xIcon: {
     width: scaleWidth(37.557),

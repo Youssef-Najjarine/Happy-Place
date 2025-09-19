@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import { HappyColor, White, Black } from 'src/constants/colors';
+import { HappyColor, White, Black, VeryLightGray, Charcoal, IndigoDye, FrostedWhite } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
@@ -30,7 +30,7 @@ const phoneStyles = StyleSheet.create({
     height: '100%',
     flex: 1,
     backgroundColor: White,
-    shadowColor: '#094173',
+    shadowColor: IndigoDye,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     justifyContent: 'space-between'
@@ -45,7 +45,7 @@ const phoneStyles = StyleSheet.create({
     marginBottom: scaleHeight(24),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   backArrowIcon: {
     width: scaleWidth(28),
@@ -63,7 +63,7 @@ const phoneStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(24),
     marginBottom: scaleHeight(24),
     fontWeight: 500,
-    color: 'rgba(35, 35, 35, 0.50)',
+    color: Charcoal,
   },
   textBoxLabel: {
     fontSize: scaleFont(14),
@@ -91,8 +91,8 @@ const phoneStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(21),
     letterSpacing: scaleLetterSpacing(-0.14),
     fontWeight: 500,
-    borderColor: '#F9F9F9',
-    backgroundColor: 'rgba(249, 249, 249, 0.30)',
+    borderColor: VeryLightGray,
+    backgroundColor: FrostedWhite,
     color: Black
   },
   confirmBtn: {
@@ -127,7 +127,7 @@ const tabletStyles = StyleSheet.create({
     height: '100%',
     flex: 1,
     backgroundColor: White,
-    shadowColor: '#094173',
+    shadowColor: IndigoDye,
     shadowOpacity: 0.10,
     shadowOffset: { width: 0, height: 10.731 },
     shadowRadius: 20.12,
@@ -143,7 +143,7 @@ const tabletStyles = StyleSheet.create({
     height: 78,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   backArrowIcon: {
     width: scaleWidth(37.557),
@@ -161,7 +161,7 @@ const tabletStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(27),
     marginBottom: scaleHeight(32),
     fontWeight: 500,
-    color: 'rgba(35, 35, 35, 0.50)',
+    color: Charcoal,
   },
   textBoxLabel: {
     fontSize: scaleFont(18),
@@ -189,8 +189,8 @@ const tabletStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(27),
     letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 500,
-    borderColor: '#F9F9F9',
-    backgroundColor: 'rgba(249, 249, 249, 0.30)',
+    borderColor: VeryLightGray,
+    backgroundColor: FrostedWhite,
     color: Black
   },
   confirmBtn: {

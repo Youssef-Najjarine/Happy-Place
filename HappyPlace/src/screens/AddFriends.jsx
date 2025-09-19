@@ -3,7 +3,7 @@ import { View, TouchableOpacity, StyleSheet, Image, FlatList, useWindowDimension
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import { HappyColor, White, Black } from 'src/constants/colors';
+import { HappyColor, White, Black, VeryLightGray } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
@@ -63,7 +63,7 @@ const phoneStyles = StyleSheet.create({
     borderRadius: scaleWidth(99),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   backArrowIcon: {
     width: scaleWidth(28),
@@ -98,7 +98,7 @@ const phoneStyles = StyleSheet.create({
     fontWeight: 500,
     width: '100%',
     height: '100%',
-    backgroundColor: '#F9F9F9',
+    backgroundColor: VeryLightGray,
     color: Black
   },
   suggestionsAndRequests: {
@@ -128,7 +128,7 @@ const phoneStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   sentRequestsTxt: {
     fontSize: scaleFont(14),
@@ -192,7 +192,7 @@ const phoneStyles = StyleSheet.create({
     borderRadius: scaleWidth(99),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   cancelRequestTxt: {
     fontSize: scaleFont(16),
@@ -241,7 +241,7 @@ const tabletStyles = StyleSheet.create({
       height: 78.14,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   backArrowIcon: {
     width: scaleWidth(37.557),
@@ -276,7 +276,7 @@ const tabletStyles = StyleSheet.create({
     fontWeight: 500,
     width: '100%',
     height: '100%',
-    backgroundColor: '#F9F9F9',
+    backgroundColor: VeryLightGray,
     color: Black
   },
   suggestionsAndRequests: {
@@ -370,7 +370,7 @@ const tabletStyles = StyleSheet.create({
     borderRadius: scaleWidth(132.792),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9'
+    backgroundColor: VeryLightGray
   },
   cancelRequestTxt: {
     fontSize: scaleFont(20),

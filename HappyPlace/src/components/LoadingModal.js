@@ -3,13 +3,14 @@ import { Modal, View, StyleSheet, Platform, Animated, Easing } from 'react-nativ
 import { useSelector } from 'react-redux';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
+import { White, SemiTransparentCharcoal, SoftGray, VeryLightLavenderTint } from 'src/constants/colors';
 import InnerArc from 'assets/images/loading/inner-arc.svg';
 import MiddleArc from 'assets/images/loading/middle-arc.svg';
 import OuterArc from 'assets/images/loading/outer-arc.svg';
 const phoneStyles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(35, 35, 35, 0.30)',
+    backgroundColor: SemiTransparentCharcoal,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -18,9 +19,9 @@ const phoneStyles = StyleSheet.create({
     height: scaleHeight(136),
     borderRadius: scaleWidth(21.461),
     borderWidth: scaleWidth(1.341),
-    borderColor: 'rgba(238, 238, 238, 0.40)',
-    backgroundColor: '#FFF',
-    shadowColor: 'rgba(83, 26, 255, 0.10)',
+    borderColor: SoftGray,
+    backgroundColor: White,
+    shadowColor: VeryLightLavenderTint,
     shadowOffset: { width: 10.731, height: 10.731 },
     shadowOpacity: 1,
     shadowRadius: 20.12,
