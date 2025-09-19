@@ -596,7 +596,7 @@ const phoneStyles = StyleSheet.create({
         left: scaleWidth(6),
         backgroundColor: "#F9F5EA"
     },  
-    microphoneView: {
+    microphoneAndSendView: {
         top: scaleHeight(6),
         right: scaleWidth(6),
         backgroundColor: HappyColor
@@ -1136,7 +1136,7 @@ const tabletStyles = StyleSheet.create({
         left: scaleWidth(8.05),
         backgroundColor: "#F9F5EA"
     },  
-    microphoneView: {
+    microphoneAndSendView: {
         top: scaleHeight(8.05),
         right: scaleWidth(8.05),
         backgroundColor: HappyColor
@@ -1144,10 +1144,15 @@ const tabletStyles = StyleSheet.create({
 });
 
 function parseTime(timeStr) {
-  const [time, ampm] = timeStr.split(' ');
-  let [hour, min] = time.split(':').map(Number);
-  if (ampm.toLowerCase() === 'pm' && hour !== 12) hour += 12;
-  if (ampm.toLowerCase() === 'am' && hour === 12) hour = 0;
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+  if (!match) {
+    throw new Error('Invalid time format: ' + timeStr);
+  }
+  let hour = Number(match[1]);
+  const min = Number(match[2]);
+  const ampm = match[3].toLowerCase();
+  if (ampm === 'pm' && hour !== 12) hour += 12;
+  if (ampm === 'am' && hour === 12) hour = 0;
   return hour * 60 + min;
 }
 
@@ -1180,6 +1185,7 @@ export default function ChatGroup() {
     chatDropdown: null,
     ellipsisBtn: null,
   });
+  const sectionListRef = useRef(null);
 
   const [expanded, setExpanded] = useState({});
 
@@ -1201,7 +1207,7 @@ export default function ChatGroup() {
     name: "Jaydon Najjarine Smith",
     username: "jaydon671"
   };
-  const chatMessages = useMemo(() => [
+  const [chatMessages, setChatMessages] = useState(() => [
     {
       id: '1',
       helperChat: true,
@@ -1289,10 +1295,10 @@ export default function ChatGroup() {
           imageTimeStamp: "11:10 am"
         }
       ],      
-      message: "Hi Mary",     
+      message: "Hi Mary",    
       timeStamp: "11:10 am",
       createdAt: new Date(2025, 8, 13, 11, 10),
-    },     
+    },    
     {
       id: '9',
       chatImages: [],        
@@ -1332,7 +1338,7 @@ export default function ChatGroup() {
           imageTimeStamp: "1:10 pm"
         }        
       ],      
-      message: "",     
+      message: "",    
       timeStamp: "1:10 pm",
       createdAt: new Date(2025, 8, 13, 13, 10),
     },
@@ -1350,10 +1356,10 @@ export default function ChatGroup() {
           imageTimeStamp: "2:26 pm"
         }        
       ],      
-      message: "",     
+      message: "",    
       timeStamp: "2:26 pm",
       createdAt: new Date(2025, 8, 13, 14, 26),
-    },     
+    },    
     {
       id: '13',
       helperChat: true,
@@ -1368,11 +1374,11 @@ export default function ChatGroup() {
           imageTimeStamp: "2:28 pm"
         }        
       ],      
-      message: "Hey Mary, let me know if you need anything",     
+      message: "Hey Mary, let me know if you need anything",    
       timeStamp: "2:28 pm",
       createdAt: new Date(2025, 8, 13, 14, 28),
     }          
-  ], []);
+  ]);
 
   const groupedMessages = useMemo(() => {
     const now = new Date(2025, 8, 15);
@@ -1408,6 +1414,19 @@ export default function ChatGroup() {
       };
     });
   }, [chatMessages]);
+
+  useEffect(() => {
+    if (chatMessages.length > 0 && groupedMessages.length > 0) {
+      setTimeout(() => {
+        sectionListRef.current?.scrollToLocation({
+          animated: true,
+          sectionIndex: groupedMessages.length - 1,
+          itemIndex: groupedMessages[groupedMessages.length - 1].data.length,
+          viewPosition: 1,
+        });
+      }, 100);
+    }
+  }, [chatMessages.length, groupedMessages]);
 
   const renderSectionHeader = useCallback(({ section: { title } }) => (
     <View style={styles.dayHeader}>
@@ -1507,9 +1526,22 @@ export default function ChatGroup() {
 
   const ChatMessageSeparator = useCallback(() => <View style={styles.ChatMessageSeparator} />, []);
 
-  const handleTextSubmit = useCallback(() => {
+  const handleSend = useCallback(() => {
+    if (!chatText.trim()) return;
+    const now = new Date();
+    const timeStamp = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+    const newMessage = {
+      id: Date.now().toString(),
+      helperChat: false,
+      chatImages: [],
+      message: chatText,
+      timeStamp,
+      createdAt: now,
+    };
+    setChatMessages(prev => [...prev, newMessage]);
     setChatText('');
-  }, [setChatText]);
+  }, [chatText]);
+
   const handleLoginPressIn = useCallback(() => {
     navigation.navigate('LoginOptions');
   }, [navigation]);
@@ -1788,6 +1820,7 @@ export default function ChatGroup() {
                 </View>
                 <View style={styles.chatGroup}>
                     <SectionList
+                    ref={sectionListRef}
                     sections={groupedMessages}
                     keyExtractor={item => item.id}
                     renderItem={renderChatItem}
@@ -1933,13 +1966,12 @@ export default function ChatGroup() {
                 keyboardType="default"
                 autoCapitalize="sentences"
                 autoCorrect={false}
-                maxLength={100}
                 value={chatText}
                 onChangeText={setChatText}
                 placeholderTextColor="rgba(35, 35, 35, 0.50)"
                 placeholder="Message"
                 returnKeyType="done"
-                onSubmitEditing={handleTextSubmit}
+                onSubmitEditing={handleSend}
                 blurOnSubmit
                 onFocus={() => setIsInputFocused(true)}
                 onBlur={() => setIsInputFocused(false)}
@@ -1952,7 +1984,7 @@ export default function ChatGroup() {
         </View>
         {!chatText.trim() ? 
             (
-                <View style={[styles.microphoneView, styles.textBoxBtnViews]}>
+                <View style={[styles.microphoneAndSendView, styles.textBoxBtnViews]}>
                     <TouchableOpacity style={styles.textBoxBtns}>
                         <MicrophoneIcon {...styles.largeIcons}/>
                     </TouchableOpacity>    
@@ -1960,13 +1992,13 @@ export default function ChatGroup() {
             )
         :
             (
-                <View style={[styles.microphoneView, styles.textBoxBtnViews]}>
-                    <TouchableOpacity style={styles.textBoxBtns}>
+                <View style={[styles.microphoneAndSendView, styles.textBoxBtnViews]}>
+                    <TouchableOpacity style={styles.textBoxBtns} onPress={handleSend}>
                         <SendMessageIcon {...styles.largeIcons}/>
                     </TouchableOpacity>    
                 </View>
             )
-        }                                    
+        }                                        
     </View>
 </Pressable> 
             </View>
