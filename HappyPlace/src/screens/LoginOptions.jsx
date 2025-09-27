@@ -428,7 +428,9 @@ export default function LoginOptions() {
           <CustomText style={styles.termsPolicyBlackTxt}>
             By continuing, you agree to our
           </CustomText>
-          <TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('TermsAndPrivacyInformation')}
+          >
             <CustomText style={styles.termsPolicyHappyTxt}>
               Terms of service
             </CustomText>
@@ -436,7 +438,9 @@ export default function LoginOptions() {
           <CustomText style={styles.termsPolicyBlackTxt}>
             and
           </CustomText>
-          <TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('TermsAndPrivacyInformation')}
+          >
             <CustomText style={styles.termsPolicyHappyTxt}>
               Privacy Policy.
             </CustomText>

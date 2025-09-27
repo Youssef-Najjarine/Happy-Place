@@ -27,6 +27,7 @@ import PhoneIcon from 'assets/images/global/phone-icon.svg';
 import KeyIcon from 'assets/images/global/key-icon.svg';
 import EyeIcon from 'assets/images/global/eye-icon.svg';
 import EyeSlashIcon from 'assets/images/global/eye-slash-icon.svg';
+import authenticationService from '../services/authenticationService';
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -428,22 +429,27 @@ export default function CreateAccount() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword,setConfirmPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState(null);
+
   useFocusEffect(
-  useCallback(() => {
-    setName('');
-    setEmail('');
-    setPhone('');
-    setPassword('');
-    setConfirmPassword('');
+    useCallback(() => {
+      setName('');
+      setEmail('');
+      setPhone('');
+      setPassword('');
+      setConfirmPassword('');
+      setError(null);
     }, [])
-    );
+  );
+
   const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
   const hasMinLen = (v) => v.length >= 8;
   const hasNumber = (v) => /\d/.test(v);
   const hasLowerUpper = (v) => /[a-z]/.test(v) && /[A-Z]/.test(v);
+
   const rules = useMemo(() => ({
     minLen: hasMinLen(password),
     number: hasNumber(password),
@@ -453,7 +459,6 @@ export default function CreateAccount() {
 
   const phoneValid = selectedCreateAccountType === 'phone' ? phone.replace(/\D/g, '').length >= 10 : false;
   const emailValid = selectedCreateAccountType === 'email' ? isEmail(email) : false;
-
   const nameValid = name.trim().length > 0;
 
   const canSubmit = nameValid &&
@@ -461,14 +466,35 @@ export default function CreateAccount() {
     rules.minLen && rules.number && 
     rules.lowerUpper && rules.match;
 
-  const goToVerifyCode = () => {
-    const contact = selectedCreateAccountType === 'email' ? email : phone;
-    navigation.navigate('VerifyCode', { contact, source: 'createAccount' });
+  const handleSignUp = async () => {
+    if (!canSubmit) return;
+
+    try {
+      console.log("START OF TRY CATCH");
+      const response = await authenticationService.signUp({
+        name: name.trim(),
+        email: selectedCreateAccountType === 'email' ? email.trim() : null,
+        phone: selectedCreateAccountType === 'phone' ? phone.replace(/\D/g, '') : null,
+        password: password
+      });
+      console.log("AFTER SIGN UP");
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.log("!response.ok ", errorData.message);
+        throw new Error(errorData.message || 'Registration failed');
+      }
+
+      const contact = selectedCreateAccountType === 'email' ? email : phone;
+      navigation.navigate('VerifyCode', { contact, source: 'createAccount' });
+    } catch (err) {
+      console.log("CATCH ERROR: ", error.message);
+      setError(err.message || 'An error occurred during registration');
+    }
   };
 
   const rootStyle = {
-  ...styles.root,
-  paddingTop: statusBarHeight
+    ...styles.root,
+    paddingTop: statusBarHeight
   };
   const contentContainer = {
     ...styles.contentContainer,
@@ -482,145 +508,146 @@ export default function CreateAccount() {
         contentContainerStyle={contentContainer}
       >
         <View style={styles.part1}>
-            <TouchableOpacity 
-                style={styles.BackArrow}
-                onPress={() => navigation.goBack()}
-            >
-                <BackArrow {...styles.backArrowIcon}/>
-            </TouchableOpacity>
-            <CustomText style={styles.createAccount}>Create an Account</CustomText>
-            <CustomText style={styles.createAccountDesc}>Fill the Details to setup your account</CustomText>
-            <View style={styles.inputsCredentials}>
-                <View style={styles.createAccountType}>
-                    <TouchableOpacity
-                        style={selectedCreateAccountType === 'email' ? styles.createAccountTypeSelectedBtn : styles.createAccountTypeNotSelectedBtn}
-                        onPress={() => setSelectedCreateAccountType('email')}
-                    >
-                        <CustomText style={selectedCreateAccountType === 'email' ? styles.createAccountTypeSelectedtxt : styles.createAccountTypeNotSelectedTxt}>Email Address</CustomText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={selectedCreateAccountType === 'phone' ? styles.createAccountTypeSelectedBtn : styles.createAccountTypeNotSelectedBtn}
-                        onPress={() => setSelectedCreateAccountType('phone')}
-                    >
-                        <CustomText style={selectedCreateAccountType === 'phone' ? styles.createAccountTypeSelectedtxt : styles.createAccountTypeNotSelectedTxt}>Phone Number</CustomText>
-                    </TouchableOpacity>
-                </View>
-                <View style={styles.emailPhoneView}>
-                    <CustomText style={styles.textBoxLabel}>Full Name</CustomText>
-                    <View>
-                        <CustomTextInput
-                          style={styles.input}
-                          keyboardType="default"
-                          autoCapitalize="words"   
-                          autoCorrect={false}
-                          textContentType="name"
-                          autoComplete="name"  
-                          value={name}
-                          onChangeText={setName}
-                        />
-                        <ProfileIcon {...styles.textBoxIcon}/>
-                    </View>
-                </View>
-                {selectedCreateAccountType === 'email' && (
-                    <View style={styles.emailPhoneView}>
-                        <CustomText style={styles.textBoxLabel}>Email</CustomText>
-                        <View>
-                            <CustomTextInput
-                            style={styles.input}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            value={email}
-                            onChangeText={setEmail}
-                            />
-                            <EmailIcon {...styles.textBoxIcon}/>
-                        </View>
-                    </View>
-                )}
-                {selectedCreateAccountType === 'phone' && (
-                    <View style={styles.emailPhoneView}>
-                        <CustomText style={styles.textBoxLabel}>Phone Number</CustomText>
-                        <View>
-                            <CustomMaskedTextInput
-                            style={styles.input}
-                            mask="(999) 999-9999"
-                            keyboardType="phone-pad"
-                            value={phone}
-                            onChangeText={(formatted, extracted) => setPhone(extracted || '')}
-                            />
-                            <PhoneIcon {...styles.textBoxIcon}/>
-                        </View>
-                    </View>
-                )}
-                <View style={styles.passwordView}>
-                    <CustomText style={styles.textBoxLabel}>Password</CustomText>
-                    <View>
-                        <CustomTextInput
-                            style={[styles.input, styles.largeRightPadding]}
-                            secureTextEntry={!showPassword}
-                            value={password}
-                            onChangeText={setPassword}
-                            textContentType="newPassword"
-                            autoComplete="password-new"
-                        />
-                        <TouchableOpacity style={styles.eyeIcons} onPress={() => setShowPassword(!showPassword)}>
-                        {showPassword ? <EyeSlashIcon {...styles.eyeIcon} /> : <EyeIcon {...styles.eyeIcon} />}
-                        </TouchableOpacity>
-                        <KeyIcon {...styles.textBoxIcon}/>
-                    </View>
-                </View>
-                <View style={styles.passwordView}>
-                    <CustomText style={styles.textBoxLabel}>Confirm-Password</CustomText>
-                    <View>
-                        <CustomTextInput
-                            style={[styles.input, styles.largeRightPadding]}
-                            secureTextEntry={!showConfirmPassword}
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                            textContentType="password"
-                            autoComplete="password"
-                        />
-                        <TouchableOpacity style={styles.eyeIcons} onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                        {showConfirmPassword ? <EyeSlashIcon {...styles.eyeIcon} /> : <EyeIcon {...styles.eyeIcon} />}
-                        </TouchableOpacity>
-                        <KeyIcon {...styles.textBoxIcon}/>
-                    </View>
-                </View>
-                <View style={styles.passwordRequirementsView}>
-                    {[
-                        { ok: rules.minLen, text: 'Minimum 8 characters' },
-                        { ok: rules.number, text: 'At least 1 number (0–9)' },
-                        { ok: rules.lowerUpper, text: 'At least 1 lowercase and 1 uppercase letter' },
-                        { ok: rules.match, text: 'Passwords matching' },
-                    ].map((r, i) => (
-                        <View key={i} style={styles.passwordRequirements}>
-                        {r.ok ? <GreenCheckIcon {...styles.passwordCheckIcons}/> : <RedXIcon {...styles.passwordCheckIcons}/>}
-                        <CustomText style={[styles.passwordRequirementTxt, { opacity: r.ok ? 1 : 0.7 }]}>
-                            {r.text}
-                        </CustomText>
-                        </View>
-                    ))}
-                </View>
+          <TouchableOpacity 
+            style={styles.BackArrow}
+            onPress={() => navigation.goBack()}
+          >
+            <BackArrow {...styles.backArrowIcon}/>
+          </TouchableOpacity>
+          <CustomText style={styles.createAccount}>Create an Account</CustomText>
+          <CustomText style={styles.createAccountDesc}>Fill the Details to setup your account</CustomText>
+          {error && <CustomText style={{ color: 'red', marginBottom: scaleHeight(10) }}>{error}</CustomText>}
+          <View style={styles.inputsCredentials}>
+            <View style={styles.createAccountType}>
+              <TouchableOpacity
+                style={selectedCreateAccountType === 'email' ? styles.createAccountTypeSelectedBtn : styles.createAccountTypeNotSelectedBtn}
+                onPress={() => setSelectedCreateAccountType('email')}
+              >
+                <CustomText style={selectedCreateAccountType === 'email' ? styles.createAccountTypeSelectedtxt : styles.createAccountTypeNotSelectedTxt}>Email Address</CustomText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={selectedCreateAccountType === 'phone' ? styles.createAccountTypeSelectedBtn : styles.createAccountTypeNotSelectedBtn}
+                onPress={() => setSelectedCreateAccountType('phone')}
+              >
+                <CustomText style={selectedCreateAccountType === 'phone' ? styles.createAccountTypeSelectedtxt : styles.createAccountTypeNotSelectedTxt}>Phone Number</CustomText>
+              </TouchableOpacity>
             </View>
-        </View>
-        <View style={styles.part2}>
+            <View style={styles.emailPhoneView}>
+              <CustomText style={styles.textBoxLabel}>Full Name</CustomText>
+              <View>
+                <CustomTextInput
+                  style={styles.input}
+                  keyboardType="default"
+                  autoCapitalize="words"   
+                  autoCorrect={false}
+                  textContentType="name"
+                  autoComplete="name"  
+                  value={name}
+                  onChangeText={setName}
+                />
+                <ProfileIcon {...styles.textBoxIcon}/>
+              </View>
+            </View>
+            {selectedCreateAccountType === 'email' && (
+              <View style={styles.emailPhoneView}>
+                <CustomText style={styles.textBoxLabel}>Email</CustomText>
+                <View>
+                  <CustomTextInput
+                    style={styles.input}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={email}
+                    onChangeText={setEmail}
+                  />
+                  <EmailIcon {...styles.textBoxIcon}/>
+                </View>
+              </View>
+            )}
+            {selectedCreateAccountType === 'phone' && (
+              <View style={styles.emailPhoneView}>
+                <CustomText style={styles.textBoxLabel}>Phone Number</CustomText>
+                <View>
+                  <CustomMaskedTextInput
+                    style={styles.input}
+                    mask="(999) 999-9999"
+                    keyboardType="phone-pad"
+                    value={phone}
+                    onChangeText={(formatted, extracted) => setPhone(extracted || '')}
+                  />
+                  <PhoneIcon {...styles.textBoxIcon}/>
+                </View>
+              </View>
+            )}
+            <View style={styles.passwordView}>
+              <CustomText style={styles.textBoxLabel}>Password</CustomText>
+              <View>
+                <CustomTextInput
+                  style={[styles.input, styles.largeRightPadding]}
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                  textContentType="newPassword"
+                  autoComplete="password-new"
+                />
+                <TouchableOpacity style={styles.eyeIcons} onPress={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <EyeSlashIcon {...styles.eyeIcon} /> : <EyeIcon {...styles.eyeIcon} />}
+                </TouchableOpacity>
+                <KeyIcon {...styles.textBoxIcon}/>
+              </View>
+            </View>
+            <View style={styles.passwordView}>
+              <CustomText style={styles.textBoxLabel}>Confirm-Password</CustomText>
+              <View>
+                <CustomTextInput
+                  style={[styles.input, styles.largeRightPadding]}
+                  secureTextEntry={!showConfirmPassword}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  textContentType="password"
+                  autoComplete="password"
+                />
+                <TouchableOpacity style={styles.eyeIcons} onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  {showConfirmPassword ? <EyeSlashIcon {...styles.eyeIcon} /> : <EyeIcon {...styles.eyeIcon} />}
+                </TouchableOpacity>
+                <KeyIcon {...styles.textBoxIcon}/>
+              </View>
+            </View>
+            <View style={styles.passwordRequirementsView}>
+              {[
+                { ok: rules.minLen, text: 'Minimum 8 characters' },
+                { ok: rules.number, text: 'At least 1 number (0–9)' },
+                { ok: rules.lowerUpper, text: 'At least 1 lowercase and 1 uppercase letter' },
+                { ok: rules.match, text: 'Passwords matching' },
+              ].map((r, i) => (
+                <View key={i} style={styles.passwordRequirements}>
+                  {r.ok ? <GreenCheckIcon {...styles.passwordCheckIcons}/> : <RedXIcon {...styles.passwordCheckIcons}/>}
+                  <CustomText style={[styles.passwordRequirementTxt, { opacity: r.ok ? 1 : 0.7 }]}>
+                    {r.text}
+                  </CustomText>
+                </View>
+              ))}
+            </View>
+          </View>
+          <View style={styles.part2}>
             <View style={styles.signUp}>
               <TouchableOpacity
-                  style={[
-                      styles.signUpBtn,
-                      !canSubmit && { opacity: 0.5 }
-                  ]}
-                  disabled={!canSubmit}
-                  onPress={goToVerifyCode}
+                style={[
+                  styles.signUpBtn,
+                  !canSubmit && { opacity: 0.5 }
+                ]}
+                disabled={!canSubmit}
+                onPress={handleSignUp}
               >
-                  <CustomText style={styles.signUpBtnText}>Sign up</CustomText>
+                <CustomText style={styles.signUpBtnText}>Sign up</CustomText>
               </TouchableOpacity>
             </View>
             <View style={styles.alreadyHaveAccount}>
-                <CustomText style={styles.alreadyHaveAccountTxt}>Already have an account?</CustomText>
-                <TouchableOpacity onPress={() => navigation.navigate('LoginOptions')}>
-                    <CustomText style={styles.loginTxt}>Login</CustomText>
-                </TouchableOpacity>
+              <CustomText style={styles.alreadyHaveAccountTxt}>Already have an account?</CustomText>
+              <TouchableOpacity onPress={() => navigation.navigate('LoginOptions')}>
+                <CustomText style={styles.loginTxt}>Login</CustomText>
+              </TouchableOpacity>
             </View>
+          </View>
         </View>
       </ScrollView>
     </View>
