@@ -9,6 +9,7 @@ module.exports = {
           assets: './assets',
           components: './src/components',
           screens: './src/screens',
+          services: './src/services',
           store: './src/store',
         },
         extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],

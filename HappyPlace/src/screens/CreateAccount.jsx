@@ -27,7 +27,7 @@ import PhoneIcon from 'assets/images/global/phone-icon.svg';
 import KeyIcon from 'assets/images/global/key-icon.svg';
 import EyeIcon from 'assets/images/global/eye-icon.svg';
 import EyeSlashIcon from 'assets/images/global/eye-slash-icon.svg';
-import authenticationService from '../services/authenticationService';
+import authenticationService from 'services/authenticationService';
 
 const phoneStyles = StyleSheet.create({
   root: {
