@@ -429,7 +429,11 @@ export default function LoginOptions() {
             By continuing, you agree to our
           </CustomText>
           <TouchableOpacity
-            onPress={() => navigation.navigate('TermsAndPrivacyInformation')}
+            onPress={() =>
+              navigation.navigate('TermsAndPrivacyInformation', {
+                initialTab: 'termsOfService',
+              })
+            }
           >
             <CustomText style={styles.termsPolicyHappyTxt}>
               Terms of service
@@ -439,7 +443,11 @@ export default function LoginOptions() {
             and
           </CustomText>
           <TouchableOpacity
-            onPress={() => navigation.navigate('TermsAndPrivacyInformation')}
+            onPress={() =>
+              navigation.navigate('TermsAndPrivacyInformation', {
+                initialTab: 'privacyPolicy',
+              })
+            }
           >
             <CustomText style={styles.termsPolicyHappyTxt}>
               Privacy Policy.

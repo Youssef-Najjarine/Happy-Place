@@ -498,6 +498,7 @@ export default function EditProfile() {
       <ScrollView 
         style={styles.root} 
         contentContainerStyle={contentContainer}
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.part1}>
           <View style={styles.header}>
