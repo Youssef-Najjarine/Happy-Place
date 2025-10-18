@@ -1,0 +1,34 @@
+[
+  {
+    "ContainingType": "WebApp.Controllers.AuthenticationController",
+    "Method": "SignUpWithEmail",
+    "RelativePath": "api/Authentication/SignUpWithEmail",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "HappyWorld.HappyPlace.Web.Models.Authentication.AuthenticationSignUpWithEmailModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WebApp.Controllers.AuthenticationController",
+    "Method": "SignUpWithEmail",
+    "RelativePath": "api/Authentication/SignUpWithEmail",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "HappyWorld.HappyPlace.Web.Models.Authentication.AuthenticationSignUpWithEmailModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]
