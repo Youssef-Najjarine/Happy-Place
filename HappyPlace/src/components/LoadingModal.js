@@ -7,6 +7,7 @@ import { White, SemiTransparentCharcoal, SoftGray, VeryLightLavenderTint } from 
 import InnerArc from 'assets/images/loading/inner-arc.svg';
 import MiddleArc from 'assets/images/loading/middle-arc.svg';
 import OuterArc from 'assets/images/loading/outer-arc.svg';
+
 const phoneStyles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -27,38 +28,34 @@ const phoneStyles = StyleSheet.create({
     shadowRadius: 20.12,
     ...(Platform.OS === 'android' && { elevation: 10 }),
   },
-arcInner: {
-  // width: scaleWidth(12),
-  // height: scaleHeight(12),
-  width: scaleWidth(22),
-  height: scaleHeight(22),
-  position: 'absolute',
-  top: (scaleHeight(136 - 12)) / 2,
-  left: (scaleWidth(136 - 12)) / 2
-},
-arcMiddle: {
-  // width: scaleWidth(52),
-  // height: scaleHeight(52),
-  width: scaleWidth(51.333),
-  height: scaleHeight(51.333),
-  position: 'absolute',
-  top: (scaleHeight(136 - 52)) / 2,
-  left: (scaleWidth(136 - 52)) / 2
-},
-arcOuter: {
-  // width: scaleWidth(112),
-  // height: scaleHeight(112),
-  width: scaleWidth(77),
-  height: scaleHeight(77),
-  position: 'absolute',
-  top: (scaleHeight(136 - 112)) / 2,
-  left: (scaleWidth(136 - 112)) / 2
-},
+  arcInner: {
+    width: scaleWidth(22),
+    height: scaleHeight(22),
+    position: 'absolute',
+    top: (scaleHeight(136 - 22)) / 2,
+    left: (scaleWidth(136 - 22)) / 2
+  },
+  arcMiddle: {
+    width: scaleWidth(51.333),
+    height: scaleHeight(51.333),
+    position: 'absolute',
+    top: (scaleHeight(136 - 51.333)) / 2,
+    left: (scaleWidth(136 - 51.333)) / 2
+  },
+  arcOuter: {
+    width: scaleWidth(77),
+    height: scaleHeight(77),
+    position: 'absolute',
+    top: (scaleHeight(136 - 77)) / 2,
+    left: (scaleWidth(136 - 77)) / 2
+  }
 });
+
 const tabletStyles = StyleSheet.create({});
+
 const LoadingModal = () => {
   const isLoading = useSelector((state) => state.loading.isLoading);
-const styles = useResponsiveStyles(phoneStyles, tabletStyles);
+  const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const outerRotate = useRef(new Animated.Value(0)).current;
   const middleRotate = useRef(new Animated.Value(0)).current;
   const innerRotate = useRef(new Animated.Value(0)).current;
@@ -135,4 +132,5 @@ const styles = useResponsiveStyles(phoneStyles, tabletStyles);
     </Modal>
   );
 };
+
 export default LoadingModal;
