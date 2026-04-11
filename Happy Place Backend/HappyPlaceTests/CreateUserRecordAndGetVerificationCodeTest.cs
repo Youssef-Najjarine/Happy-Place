@@ -1,9 +1,4 @@
-﻿using HappyWorld.HappyPlace.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using HappyWorld.HappyPlace.Email;
 
 namespace HappyWorld.HappyPlace
 {
@@ -12,13 +7,17 @@ namespace HappyWorld.HappyPlace
         [Fact]
         public void CreateUserRecordAndGetVerificationCodeBasicTest()
         {
-            using var dbContext = HappyPlaceDbContext.Create();
+            //using var dbContext = HappyPlaceDbContext.Create();
+            Random random = new Random();
             String email = "ynajjarine@gmail.com";
-            String name = "Test User";
-            String password = "TestPassword!23";
-            String username = "testuser123";
-            String verificationCode = UserAccountRegistrar.CreateUserRecordAndGetVerificationCode(email, name, password, username, dbContext);
-            Console.WriteLine($"VERIFICATION CODE: {verificationCode}");
+            String verificationCode = random.Next(100000, 1000000).ToString();
+            String name = "Youssef Najjarine";
+            //String password = "TestPassword!23";
+            //String username = "testuser123";
+            EmailVerificationNotification.Send(email, name, verificationCode);
+
+            //String verificationCode = UserAccountRegistrar.CreateUserRecordAndGetVerificationCode(email, name, password, username, dbContext);
+            //Console.WriteLine($"VERIFICATION CODE: {verificationCode}");
         }
     }
 }

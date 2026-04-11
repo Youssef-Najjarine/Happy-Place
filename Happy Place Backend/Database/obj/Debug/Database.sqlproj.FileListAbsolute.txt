@@ -1,6 +1,0 @@
-C:\Users\youss\Desktop\repos\Happy-Place\Happy Place Backend\Database\bin\Debug\Database.dacpac
-C:\Users\youss\Desktop\repos\Happy-Place\Happy Place Backend\Database\bin\Debug\Database.dll
-C:\Users\youss\Desktop\repos\Happy-Place\Happy Place Backend\Database\bin\Debug\Database.pdb
-C:\Users\youss\Desktop\repos\Happy-Place\Happy Place Backend\Database\obj\Debug\Database.sqlproj.AssemblyReference.cache
-C:\Users\youss\Desktop\repos\Happy-Place\Happy Place Backend\Database\obj\Debug\Database.dll
-C:\Users\youss\Desktop\repos\Happy-Place\Happy Place Backend\Database\obj\Debug\Database.pdb

@@ -1,11 +1,6 @@
 ﻿using HappyWorld.HappyPlace.Data;
-using Microsoft.EntityFrameworkCore;
+using HappyWorld.HappyPlace.Email;
 using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace HappyWorld.HappyPlace;
 
@@ -17,7 +12,17 @@ public class UserAccountRegistrar
         using var dbContext = HappyPlaceDbContext.Create();
         String username = GenerateUsername(email, name, dbContext);
         String verificationCode = CreateUserRecordAndGetVerificationCode(email, name, password, username, dbContext);
-        SendEmailVerificationNotification(email, verificationCode);
+        EmailVerificationNotification.Send(email, name, verificationCode);
+    }
+    public static Boolean VerifyEmailAddress(String email, String verificationCode)
+    {
+        using var dbContext = HappyPlaceDbContext.Create();
+        var pendingUserAccount = dbContext.PendingUserAccounts.SingleOrDefault(field => field.EmailAddress == email && field.VerificationCode == verificationCode);
+        if (pendingUserAccount == null)
+        {
+            return false;
+        }
+        return true;
     }
     public static string GenerateUsername(string email, string name, HappyPlaceDbContext dbContext)
     {
@@ -86,14 +91,15 @@ public class UserAccountRegistrar
     }
     public static String CreateUserRecordAndGetVerificationCode(String email, String name, String password, String username, HappyPlaceDbContext dbContext)
     {
-        // Send a verification code to the user's email address
         // Hash Password
+        String hashedPassword = PasswordHasher.HashPassword(password);
+        // Generate Verification Code
+        Random random = new Random();
+        String verificationCode = random.Next(100000, 1000000).ToString();
         // Save this record to the PendingUserAccounts table in the database with the verification code
-        // Retrieve that same verification code and return it
-        throw new NotImplementedException();
-    }
-    private static void SendEmailVerificationNotification(String email, String verificationCode)
-    {
-        throw new NotImplementedException();
+        dbContext.PendingUserAccounts.Add(new PendingUserAccount { EmailAddress = email, DisplayName = name, Username = username, HashedPassword = hashedPassword, VerificationCode = verificationCode });
+        dbContext.SaveChanges();
+        //  return Verification Code
+        return verificationCode;
     }
 }

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace HappyWorld.HappyPlace.Email;
+﻿namespace HappyWorld.HappyPlace.Email;
 
 public abstract class EmailSender
 {
@@ -18,4 +12,14 @@ public abstract class EmailSender
     {
         _initializer = initializer;
     }
+
+    internal static EmailSender Create()
+    {
+        if (_initializer != null) return _initializer();
+        return new MailKitEmailSender();
+    }
+
+    public abstract MailMessage NewMailMessage();
+
+    public abstract void Send(MailMessage message);
 }

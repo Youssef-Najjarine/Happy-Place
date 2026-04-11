@@ -1,5 +1,4 @@
-﻿
-namespace HappyWorld.HappyPlace.Web.Models;
+﻿namespace HappyWorld.HappyPlace.Web.Models;
 
 public class ResponseModel
 {
@@ -15,7 +14,6 @@ public class ResponseModel
     public IEnumerable<String> ErrorMessages { get; }
 
     // Methods
-
     internal static ResponseModel AsSuccess()
     {
         return new(true, []);
