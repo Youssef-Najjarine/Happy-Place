@@ -1,35 +1,35 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 
-const CustomText = (props) => {
-  const { style = {}, ...rest } = props;
-  const fontWeight = style.fontWeight || 400;
-  const fontStyle = style.fontStyle || 'normal';
+const weightMap = {
+  100: 'Thin',
+  200: 'ExtraLight',
+  300: 'Light',
+  400: 'Regular',
+  500: 'Medium',
+  600: 'SemiBold',
+  700: 'Bold',
+  800: 'ExtraBold',
+  900: 'Black',
+};
 
-  // Map weight to font file name (based on your font files)
-  const weightMap = {
-    100: 'Thin',
-    200: 'ExtraLight',
-    300: 'Light',
-    400: 'Regular',
-    500: 'Medium',
-    600: 'SemiBold',
-    700: 'Bold',
-    800: 'ExtraBold',
-    900: 'Black',
-  };
+const CustomText = ({ style = {}, ...rest }) => {
+  const flat = StyleSheet.flatten(style) || {};
 
-  const baseName = weightMap[fontWeight] || 'Regular'; // Fallback to 400
+  const numericWeight = Number(flat.fontWeight) || 400;
+  const fontStyle = flat.fontStyle || 'normal';
+
+  const baseName = weightMap[numericWeight] || 'Regular';
   const italicSuffix = fontStyle === 'italic' ? 'Italic' : '';
   const fontFamily = `Urbanist-${baseName}${italicSuffix}`;
 
-  // Merge styles, removing fontWeight/fontStyle to avoid conflicts
   const mergedStyle = {
-    ...style,
+    ...flat,
     fontFamily,
-    fontWeight: undefined, // Let fontFamily handle weight
-    fontStyle: undefined,  // Let fontFamily handle style
+    fontWeight: undefined,
+    fontStyle: undefined,
   };
+
   return <Text style={mergedStyle} {...rest} />;
 };
 

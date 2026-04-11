@@ -1,15 +1,17 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, LogBox } from 'react-native';
+import React, {useCallback} from 'react';
+import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
+import { HappyColor, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
-import { useNavigation } from '@react-navigation/native';
+import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
+import { scaleWidth, scaleHeight, moderateScale} from 'src/utils/scaleLayout';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import CustomText from 'src/components/FontFamilyText';
-import HappyEmoji from 'assets/images/happy-emoji.svg';
-import SadEmoji from 'assets/images/sad-emoji.svg';
-import Logo from 'assets/images/logo.png';
-
-const HappyColor = '#ED5370';
-const White = '#FFFFFF';
-const Black = '#232323';
+import Logo from 'assets/images/global/logo.png';
+import HappyEmoji from 'assets/images/global/happy-emoji.svg';
+import SadEmoji from 'assets/images/global/sad-emoji.svg';
+import { useDispatch } from 'react-redux';
+import { showLoading, hideLoading } from 'store/loadingSlice'; 
 const phoneStyles = StyleSheet.create({
   root: {
     backgroundColor: HappyColor,
@@ -17,371 +19,420 @@ const phoneStyles = StyleSheet.create({
     width: '100%'
   },
   topSection: {
-    height: '40%',
+    height: '34.5%',
     width: '100%'
   },
   logoBox: {
     height: '100%',
     width: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   logoImg: {
-    width: '50%',
-    height: '59%'
+    width: scaleWidth(188),
+    height: scaleHeight(188),
+    resizeMode: 'contain'
   },
   card: {
-    height:'60%',
-    backgroundColor: White,
+    height: '65.5%',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    paddingTop: scaleHeight(24),
+    backgroundColor: White,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 24,
-    paddingBottom: 34
+    justifyContent: 'space-between'
   },
   header: {
-    height: '15%',
+    height: scaleHeight(73),
     justifyContent: 'space-between'
   },
   helpButtons: {
-    height: '35%',
-    width: '83%',
-    justifyContent: 'space-between',
+    height: scaleHeight(168),
+    width: scaleWidth(311),
+    justifyContent: 'space-between'
   },
   signUpLogIn: {
-    width: '73%',
-    height: '19%',
+    width: scaleWidth(271),
+    height: scaleHeight(92),
     justifyContent: 'space-between'
   },
   heading: {
+    fontSize: scaleFont(32),
+    lineHeight: scaleLineHeight(38.4),
+    letterSpacing: scaleLetterSpacing(-0.32),
     color: HappyColor,
-    fontSize: 32,
-    fontWeight: 800,
-    lineHeight: 38.4,
-    letterSpacing: -0.32
+    fontWeight: 800
   },
   subhead: {
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
     color: Black,
     textAlign: 'center',
-    fontSize: 18,
-    fontWeight: 600,
-    lineHeight: 27,
-    letterSpacing: -0.18
+    fontWeight: 600
   },
   helpMeBtn: {
+    gap: scaleWidth(10),
+    borderWidth: scaleWidth(1.5),
+    borderRadius: scaleWidth(99),
+    height: scaleHeight(76),
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    borderWidth: 1.5,
     borderColor: Black,
-    borderRadius: 99,
-    height: 76,
     backgroundColor: White
   },
   emojis: {
-    width: 32,
-    height: 32
+    width: scaleWidth(32),
+    height: scaleHeight(32),
+    resizeMode: 'contain'
   },
   helpMeBtnText: {
+    fontSize: scaleFont(24),
+    lineHeight: scaleLineHeight(36),
+    letterSpacing: scaleLetterSpacing(-0.48),
     color: Black,
-    fontSize: 24,
-    fontWeight: 700,
-    lineHeight: 36,
-    letterSpacing: -0.48
+    fontWeight: 700
   },
   iCanHelpBtn: {
-   width: '100%',
+    gap: scaleWidth(10),
+    borderWidth: scaleWidth(0),
+    borderRadius: scaleWidth(99),
+    height: scaleHeight(76),
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    borderWidth: 0,
-    borderRadius: 99,
-    height: 76,
     backgroundColor: HappyColor
   },
   iCanHelpBtnText: {
+    fontSize: scaleFont(24),
+    lineHeight: scaleLineHeight(36),
+    letterSpacing: scaleLetterSpacing(-0.48),
     color: White,
-    fontSize: 24,
     fontWeight: 700,
-    lineHeight: 36,
-    letterSpacing: -0.48
   },
   signUp: {
+    height: scaleHeight(31),
     width: '100%',
-    height: 31,
     alignItems: 'center'
   },
   signUpBtn: {
+    width: scaleWidth(112),
+    borderRadius: scaleWidth(99),
     backgroundColor: Black,
-    borderRadius: 99,
-    width: '41.3%',
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center'
   },
   signUpBtnText: {
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
     color: White,
-    fontSize: 18,
-    fontWeight: 800,
-    lineHeight: 27,
-    letterSpacing: -0.18
+    fontWeight: 800
   },
   divider: {
+    gap: scaleWidth(8),
+    height: scaleHeight(21),
     width: '100%',
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    height: 21
-
+    alignItems: 'center'
   },
   line: {
-    width: '45%',
-    height: 1,
+    width: scaleWidth(121),
+    height: scaleHeight(1),
     backgroundColor: Black,
     opacity: 0.6
   },
   or: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
     color: Black,
-    fontSize: 14,
     fontWeight: 600,
-    lineHeight: 21,
-    letterSpacing: -0.14,
     opacity: 0.8
   },
   alreadyHaveAccount: {
+    height: scaleHeight(24),
+    gap: scaleWidth(5),
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    height: 24,
-    gap: 5
+    justifyContent: 'center'
   },
   loginText: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
     color: Black,
-    fontSize: 16,
-    fontWeight: 600,
-    lineHeight: 24,
-    letterSpacing: -0.16
+    fontWeight: 600
   },
   loginLink: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
     color: HappyColor,
-    fontSize: 16,
-    fontWeight: 600,
-    lineHeight: 24,
-    letterSpacing: -0.16
+    fontWeight: 600
   }
 });
+
 const tabletStyles = StyleSheet.create({
-root: {
+  root: {
     backgroundColor: HappyColor,
     height: '100%',
     width: '100%'
   },
   topSection: {
-    height: '39%',
+    height: '35.4%',
     width: '100%'
   },
   logoBox: {
     height: '100%',
     width: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   logoImg: {
-    width: '34%',
-    height: '58%'
+    width: scaleWidth(252.17),
+    height: scaleHeight(252.17),
+    resizeMode: 'contain'
   },
   card: {
-    height:'61%',
-    backgroundColor: White,
+    paddingTop: scaleHeight(32),
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
+    height: '64.6%',
+    backgroundColor: White,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 32,
-    paddingBottom: 50
+    justifyContent: 'space-between'
   },
   header: {
-    height: '13.3%',
+    height: scaleHeight(91.73),
     justifyContent: 'space-between'
   },
   helpButtons: {
-    width: '94%',
-    height: '29.6%',
+    width: scaleWidth(696),
+    height: scaleHeight(224.76668),
     justifyContent: 'space-between'
   },
   signUpLogIn: {
-    width: '79%',
-    height: '16.5%',
+    width: scaleWidth(584),
+    height: scaleHeight(103.09533),
     justifyContent: 'space-between'
   },
   heading: {
+    fontSize: scaleFont(40),
+    lineHeight: scaleLineHeight(48),
+    letterSpacing: scaleLetterSpacing(-0.4),
     color: HappyColor,
-    fontSize: 50,
-    fontWeight: 800,
-    lineHeight: 48,
-    letterSpacing: -0.4
+    fontWeight: 800
   },
   subhead: {
+    fontSize: scaleFont(22),
+    lineHeight: scaleLineHeight(33),
+    letterSpacing: scaleLetterSpacing(-0.22),
     color: Black,
     textAlign: 'center',
-    fontSize: 28,
-    fontWeight: 500,
-    lineHeight: 33,
-    letterSpacing: -0.22
+    fontWeight: 500
   },
   helpMeBtn: {
+    height: scaleHeight(101.65334),
+    gap: scaleWidth(13.41),
+    borderWidth: scaleWidth(2.012),
+    borderRadius: scaleWidth(132.792),
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 13.41,
-    borderWidth: 2.012,
     borderColor: Black,
-    borderRadius: 132.792,
-    height: 101.7,
     backgroundColor: White
   },
   emojis: {
-    width: 43,
-    height: 43
+    width: scaleWidth(42.92267,696),
+    height: scaleHeight(42.92267),
+    resizeMode: 'contain'
   },
   helpMeBtnText: {
+    fontSize: scaleFont(32),
+    lineHeight: scaleLineHeight(48),
+    letterSpacing: scaleLetterSpacing(-0.64),
     color: Black,
-    fontSize: 32,
-    fontWeight: 700,
-    lineHeight: 48,
-    letterSpacing: -0.64
+    fontWeight: 700
   },
   iCanHelpBtn: {
-   width: '100%',
+    height: scaleHeight(101.65334),
+    gap: scaleWidth(13.41),
+    borderRadius: scaleWidth(132.792),
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 13.41,
     borderWidth: 0,
-    borderRadius: 132.792,
-    height: 101.7,
     backgroundColor: HappyColor
   },
   iCanHelpBtnText: {
+    fontSize: scaleFont(32),
+    lineHeight: scaleLineHeight(48),
+    letterSpacing: scaleLetterSpacing(-0.64),
     color: White,
-    fontSize: 32,
-    fontWeight: 700,
-    lineHeight: 48,
-    letterSpacing: -0.64
+    fontWeight: 700
   },
   signUp: {
+    height: scaleHeight(38.6533),
     width: '100%',
-    height: 38.4,
     alignItems: 'center'
   },
   signUpBtn: {
+    width: scaleWidth(142.384),
+    borderRadius: scaleWidth(132.792),
     backgroundColor: Black,
-    borderRadius: 132.792,
-    width: '24.4%',
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center'
   },
   signUpBtnText: {
+    fontSize: scaleFont(22),
+    lineHeight: scaleLineHeight(33),
+    letterSpacing: scaleLetterSpacing(-0.22),
     color: White,
-    fontSize: 22,
-    fontWeight: 800,
-    lineHeight: 33,
-    letterSpacing: -0.22
+    fontWeight: 800
   },
   divider: {
+    gap: scaleWidth(10.73),
+    height: scaleHeight(24),
     width: '100%',
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10.73,
-    height: 24
-
+    alignItems: 'center'
   },
   line: {
-    width: '47%',
-    height: 2,
+    width: scaleWidth(273.6935),
+    height: scaleHeight(1.341),
     backgroundColor: Black,
     opacity: 0.6
   },
   or: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
     color: Black,
-    fontSize: 16,
     fontWeight: 600,
-    lineHeight: 24,
-    letterSpacing: -0.16,
     opacity: 0.8
   },
   alreadyHaveAccount: {
+    height: scaleHeight(30),
+    gap: scaleWidth(5),
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    height: 30,
-    gap: 10
+    justifyContent: 'center'
   },
   loginText: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
     color: Black,
-    fontSize: 20,
-    fontWeight: 600,
-    lineHeight: 30,
-    letterSpacing: -0.2
+    fontWeight: 600
   },
   loginLink: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
     color: HappyColor,
-    fontSize: 20,
-    fontWeight: 600,
-    lineHeight: 30,
-    letterSpacing: -0.2
+    fontWeight: 600
   }
 });
+
 export default function Home() {
+  const dispatch = useDispatch();
+  //   useFocusEffect(
+  //   useCallback(() => {
+  //     dispatch(showLoading());
+  //     return () => {
+  //       dispatch(hideLoading());
+  //     };
+  //   }, [dispatch])
+  // );
+  const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
+
+  const handleHelpMe = () => {
+    dispatch(showLoading()); // Show modal during navigation/async
+    // Simulate async (e.g., API call before navigation)
+    setTimeout(() => {
+      dispatch(hideLoading()); // Hide when done
+      navigation.navigate('ChatGroups', { startSearching: true });
+    }, 1000); // Replace with actual async logic
+  };
+
+  const handleICanHelp = () => {
+    dispatch(showLoading());
+    setTimeout(() => {
+      dispatch(hideLoading());
+      navigation.navigate('ChatGroups', { startSearching: true });
+    }, 1000);
+  };
+
+  const handleSignUp = () => {
+    dispatch(showLoading());
+    setTimeout(() => {
+      dispatch(hideLoading());
+      navigation.navigate('CreateAccount');
+    }, 1000);
+  };
+
+  const handleLogin = () => {
+    dispatch(showLoading());
+    setTimeout(() => {
+      dispatch(hideLoading());
+      navigation.navigate('LoginOptions');
+    }, 1000);
+  };
+
+  const rootStyle = {
+    ...styles.root,
+    paddingTop: statusBarHeight
+  };
+  const cardStyle = {
+    ...styles.card,
+    paddingBottom: bottomSafeHeight
+  };
+
   return (
-    <View style={styles.root}>
+    <View style={rootStyle}>
       <View style={styles.topSection}>
         <View style={styles.logoBox}>
           <Image
             source={Logo}
             style={styles.logoImg}
-            resizeMode="contain"
             accessible={true}
             accessibilityLabel="App logo"
           />
         </View>
       </View>
-
-      <View style={styles.card}>
-
+      <View style={cardStyle}>
         <View style={styles.header}>
           <CustomText style={styles.heading}>What's your issue?</CustomText>
           <CustomText style={styles.subhead}>Someone is here to help.</CustomText>
         </View>
-
         <View style={styles.helpButtons}>
-          <TouchableOpacity style={styles.helpMeBtn} onPress={() => navigation.navigate('ChatGroups')}>
+          <TouchableOpacity style={styles.helpMeBtn} onPress={handleHelpMe}>
             <SadEmoji {...styles.emojis}/>
             <CustomText style={styles.helpMeBtnText}>HELP ME</CustomText>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iCanHelpBtn} onPress={() => navigation.navigate('ChatGroups')}>
+          <TouchableOpacity style={styles.iCanHelpBtn} onPress={handleICanHelp}>
             <HappyEmoji {...styles.emojis}/>
             <CustomText style={styles.iCanHelpBtnText}>I CAN HELP</CustomText>
           </TouchableOpacity>
         </View>
-
         <View style={styles.signUpLogIn}>
           <View style={styles.signUp}>
-            <TouchableOpacity style={styles.signUpBtn}>
+            <TouchableOpacity style={styles.signUpBtn} onPress={handleSignUp}>
               <CustomText style={styles.signUpBtnText}>Sign Up</CustomText>
             </TouchableOpacity>
           </View>
-
           <View style={styles.divider}>
             <View style={styles.line} />
             <CustomText style={styles.or}>or</CustomText>
@@ -391,7 +442,7 @@ export default function Home() {
             <CustomText style={styles.loginText}>
               Already have an account?
             </CustomText>
-            <CustomText style={styles.loginLink}>Login</CustomText>
+            <CustomText style={styles.loginLink} onPress={handleLogin}>Login</CustomText>
           </View>
         </View>
       </View>

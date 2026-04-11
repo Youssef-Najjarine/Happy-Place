@@ -1,8 +1,7 @@
 import { useWindowDimensions } from 'react-native';
-
-const BREAKPOINT = 600;
+import { tabletBreakpoint } from 'src/constants/breakpoints';
 
 export const useResponsiveStyles = (phoneStyles, tabletStyles) => {
   const { width } = useWindowDimensions();
-  return width < BREAKPOINT ? phoneStyles : tabletStyles;
+  return width < tabletBreakpoint ? phoneStyles : tabletStyles;
 };
