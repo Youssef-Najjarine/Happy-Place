@@ -1,7 +1,4 @@
-﻿
-using Microsoft.AspNetCore.Cors.Infrastructure;
-
-namespace WebApp
+﻿namespace WebApp
 {
     public class Program
     {
@@ -16,12 +13,11 @@ namespace WebApp
                 options.AddPolicy(name: myCorsPolicy,
                     policy =>
                     {
-                        // Common configurations:
-                        policy.AllowAnyOrigin() // Specific origins (recommended for production)
-                              .AllowAnyMethod() // Allows GET, POST, etc. (or WithMethods("GET", "POST") for specifics)
-                              .AllowAnyHeader() // Allows any headers (or WithHeaders("Content-Type", "Authorization") for specifics)
-                              .AllowCredentials() // If needed for cookies/auth (avoid with AllowAnyOrigin due to security risks)
-                              .SetPreflightMaxAge(TimeSpan.FromSeconds(3600)); // Cache preflight responses for 1 hour
+                        policy.AllowAnyOrigin()
+                              .AllowAnyMethod()
+                              .AllowAnyHeader()
+                              .AllowCredentials()
+                              .SetPreflightMaxAge(TimeSpan.FromSeconds(3600));
                     });
             });
             var app = builder.Build();
