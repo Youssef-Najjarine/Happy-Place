@@ -1,39 +1,83 @@
 ﻿using HappyWorld.HappyPlace.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace HappyWorld.HappyPlace
+namespace HappyWorld.HappyPlace;
+
+[Collection("Integration")]
+public class GenerateUsernameTest
 {
-    public class GenerateUsernameTest
+    // Tests - Username Length
+
+    [Fact]
+    public void LongNameProducesUsernameUnder20Characters()
     {
-        [Fact]
-        public void NameEnteredVeryLongTest()
+        using var dbContext = HappyPlaceDbContext.Create();
+
+        string username = UserAccountRegistrar.GenerateUsername("ynajjarine@gmail.com", "Youssef Najjarine Youssef Najjarine Youssef Najjarine", dbContext);
+
+        Assert.True(username.Length <= 20);
+    }
+
+    [Fact]
+    public void ShortNameProducesUsernameWithAtLeastFiveCharacters()
+    {
+        using var dbContext = HappyPlaceDbContext.Create();
+
+        string username = UserAccountRegistrar.GenerateUsername("ynajjarine@gmail.com", "Y", dbContext);
+
+        Assert.True(username.Length >= 5);
+    }
+
+    // Tests - Username Format
+
+    [Fact]
+    public void UsernameIsAllLowercase()
+    {
+        using var dbContext = HappyPlaceDbContext.Create();
+
+        string username = UserAccountRegistrar.GenerateUsername("ynajjarine@gmail.com", "Youssef Najjarine", dbContext);
+
+        Assert.Equal(username, username.ToLower());
+    }
+
+    [Fact]
+    public void UsernameContainsNoSpaces()
+    {
+        using var dbContext = HappyPlaceDbContext.Create();
+
+        string username = UserAccountRegistrar.GenerateUsername("ynajjarine@gmail.com", "Youssef Najjarine", dbContext);
+
+        Assert.DoesNotContain(" ", username);
+    }
+
+    [Fact]
+    public void UsernameEndsWithNumber()
+    {
+        using var dbContext = HappyPlaceDbContext.Create();
+
+        string username = UserAccountRegistrar.GenerateUsername("ynajjarine@gmail.com", "Youssef Najjarine", dbContext);
+
+        Assert.True(char.IsDigit(username[username.Length - 1]));
+    }
+
+    // Tests - Username Uniqueness
+
+    [Fact]
+    public void TwoGeneratedUsernamesForSameNameAreDifferent()
+    {
+        using var dbContext = HappyPlaceDbContext.Create();
+
+        string firstUsername = UserAccountRegistrar.GenerateUsername("user1@gmail.com", "John Smith", dbContext);
+        dbContext.PendingUserAccounts.Add(new PendingUserAccount
         {
-            using var dbContext = HappyPlaceDbContext.Create();
-            //dbContext.PendingUserAccounts.RemoveRange(dbContext.PendingUserAccounts);
-            //dbContext.PendingUserAccounts.Add(new PendingUserAccount { Id = Guid.NewGuid(), EmailAddress = "ynajjarine@gmail.com", PhoneNumber = "9497359148", DisplayName = "Youssef Najjarine", Username = "youssef.najjarine.yo", HashedPassword = "Seven74!", VerificationCode = "123456" });
-            //dbContext.PendingUserAccounts.Add(new PendingUserAccount { Id = Guid.NewGuid(), EmailAddress = "ynajarine@gmail.com", PhoneNumber = "9497359148", DisplayName = "Youssef Najjarine", Username = "ynajjarine123", HashedPassword = "Seven74!", VerificationCode = "123456" });
-            //dbContext.PendingUserAccounts.Add(new PendingUserAccount { Id = Guid.NewGuid(), EmailAddress = "johnsmith@gmail.com", PhoneNumber = "9497359148", DisplayName = "Youssef Najjarine", Username = "johnSmith456", HashedPassword = "Seven74!", VerificationCode = "123456" });
-            //dbContext.SaveChanges();
-            String username = UserAccountRegistrar.GenerateUsername("ynajjarine@gmail.com", "youssef najjarine youssef najjarine youssef najjarine youssef najjarine", dbContext);
-            Console.WriteLine($"NAME VERY LONG: {username}");
-        }
-        [Fact]
-        public void NameEnteredVeryShortTest()
-        {
-            using var dbContext = HappyPlaceDbContext.Create();
-            String username = UserAccountRegistrar.GenerateUsername("ynajjarine@gmail.com", "Y", dbContext);
-            Console.WriteLine($"NAME VERY SHORT: {username}");
-        }
-        [Fact]
-        public void NameEnteredMatchesExistingUsernameTest()
-        {
-            using var dbContext = HappyPlaceDbContext.Create();
-            String username = UserAccountRegistrar.GenerateUsername("ynajjarine@gmail.com", "ynajjarine123", dbContext);
-            Console.WriteLine($"NAME ENTERED MATCHES EXISTING USERNAME: {username}");
-        }
+            EmailAddress = "user1@gmail.com",
+            DisplayName = "John Smith",
+            Username = firstUsername,
+            HashedPassword = "hashed",
+            VerificationCode = "123456"
+        });
+        dbContext.SaveChanges();
+        string secondUsername = UserAccountRegistrar.GenerateUsername("user2@gmail.com", "John Smith", dbContext);
+
+        Assert.NotEqual(firstUsername, secondUsername);
     }
 }

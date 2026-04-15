@@ -1,30 +1,30 @@
-﻿using HappyWorld.HappyPlace.Email;
+﻿using HappyWorld.HappyPlace.Sms;
 using System.Net;
 
 namespace HappyWorld.HappyPlace;
 
 [Collection("Integration")]
-public class SignUpWithEmailTest
+public class SignUpWithPhoneTest
 {
     // Tests - Happy Path
 
     [Fact]
-    public void ValidAccountCredentials()
+    public void ValidPhoneAccountCredentials()
     {
-        string uniqueEmail = $"valid{Guid.NewGuid():N}@gmail.com";
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
         var jsonData = new
         {
             Name = "Youssef Najjarine",
-            Email = uniqueEmail,
+            PhoneNumber = uniquePhone,
             Password = "Seven74!"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
 
-        MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
-        string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        SmsMessage verificationSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
+        string verificationCode = SmsVerificationNotification.ExtractVerificationCode(verificationSms);
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode });
 
         var verifyResponseData = verifyResponse.ReadContentAsJsonDocument();
         Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
@@ -36,16 +36,16 @@ public class SignUpWithEmailTest
     [Fact]
     public void EmptyNameReturnsBadRequest()
     {
-        string uniqueEmail = $"emptyname{Guid.NewGuid():N}@gmail.com";
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
         var jsonData = new
         {
             Name = "",
-            Email = uniqueEmail,
+            PhoneNumber = uniquePhone,
             Password = "Seven74!"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -53,16 +53,16 @@ public class SignUpWithEmailTest
     [Fact]
     public void WhitespaceOnlyNameReturnsBadRequest()
     {
-        string uniqueEmail = $"wsname{Guid.NewGuid():N}@gmail.com";
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
         var jsonData = new
         {
             Name = "   ",
-            Email = uniqueEmail,
+            PhoneNumber = uniquePhone,
             Password = "Seven74!"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -70,116 +70,100 @@ public class SignUpWithEmailTest
     [Fact]
     public void NameExceedingMaxLengthReturnsBadRequest()
     {
-        string uniqueEmail = $"longname{Guid.NewGuid():N}@gmail.com";
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
         var jsonData = new
         {
             Name = new string('A', 201),
-            Email = uniqueEmail,
+            PhoneNumber = uniquePhone,
             Password = "Seven74!"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    // Tests - Email Validation
+    // Tests - Phone Number Validation
 
     [Fact]
-    public void EmptyEmailReturnsBadRequest()
+    public void EmptyPhoneNumberReturnsBadRequest()
     {
         var jsonData = new
         {
             Name = "Youssef Najjarine",
-            Email = "",
+            PhoneNumber = "",
             Password = "Seven74!"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
-    public void EmailMissingAtSymbolReturnsBadRequest()
-    {
-        var jsonData = new
-        {
-            Name = "Youssef Najjarine",
-            Email = "ynajjarinegmail.com",
-            Password = "Seven74!"
-        };
-        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
-
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public void EmailMissingDomainReturnsBadRequest()
+    public void PhoneNumberWithLettersReturnsBadRequest()
     {
         var jsonData = new
         {
             Name = "Youssef Najjarine",
-            Email = "ynajjarine@",
+            PhoneNumber = "949abc5148",
             Password = "Seven74!"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public void EmailMissingUsernameReturnsBadRequest()
+    public void PhoneNumberTooShortReturnsBadRequest()
     {
         var jsonData = new
         {
             Name = "Youssef Najjarine",
-            Email = "@gmail.com",
+            PhoneNumber = "12345",
             Password = "Seven74!"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public void EmailExceedingMaxLengthReturnsBadRequest()
+    public void PhoneNumberExceedingMaxLengthReturnsBadRequest()
     {
         var jsonData = new
         {
             Name = "Youssef Najjarine",
-            Email = new string('a', 246) + "@gmail.com",
+            PhoneNumber = "123456789012345678901",
             Password = "Seven74!"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public void DuplicateEmailReturnsBadRequest()
+    public void DuplicatePhoneNumberReturnsBadRequest()
     {
-        string uniqueEmail = $"dup{Guid.NewGuid():N}@gmail.com";
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
         var jsonData = new
         {
             Name = "Youssef Najjarine",
-            Email = uniqueEmail,
+            PhoneNumber = uniquePhone,
             Password = "Seven74!"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
-        HttpResponseMessage secondAttempt = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
+        HttpResponseMessage secondAttempt = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, secondAttempt.StatusCode);
     }
@@ -189,16 +173,16 @@ public class SignUpWithEmailTest
     [Fact]
     public void EmptyPasswordReturnsBadRequest()
     {
-        string uniqueEmail = $"emptypw{Guid.NewGuid():N}@gmail.com";
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
         var jsonData = new
         {
             Name = "Youssef Najjarine",
-            Email = uniqueEmail,
+            PhoneNumber = uniquePhone,
             Password = ""
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -206,16 +190,16 @@ public class SignUpWithEmailTest
     [Fact]
     public void PasswordUnderEightCharactersReturnsBadRequest()
     {
-        string uniqueEmail = $"shortpw{Guid.NewGuid():N}@gmail.com";
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
         var jsonData = new
         {
             Name = "Youssef Najjarine",
-            Email = uniqueEmail,
+            PhoneNumber = uniquePhone,
             Password = "Se7en!"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -223,16 +207,16 @@ public class SignUpWithEmailTest
     [Fact]
     public void PasswordMissingUppercaseReturnsBadRequest()
     {
-        string uniqueEmail = $"nouppr{Guid.NewGuid():N}@gmail.com";
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
         var jsonData = new
         {
             Name = "Youssef Najjarine",
-            Email = uniqueEmail,
+            PhoneNumber = uniquePhone,
             Password = "seven74!"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -240,16 +224,16 @@ public class SignUpWithEmailTest
     [Fact]
     public void PasswordMissingLowercaseReturnsBadRequest()
     {
-        string uniqueEmail = $"nolowr{Guid.NewGuid():N}@gmail.com";
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
         var jsonData = new
         {
             Name = "Youssef Najjarine",
-            Email = uniqueEmail,
+            PhoneNumber = uniquePhone,
             Password = "SEVEN74!"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -257,16 +241,16 @@ public class SignUpWithEmailTest
     [Fact]
     public void PasswordMissingNumberReturnsBadRequest()
     {
-        string uniqueEmail = $"nonum{Guid.NewGuid():N}@gmail.com";
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
         var jsonData = new
         {
             Name = "Youssef Najjarine",
-            Email = uniqueEmail,
+            PhoneNumber = uniquePhone,
             Password = "Sevennn!"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -274,16 +258,16 @@ public class SignUpWithEmailTest
     [Fact]
     public void PasswordMissingSpecialCharacterReturnsBadRequest()
     {
-        string uniqueEmail = $"nospec{Guid.NewGuid():N}@gmail.com";
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
         var jsonData = new
         {
             Name = "Youssef Najjarine",
-            Email = uniqueEmail,
+            PhoneNumber = uniquePhone,
             Password = "Seven741"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -293,28 +277,28 @@ public class SignUpWithEmailTest
     [Fact]
     public void WrongVerificationCodeReturnsBadRequest()
     {
-        string uniqueEmail = $"wrongcode{Guid.NewGuid():N}@gmail.com";
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
         var jsonData = new
         {
             Name = "Youssef Najjarine",
-            Email = uniqueEmail,
+            PhoneNumber = uniquePhone,
             Password = "Seven74!"
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = "000000" });
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = "000000" });
 
         Assert.Equal(HttpStatusCode.BadRequest, verifyResponse.StatusCode);
     }
 
     [Fact]
-    public void VerificationWithNonExistentEmailReturnsBadRequest()
+    public void VerificationWithNonExistentPhoneReturnsBadRequest()
     {
-        string uniqueEmail = $"noexist{Guid.NewGuid():N}@gmail.com";
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = "123456" });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = "123456" });
 
         Assert.Equal(HttpStatusCode.BadRequest, verifyResponse.StatusCode);
     }

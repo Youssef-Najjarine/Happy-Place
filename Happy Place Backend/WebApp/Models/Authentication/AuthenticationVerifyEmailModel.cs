@@ -12,7 +12,7 @@ namespace HappyWorld.HappyPlace.Web.Models.Authentication
             {
                 return null;
             }
-            // create userAuthenticator class that logs user in and generates auth token
+
             UserAuthenticationToken authToken = UserAuthenticationToken.GenerateForUser(this.Email);
             return new LoginSuccessModel(authToken.ToAuthTokenString());
         }
