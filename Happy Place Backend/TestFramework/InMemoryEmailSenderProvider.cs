@@ -1,15 +1,14 @@
-﻿using HappyWorld.HappyPlace.Email;
+using HappyWorld.HappyPlace.Email;
 
 
 namespace HappyWorld.HappyPlace;
-public class InMemoryEmailSenderProvider : IDisposable
-{
+
+public class InMemoryEmailSenderProvider : IDisposable {
     // Fields
     private InMemoryEmailSender _emailSender = new();
 
     // Constructors
-    public InMemoryEmailSenderProvider()
-    {
+    public InMemoryEmailSenderProvider() {
         EmailSender.SetInitializer(() => this._emailSender);
     }
 
@@ -18,8 +17,7 @@ public class InMemoryEmailSenderProvider : IDisposable
 
     // Methods
 
-    public void Dispose()
-    {
+    public void Dispose() {
         EmailSender.ResetInitializer();
     }
 }

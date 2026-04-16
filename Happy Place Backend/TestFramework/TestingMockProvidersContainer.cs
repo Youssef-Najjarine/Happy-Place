@@ -1,7 +1,6 @@
-﻿namespace HappyWorld.HappyPlace;
+namespace HappyWorld.HappyPlace;
 
-public class TestingMockProvidersContainer : IDisposable
-{
+public class TestingMockProvidersContainer : IDisposable {
     // Fields
     private InMemoryEmailSenderProvider _emailProvider;
     private InMemorySmsSenderProvider _smsProvider;
@@ -9,14 +8,12 @@ public class TestingMockProvidersContainer : IDisposable
     private WebClient _webClient;
 
     // Constructors
-    public TestingMockProvidersContainer()
-    {
+    public TestingMockProvidersContainer() {
         this._webClient = new WebClient();
         this._emailProvider = new InMemoryEmailSenderProvider();
         this._smsProvider = new InMemorySmsSenderProvider();
     }
-    ~TestingMockProvidersContainer()
-    {
+    ~TestingMockProvidersContainer() {
         Dispose(disposing: false);
     }
 
@@ -26,18 +23,15 @@ public class TestingMockProvidersContainer : IDisposable
     public WebClient WebClient => this._webClient;
 
     // Methods
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_isDisposed)
-        {
+    protected virtual void Dispose(bool disposing) {
+        if (!_isDisposed) {
             if (disposing) { }
             this.DisposeProviders();
             _isDisposed = true;
         }
     }
 
-    private void DisposeProviders()
-    {
+    private void DisposeProviders() {
         this._emailProvider?.Dispose();
         this._emailProvider = null;
         this._smsProvider?.Dispose();
@@ -46,8 +40,7 @@ public class TestingMockProvidersContainer : IDisposable
         this._webClient = null;
     }
 
-    public void Dispose()
-    {
+    public void Dispose() {
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }

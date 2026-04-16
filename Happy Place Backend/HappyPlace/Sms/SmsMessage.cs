@@ -1,7 +1,6 @@
-﻿namespace HappyWorld.HappyPlace.Sms;
+namespace HappyWorld.HappyPlace.Sms;
 
-public interface SmsMessage
-{
+public interface SmsMessage {
     string ToPhoneNumber { get; set; }
     string BodyText { get; set; }
 }

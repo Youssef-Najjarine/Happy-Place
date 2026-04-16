@@ -1,20 +1,16 @@
-﻿namespace HappyWorld.HappyPlace;
+namespace HappyWorld.HappyPlace;
 
-public class ValidationErrorsException: Exception
-{
+public class ValidationErrorsException : Exception {
     // Constructors
-    public ValidationErrorsException(IEnumerable<string> validationErrors)
-    {
+    public ValidationErrorsException(IEnumerable<string> validationErrors) {
         this.ValidationErrors = validationErrors.ToList();
     }
     public ValidationErrorsException(string message, IEnumerable<String> validationErrors)
-        : base(message)
-    {
+        : base(message) {
         this.ValidationErrors = validationErrors.ToList();
     }
     public ValidationErrorsException(string message, Exception innerException, IEnumerable<String> validationErrors)
-        : base(message, innerException)
-    {
+        : base(message, innerException) {
         this.ValidationErrors = validationErrors.ToList();
     }
     // Properties

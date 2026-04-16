@@ -1,18 +1,15 @@
-﻿namespace HappyWorld.HappyPlace.Email;
+namespace HappyWorld.HappyPlace.Email;
 
-public abstract class EmailSender
-{
+public abstract class EmailSender {
     private static Func<EmailSender> _initializer;
 
     public static void ResetInitializer() => SetInitializer(null);
 
-    public static void SetInitializer(Func<EmailSender> initializer)
-    {
+    public static void SetInitializer(Func<EmailSender> initializer) {
         _initializer = initializer;
     }
 
-    internal static EmailSender Create()
-    {
+    internal static EmailSender Create() {
         if (_initializer != null) return _initializer();
         return new MailKitEmailSender();
     }

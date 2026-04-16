@@ -1,20 +1,17 @@
-﻿using HappyWorld.HappyPlace.Sms;
+using HappyWorld.HappyPlace.Sms;
 
 namespace HappyWorld.HappyPlace;
 
-public class InMemorySmsSender : SmsSender
-{
+public class InMemorySmsSender : SmsSender {
     // Properties
     public IList<SmsMessage> SentMessages { get; } = [];
 
     // Methods
-    public override SmsMessage NewSmsMessage()
-    {
+    public override SmsMessage NewSmsMessage() {
         return new InMemorySmsMessage();
     }
 
-    public override void Send(SmsMessage message)
-    {
+    public override void Send(SmsMessage message) {
         this.SentMessages.Add(message);
     }
 }

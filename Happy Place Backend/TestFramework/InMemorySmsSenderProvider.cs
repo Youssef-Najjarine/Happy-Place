@@ -1,15 +1,13 @@
-﻿using HappyWorld.HappyPlace.Sms;
+using HappyWorld.HappyPlace.Sms;
 
 namespace HappyWorld.HappyPlace;
 
-public class InMemorySmsSenderProvider : IDisposable
-{
+public class InMemorySmsSenderProvider : IDisposable {
     // Fields
     private InMemorySmsSender _smsSender = new();
 
     // Constructors
-    public InMemorySmsSenderProvider()
-    {
+    public InMemorySmsSenderProvider() {
         SmsSender.SetInitializer(() => this._smsSender);
     }
 
@@ -17,8 +15,7 @@ public class InMemorySmsSenderProvider : IDisposable
     public IEnumerable<SmsMessage> SentMessages => this._smsSender.SentMessages;
 
     // Methods
-    public void Dispose()
-    {
+    public void Dispose() {
         SmsSender.ResetInitializer();
     }
 }

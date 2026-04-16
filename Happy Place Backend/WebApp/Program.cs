@@ -1,18 +1,13 @@
-﻿namespace WebApp
-{
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
+namespace WebApp {
+    public class Program {
+        public static void Main(string[] args) {
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddControllers();
             builder.Services.AddOpenApi();
             var myCorsPolicy = "_myCorsPolicy";
-            builder.Services.AddCors(options =>
-            {
+            builder.Services.AddCors(options => {
                 options.AddPolicy(name: myCorsPolicy,
-                    policy =>
-                    {
+                    policy => {
                         policy.AllowAnyOrigin()
                               .AllowAnyMethod()
                               .AllowAnyHeader()
@@ -21,8 +16,7 @@
                     });
             });
             var app = builder.Build();
-            if (app.Environment.IsDevelopment())
-            {
+            if (app.Environment.IsDevelopment()) {
                 app.MapOpenApi();
             }
             //app.UseHttpsRedirection();

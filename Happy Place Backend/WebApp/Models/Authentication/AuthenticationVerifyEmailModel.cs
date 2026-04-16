@@ -1,15 +1,8 @@
-﻿using Microsoft.AspNetCore.Identity;
-using System.Runtime.InteropServices;
-
-namespace HappyWorld.HappyPlace.Web.Models.Authentication
-{
-    public record AuthenticationVerifyEmailModel(string Email, string VerificationCode)
-    {
-        public LoginSuccessModel VerifyEmail()
-        {
+namespace HappyWorld.HappyPlace.Web.Models.Authentication {
+    public record AuthenticationVerifyEmailModel(string Email, string VerificationCode) {
+        public LoginSuccessModel VerifyEmail() {
             bool isVerified = UserAccountRegistrar.VerifyEmailAddress(this.Email, this.VerificationCode);
-            if (!isVerified)
-            {
+            if (!isVerified) {
                 return null;
             }
 

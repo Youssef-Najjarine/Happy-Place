@@ -1,12 +1,10 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 
 namespace HappyWorld.HappyPlace.Email;
 
-public class EmailVerificationNotification
-{
+public class EmailVerificationNotification {
     private static readonly Regex SixDigits = new(@"\b(\d{6})\b", RegexOptions.Compiled);
-    public static string ExtractVerificationCode(MailMessage verificationEmail)
-    {
+    public static string ExtractVerificationCode(MailMessage verificationEmail) {
         var bodyProp = verificationEmail.GetType().GetProperty("BodyText");
         var body = bodyProp?.GetValue(verificationEmail) as string ?? string.Empty;
 
@@ -17,8 +15,7 @@ public class EmailVerificationNotification
         throw new InvalidOperationException("Verification code not found in email body.");
     }
 
-    public static void Send(String toAddress, String name, String verificationCode)
-    {
+    public static void Send(String toAddress, String name, String verificationCode) {
         var emailSender = EmailSender.Create();
         MailMessage message = emailSender.NewMailMessage();
         message.AddToAddress(toAddress);

@@ -1,7 +1,5 @@
-﻿namespace HappyWorld.HappyPlace.Email
-{
-    public interface MailMessage
-    {
+namespace HappyWorld.HappyPlace.Email {
+    public interface MailMessage {
         String Subject { get; set; }
 
         void AddFromAddress(string emailAddress);

@@ -9,4 +9,6 @@
 	[VerificationCode] varchar(6) NOT NULL,
 	[EmailAddress] nvarchar(255) NULL,
 	[PhoneNumber] varchar(20) NULL,
+	[CreatedAtUtc] datetime2(0) NOT NULL
+		constraint [DF-PendingUserAccount-CreatedAtUtc] default sysutcdatetime(),
 )

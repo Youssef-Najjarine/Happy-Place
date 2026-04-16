@@ -1,16 +1,12 @@
-﻿using System;
 using System.Security.Cryptography;
-using System.Text;
 
-public static class PasswordHasher
-{
+public static class PasswordHasher {
     private const int SaltSize = 16; // 128 bits (base64: 24 chars)
     private const int HashSize = 32; // 256 bits (base64: 44 chars)
     private const int DefaultIterations = 600000; // ~6 chars; tune for ~250ms
     private const int MaxStoredLength = 100; // Your DB limit
 
-    public static string HashPassword(string password, int? customIterations = null)
-    {
+    public static string HashPassword(string password, int? customIterations = null) {
         int iterations = customIterations ?? DefaultIterations;
         if (iterations <= 0) throw new ArgumentException("Iterations must be positive.");
 
@@ -40,8 +36,7 @@ public static class PasswordHasher
         return fullHash;
     }
 
-    public static bool VerifyPassword(string password, string storedHash)
-    {
+    public static bool VerifyPassword(string password, string storedHash) {
         if (string.IsNullOrEmpty(storedHash) || storedHash.Length > MaxStoredLength) return false;
 
         var parts = storedHash.Split('.');
@@ -51,13 +46,11 @@ public static class PasswordHasher
 
         byte[] salt;
         byte[] storedHashBytes;
-        try
-        {
+        try {
             salt = Convert.FromBase64String(parts[1]);
             storedHashBytes = Convert.FromBase64String(parts[2]);
         }
-        catch
-        {
+        catch {
             return false; // Invalid base64
         }
 

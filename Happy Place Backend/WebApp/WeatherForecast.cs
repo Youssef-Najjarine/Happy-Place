@@ -1,10 +1,5 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
-
-namespace WebApp
-{
-    public class WeatherForecast
-    {
+namespace WebApp {
+    public class WeatherForecast {
         public DateOnly Date { get; set; }
 
         public int TemperatureC { get; set; }

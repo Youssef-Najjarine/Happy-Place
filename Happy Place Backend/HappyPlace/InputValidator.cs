@@ -1,13 +1,11 @@
-﻿using HappyWorld.HappyPlace.Data;
+using HappyWorld.HappyPlace.Data;
 
 namespace HappyWorld.HappyPlace;
 
-public class InputValidator
-{
+public class InputValidator {
     // Methods
 
-    public static void ValidateEmailRegistration(string name, string email, string password, HappyPlaceDbContext dbContext)
-    {
+    public static void ValidateEmailRegistration(string name, string email, string password, HappyPlaceDbContext dbContext) {
         List<string> validationErrors = new List<string>();
 
         ValidateName(name, validationErrors);
@@ -24,8 +22,7 @@ public class InputValidator
             throw new ValidationErrorsException(validationErrors);
     }
 
-    public static void ValidatePhoneRegistration(string name, string phoneNumber, string password, HappyPlaceDbContext dbContext)
-    {
+    public static void ValidatePhoneRegistration(string name, string phoneNumber, string password, HappyPlaceDbContext dbContext) {
         List<string> validationErrors = new List<string>();
 
         ValidateName(name, validationErrors);
@@ -42,10 +39,8 @@ public class InputValidator
             throw new ValidationErrorsException(validationErrors);
     }
 
-    private static void ValidateName(string name, List<string> validationErrors)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
+    private static void ValidateName(string name, List<string> validationErrors) {
+        if (string.IsNullOrWhiteSpace(name)) {
             validationErrors.Add("Name is required.");
             return;
         }
@@ -54,42 +49,42 @@ public class InputValidator
             validationErrors.Add("Name must be 200 characters or less.");
     }
 
-    private static void ValidateEmailAddress(string email, List<string> validationErrors)
-    {
-        if (string.IsNullOrWhiteSpace(email))
-        {
+    private static void ValidateEmailAddress(string email, List<string> validationErrors) {
+        if (string.IsNullOrWhiteSpace(email)) {
             validationErrors.Add("Email address is required.");
             return;
         }
 
-        if (email.Length > 255)
-        {
+        if (email.Length > 255) {
             validationErrors.Add("Email address must be 255 characters or less.");
             return;
         }
 
-        int atIndex = email.IndexOf('@');
-        if (atIndex <= 0 || atIndex == email.Length - 1)
-        {
+        if (email.Contains(' ')) {
             validationErrors.Add("Please enter a valid email address.");
             return;
         }
 
-        string domain = email.Substring(atIndex + 1);
+        int firstAtIndex = email.IndexOf('@');
+        int lastAtIndex = email.LastIndexOf('@');
+
+        if (firstAtIndex <= 0 || firstAtIndex == email.Length - 1 || firstAtIndex != lastAtIndex) {
+            validationErrors.Add("Please enter a valid email address.");
+            return;
+        }
+
+        string domain = email.Substring(firstAtIndex + 1);
         if (!domain.Contains('.') || domain.StartsWith('.') || domain.EndsWith('.'))
             validationErrors.Add("Please enter a valid email address.");
     }
 
-    private static void ValidatePhoneNumber(string phoneNumber, List<string> validationErrors)
-    {
-        if (string.IsNullOrWhiteSpace(phoneNumber))
-        {
+    private static void ValidatePhoneNumber(string phoneNumber, List<string> validationErrors) {
+        if (string.IsNullOrWhiteSpace(phoneNumber)) {
             validationErrors.Add("Phone number is required.");
             return;
         }
 
-        if (!phoneNumber.All(char.IsDigit))
-        {
+        if (!phoneNumber.All(char.IsDigit)) {
             validationErrors.Add("Phone number must contain only digits.");
             return;
         }
@@ -101,10 +96,8 @@ public class InputValidator
             validationErrors.Add("Phone number is too long.");
     }
 
-    private static void ValidatePassword(string password, List<string> validationErrors)
-    {
-        if (string.IsNullOrEmpty(password))
-        {
+    private static void ValidatePassword(string password, List<string> validationErrors) {
+        if (string.IsNullOrEmpty(password)) {
             validationErrors.Add("Password is required.");
             return;
         }
