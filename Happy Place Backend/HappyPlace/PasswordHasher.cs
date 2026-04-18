@@ -1,35 +1,35 @@
 using System.Security.Cryptography;
 
-public static class PasswordHasher {
-    private const int SaltSize = 16; // 128 bits (base64: 24 chars)
-    private const int HashSize = 32; // 256 bits (base64: 44 chars)
-    private const int DefaultIterations = 600000; // ~6 chars; tune for ~250ms
-    private const int MaxStoredLength = 100; // Your DB limit
+namespace HappyWorld.HappyPlace;
 
+public static class PasswordHasher {
+    // Fields
+    private const int SaltSize = 16;
+    private const int HashSize = 32;
+    private const int DefaultIterations = 600000;
+    private const int MaxStoredLength = 100;
+
+    // Methods
     public static string HashPassword(string password, int? customIterations = null) {
         int iterations = customIterations ?? DefaultIterations;
         if (iterations <= 0) throw new ArgumentException("Iterations must be positive.");
 
-        // Generate unique salt
         byte[] salt = new byte[SaltSize];
         RandomNumberGenerator.Fill(salt);
 
-        // Derive hash using string overload (UTF-8 encoded internally)
         byte[] hash = Rfc2898DeriveBytes.Pbkdf2(
-            password: password,  // Direct string—no manual encoding needed
+            password: password,
             salt: salt,
             iterations: iterations,
-            hashAlgorithm: HashAlgorithmName.SHA512,  // Matches HMAC-SHA512 PRF
-            outputLength: HashSize  // Fixed: was 'numBytesRequested'
+            hashAlgorithm: HashAlgorithmName.SHA512,
+            outputLength: HashSize
         );
 
-        // Build formatted string
         string iterStr = iterations.ToString();
         string saltB64 = Convert.ToBase64String(salt);
         string hashB64 = Convert.ToBase64String(hash);
         string fullHash = $"{iterStr}.{saltB64}.{hashB64}";
 
-        // Enforce length (rarely needed, but safe)
         if (fullHash.Length > MaxStoredLength)
             throw new InvalidOperationException($"Hash too long ({fullHash.Length} chars). Reduce iterations or salt size.");
 
@@ -41,7 +41,6 @@ public static class PasswordHasher {
 
         var parts = storedHash.Split('.');
         if (parts.Length != 3) return false;
-
         if (!int.TryParse(parts[0], out int iterations)) return false;
 
         byte[] salt;
@@ -51,16 +50,15 @@ public static class PasswordHasher {
             storedHashBytes = Convert.FromBase64String(parts[2]);
         }
         catch {
-            return false; // Invalid base64
+            return false;
         }
 
-        // Re-derive and compare (constant-time)
         byte[] hash = Rfc2898DeriveBytes.Pbkdf2(
-            password: password,  // Direct string
+            password: password,
             salt: salt,
             iterations: iterations,
             hashAlgorithm: HashAlgorithmName.SHA512,
-            outputLength: storedHashBytes.Length  // Fixed: was 'numBytesRequested'
+            outputLength: storedHashBytes.Length
         );
 
         return CryptographicOperations.FixedTimeEquals(hash, storedHashBytes);

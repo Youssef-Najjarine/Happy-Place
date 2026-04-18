@@ -1,39 +1,98 @@
+using DotNetEnv;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace HappyWorld.HappyPlace;
 
 public class UserAuthenticationToken {
+    // Fields
+    private static readonly int TokenExpirationDays = 7;
+    private static readonly int IvSizeBytes = 16;
+
     // Constructors
-    private UserAuthenticationToken(string email) {
-        this.Username = email;
-        this.ExpirationDate = DateTimeOffset.Now.AddMinutes(20);
+    static UserAuthenticationToken() {
+        var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
+        while (directory != null && !File.Exists(Path.Combine(directory.FullName, ".env")))
+            directory = directory.Parent;
+        if (directory != null) Env.Load(Path.Combine(directory.FullName, ".env"));
     }
+
+    private UserAuthenticationToken(string identifier) {
+        this.Identifier = identifier;
+        this.ExpirationDateUtc = DateTimeOffset.UtcNow.AddDays(TokenExpirationDays);
+    }
+
+    private UserAuthenticationToken() { }
 
     // Properties
-    public string Username { get; }
-    public DateTimeOffset ExpirationDate { get; }
+    public string Identifier { get; set; }
+    public DateTimeOffset ExpirationDateUtc { get; set; }
 
     // Methods
-    public static UserAuthenticationToken GenerateForUser(string email) {
-        // To do retrieve from the users table when I create it.
-        // should return new(userRecord.Username, userRecord.Id, userRecord.....)
-        return new(email);
+    public static UserAuthenticationToken GenerateForUser(string identifier) {
+        return new(identifier);
     }
+
+    public static UserAuthenticationToken ValidateToken(string authTokenString) {
+        byte[] key = GetEncryptionKey();
+        byte[] encryptedWithIv = Convert.FromBase64String(authTokenString);
+
+        if (encryptedWithIv.Length <= IvSizeBytes)
+            return null;
+
+        byte[] iv = new byte[IvSizeBytes];
+        byte[] encryptedPayload = new byte[encryptedWithIv.Length - IvSizeBytes];
+        Buffer.BlockCopy(encryptedWithIv, 0, iv, 0, IvSizeBytes);
+        Buffer.BlockCopy(encryptedWithIv, IvSizeBytes, encryptedPayload, 0, encryptedPayload.Length);
+
+        using var aes = Aes.Create();
+        aes.Key = key;
+        aes.IV = iv;
+
+        using var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+        using var stream = new MemoryStream(encryptedPayload);
+        using var cryptoStream = new CryptoStream(stream, decryptor, CryptoStreamMode.Read);
+        using var reader = new StreamReader(cryptoStream, Encoding.UTF8);
+        string decryptedText = reader.ReadToEnd();
+
+        UserAuthenticationToken token = JsonSerializer.Deserialize<UserAuthenticationToken>(decryptedText);
+        if (token == null)
+            return null;
+
+        if (token.ExpirationDateUtc < DateTimeOffset.UtcNow)
+            return null;
+
+        return token;
+    }
+
     public string ToAuthTokenString() {
-        var decryptedText = JsonSerializer.Serialize(this);
-        // Encrypt using aes
-        var aes = Aes.Create();
-        // TODO: Store key and IV securely
-        aes.Key = Convert.FromBase64String("bWluZHN0b25lX2lzX3RoZV9iZXN0X3NlY3JldF9rZXk=");
-        aes.IV = new byte[16]; // Zero IV for simplicity, use a random IV in production
+        byte[] key = GetEncryptionKey();
+        string decryptedText = JsonSerializer.Serialize(this);
+
+        using var aes = Aes.Create();
+        aes.Key = key;
+        aes.GenerateIV();
+
         using var encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
         using var stream = new MemoryStream();
         using (var cryptoStream = new CryptoStream(stream, encryptor, CryptoStreamMode.Write)) {
-            using var writer = new StreamWriter(cryptoStream);
+            using var writer = new StreamWriter(cryptoStream, Encoding.UTF8);
             writer.Write(decryptedText);
-            cryptoStream.FlushFinalBlock();
         }
-        return Convert.ToBase64String(stream.ToArray());
+
+        byte[] encryptedPayload = stream.ToArray();
+        byte[] encryptedWithIv = new byte[aes.IV.Length + encryptedPayload.Length];
+        Buffer.BlockCopy(aes.IV, 0, encryptedWithIv, 0, aes.IV.Length);
+        Buffer.BlockCopy(encryptedPayload, 0, encryptedWithIv, aes.IV.Length, encryptedPayload.Length);
+
+        return Convert.ToBase64String(encryptedWithIv);
+    }
+
+    private static byte[] GetEncryptionKey() {
+        string keyBase64 = Environment.GetEnvironmentVariable("AUTH_TOKEN_KEY");
+        if (string.IsNullOrEmpty(keyBase64))
+            throw new InvalidOperationException("AUTH_TOKEN_KEY environment variable is not set.");
+        return Convert.FromBase64String(keyBase64);
     }
 }
