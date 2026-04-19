@@ -63,6 +63,7 @@ public class UserAccountRegistrar {
         if (DateTime.UtcNow - pendingUserAccount.CreatedAtUtc > TimeSpan.FromMinutes(VerificationCodeExpirationMinutes))
             return null;
         UserAccount userAccount = CreateUserAccountFromPending(pendingUserAccount, dbContext);
+        EmailAccountVerifiedNotification.Send(email, userAccount.DisplayName);
         return userAccount;
     }
 
@@ -74,6 +75,7 @@ public class UserAccountRegistrar {
         if (DateTime.UtcNow - pendingUserAccount.CreatedAtUtc > TimeSpan.FromMinutes(VerificationCodeExpirationMinutes))
             return null;
         UserAccount userAccount = CreateUserAccountFromPending(pendingUserAccount, dbContext);
+        SmsAccountVerifiedNotification.Send(phoneNumber, userAccount.DisplayName);
         return userAccount;
     }
 

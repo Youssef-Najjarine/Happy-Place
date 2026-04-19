@@ -11,9 +11,8 @@ public class EmailVerificationNotification {
         var bodyProp = verificationEmail.GetType().GetProperty("BodyText");
         var body = bodyProp?.GetValue(verificationEmail) as string ?? string.Empty;
 
-        var m = SixDigits.Match(body);
-        Console.WriteLine($"THE 6 DIGITS ARE: {m.Groups[1].Value}");
-        if (m.Success) return m.Groups[1].Value;
+        var verificationCodeMatch = SixDigits.Match(body);
+        if (verificationCodeMatch.Success) return verificationCodeMatch.Groups[1].Value;
 
         throw new InvalidOperationException("Verification code not found in email body.");
     }
@@ -45,7 +44,7 @@ public class EmailVerificationNotification {
         
         <hr style='border: none; border-top: 1px solid #F9F9F9; margin: 30px 0;'>
         <p style='font-size: 12px; color: rgba(35, 35, 35, 0.50); text-align: center;'>Best regards,<br><strong>Happy Place Team</strong></p>
-        <p style='font-size: 12px; color: rgba(35, 35, 35, 0.50); text-align: center;'><a href='https://happy.place' style='color: #ED5370;'>happy.place</a></p>
+        <p style='font-size: 12px; color: rgba(35, 35, 35, 0.50); text-align: center;'><a href='https://happy.place' target='_blank' style='color: #ED5370;'>happy.place</a></p>
     </div>
 </body>
 </html>

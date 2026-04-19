@@ -9,8 +9,8 @@ public class SmsVerificationNotification {
     // Methods
     public static string ExtractVerificationCode(SmsMessage verificationSms) {
         string body = verificationSms.BodyText ?? string.Empty;
-        var match = SixDigits.Match(body);
-        if (match.Success) return match.Groups[1].Value;
+        var verificationCodeMatch = SixDigits.Match(body);
+        if (verificationCodeMatch.Success) return verificationCodeMatch.Groups[1].Value;
         throw new InvalidOperationException("Verification code not found in SMS body.");
     }
 
