@@ -76,6 +76,12 @@ const LoadingModal = () => {
   });
 
   useEffect(() => {
+    if (!isLoading) return;
+
+    outerRotate.setValue(0);
+    middleRotate.setValue(0);
+    innerRotate.setValue(0);
+
     const animOuter = Animated.loop(
       Animated.timing(outerRotate, {
         toValue: 1,
@@ -112,7 +118,7 @@ const LoadingModal = () => {
       animMiddle.stop();
       animInner.stop();
     };
-  }, [outerRotate, middleRotate, innerRotate]);
+  }, [isLoading, outerRotate, middleRotate, innerRotate]);
 
   return (
     <Modal transparent visible={isLoading} animationType="fade" onRequestClose={() => {}}>

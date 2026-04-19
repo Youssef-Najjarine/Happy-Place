@@ -346,25 +346,16 @@ const tabletStyles = StyleSheet.create({
 
 export default function Home() {
   const dispatch = useDispatch();
-  //   useFocusEffect(
-  //   useCallback(() => {
-  //     dispatch(showLoading());
-  //     return () => {
-  //       dispatch(hideLoading());
-  //     };
-  //   }, [dispatch])
-  // );
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
 
   const handleHelpMe = () => {
-    dispatch(showLoading()); // Show modal during navigation/async
-    // Simulate async (e.g., API call before navigation)
+    dispatch(showLoading());
     setTimeout(() => {
-      dispatch(hideLoading()); // Hide when done
+      dispatch(hideLoading());
       navigation.navigate('ChatGroups', { startSearching: true });
-    }, 1000); // Replace with actual async logic
+    }, 1000);
   };
 
   const handleICanHelp = () => {

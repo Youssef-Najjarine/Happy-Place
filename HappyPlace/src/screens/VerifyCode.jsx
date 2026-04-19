@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Animated, Keyboard } from 'react-native';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { 
@@ -16,11 +16,14 @@ import {
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { showLoading, hideLoading } from 'store/loadingSlice'; 
 import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
+import authenticationService from 'services/authenticationService';
+
+const TOAST_DISPLAY_DURATION = 4000;
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -81,7 +84,7 @@ const phoneStyles = StyleSheet.create({
     fontSize: scaleFont(16),
     lineHeight: scaleLineHeight(24),
     fontWeight: 500,
-    volor: Black
+    color: Black
   },
   verifyCodeInputs: {
     flexDirection: 'row',
@@ -117,6 +120,31 @@ const phoneStyles = StyleSheet.create({
     borderColor: VeryLightGray,
     backgroundColor: FrostedWhite,
     color: Graphite,
+    textAlign: 'center',
+    textAlignVertical: 'center'
+  },
+  toastContainer: {
+    position: 'absolute',
+    left: scaleWidth(20),
+    right: scaleWidth(20),
+    zIndex: 100
+  },
+  toast: {
+    borderRadius: scaleWidth(12),
+    paddingHorizontal: scaleWidth(16),
+    paddingVertical: scaleHeight(12),
+    backgroundColor: HappyColor,
+    shadowColor: Black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6
+  },
+  toastText: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(20),
+    fontWeight: 600,
+    color: White,
     textAlign: 'center'
   },
   resendCode: {
@@ -220,7 +248,7 @@ const tabletStyles = StyleSheet.create({
     fontSize: scaleFont(18),
     lineHeight: scaleLineHeight(27),
     fontWeight: 500,
-    volor: Black
+    color: Black
   },
   verifyCodeInputs: {
     flexDirection: 'row',
@@ -256,6 +284,30 @@ const tabletStyles = StyleSheet.create({
     borderColor: VeryLightGray,
     backgroundColor: FrostedWhite,
     color: Graphite,
+    textAlign: 'center'
+  },
+  toastContainer: {
+    position: 'absolute',
+    left: scaleWidth(24),
+    right: scaleWidth(24),
+    zIndex: 100
+  },
+  toast: {
+    borderRadius: scaleWidth(16),
+    paddingHorizontal: scaleWidth(20),
+    paddingVertical: scaleHeight(16),
+    backgroundColor: HappyColor,
+    shadowColor: Black,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8
+  },
+  toastText: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    fontWeight: 600,
+    color: White,
     textAlign: 'center'
   },
   resendCode: {
@@ -301,41 +353,34 @@ const tabletStyles = StyleSheet.create({
 
 export default function VerifyCode() {
   const dispatch = useDispatch();
-  const isLoading = useSelector((state) => state.loading.isLoading);
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     dispatch(showLoading());
-  //     return () => {
-  //       dispatch(hideLoading()); // hide when navigating away
-  //     };
-  //   }, [dispatch])
-  // );
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
-
   const navigation = useNavigation();
   const route = useRoute();
 
-  // params you already pass when navigating here
   const contact = route.params?.contact || '';
   const source  = route.params?.source  || 'createAccount';
 
   const CODE_LENGTH = 6;
   const [code, setCode] = useState(Array(CODE_LENGTH).fill(''));
+  const [toastMessage, setToastMessage] = useState(null);
   const inputsRef = useRef(Array.from({ length: CODE_LENGTH }, () => React.createRef()));
   const canConfirm = code.every((c) => c !== '');
   const codeValue = code.join('');
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const toastTranslateY = useRef(new Animated.Value(-20)).current;
+  const toastTimerRef = useRef(null);
 
   const INITIAL_SECONDS = 60;
   const [secondsLeft, setSecondsLeft] = useState(INITIAL_SECONDS);
   const [isCounting, setIsCounting] = useState(true);
 
-  // ---- helpers to mask contact and build description ----
+  const isEmailContact = contact.includes('@');
   const maskEmail = (email) => {
     const [name, domain] = email.split('@');
     if (!domain || name.length <= 4) return email;
     return `${name.slice(0, 4)}${'*'.repeat(name.length - 4)}@${domain}`;
-    };
+  };
   const maskPhone = (phone) => {
     if (phone.length <= 4) return phone;
     const visibleStart = phone.slice(0, 5);
@@ -344,18 +389,48 @@ export default function VerifyCode() {
     return `${visibleStart}${maskedMiddle}${visibleEnd}`;
   };
 
-  const isEmailContact = contact.includes('@');
-  const maskedContact   = isEmailContact ? maskEmail(contact) : maskPhone(contact);
+  const maskedContact = isEmailContact ? maskEmail(contact) : maskPhone(contact);
   const descriptionText = isEmailContact
     ? 'Please enter the code we just sent to your email.'
     : 'Please enter the code we just sent to your phone number.';
 
-  // ---- focus / input handling for the 6-digit code ----
+  const showToast = (message) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage(message);
+    toastOpacity.setValue(0);
+    toastTranslateY.setValue(-20);
+    Animated.parallel([
+      Animated.timing(toastOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
+      Animated.timing(toastTranslateY, { toValue: 0, duration: 250, useNativeDriver: true })
+    ]).start();
+    toastTimerRef.current = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(toastOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.timing(toastTranslateY, { toValue: -20, duration: 200, useNativeDriver: true })
+      ]).start(() => setToastMessage(null));
+    }, TOAST_DISPLAY_DURATION);
+  };
+
+  const dismissToast = () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    Animated.parallel([
+      Animated.timing(toastOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(toastTranslateY, { toValue: -20, duration: 200, useNativeDriver: true })
+    ]).start(() => setToastMessage(null));
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
   const focusInput = (i) => inputsRef.current[i]?.current?.focus?.();
 
   const setDigit = (i, val) => {
     const digits = String(val).replace(/\D/g, '');
     if (!digits) return;
+    if (toastMessage) dismissToast();
 
     setCode((prev) => {
       const next = [...prev];
@@ -377,6 +452,7 @@ export default function VerifyCode() {
 
   const handleKeyPress = (i, e) => {
     if (e.nativeEvent.key === 'Backspace') {
+      if (toastMessage) dismissToast();
       setCode((prev) => {
         const next = [...prev];
         if (next[i]) {
@@ -402,7 +478,6 @@ export default function VerifyCode() {
     if (firstEmpty !== -1 && firstEmpty < i) focusInput(firstEmpty);
   };
 
-  // ---- resend timer ----
   useEffect(() => {
     if (!isCounting) return;
     const id = setInterval(() => {
@@ -425,41 +500,71 @@ export default function VerifyCode() {
   }, [secondsLeft]);
 
   const handleResend = () => {
+    if (toastMessage) dismissToast();
+    setCode(Array(CODE_LENGTH).fill(''));
+    Keyboard.dismiss();
     dispatch(showLoading());
-    setSecondsLeft(INITIAL_SECONDS);
-    setIsCounting(true);
-    // TODO: call your API
-    setTimeout(() => dispatch(hideLoading()), 1000);
+    setTimeout(async () => {
+      try {
+        if (isEmailContact) {
+          await authenticationService.resendEmailCode(contact);
+        } else {
+          await authenticationService.resendPhoneCode(contact);
+        }
+        setSecondsLeft(INITIAL_SECONDS);
+        setIsCounting(true);
+      } catch (err) {
+        showToast('Unable to resend code. Please try again.');
+      } finally {
+        dispatch(hideLoading());
+      }
+    }, 100);
   };
 
-  // ---- VERIFY & NAVIGATE ----
   const verifyCode = () => {
     if (!canConfirm) return;
-
+    Keyboard.dismiss();
+    if (toastMessage) dismissToast();
     dispatch(showLoading());
-    // TODO: call your API with { code: codeValue, contact, source }
-    setTimeout(() => {
-      dispatch(hideLoading());
-
-      if (source === 'forgotPassword') {
-        // forgot password flow continues to SetupPassword
-        navigation.replace('SetupPassword', { contact });
-      } else {
-        // createAccount / AddNewEmailOrPhone / EditEmailOrPhone (email or phone)
-        navigation.replace('AccountVerified', { contact, source });
+    setTimeout(async () => {
+      try {
+        let response;
+        if (isEmailContact) {
+          response = await authenticationService.verifyEmail(contact, codeValue);
+        } else {
+          response = await authenticationService.verifyPhone(contact, codeValue);
+        }
+        if (!response.ok) {
+          showToast('The code entered is incorrect or has expired. Please try again.');
+          return;
+        }
+        if (source === 'forgotPassword') {
+          navigation.replace('SetupPassword', { contact });
+        } else {
+          navigation.replace('AccountVerified', { contact, source });
+        }
+      } catch (err) {
+        showToast('Something went wrong. Please try again.');
+      } finally {
+        dispatch(hideLoading());
       }
-    }, 1000);
+    }, 100);
   };
 
   useFocusEffect(
     useCallback(() => {
       setSecondsLeft(INITIAL_SECONDS);
       setIsCounting(true);
+      setToastMessage(null);
+      toastOpacity.setValue(0);
+      toastTranslateY.setValue(-20);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      setCode(Array(CODE_LENGTH).fill(''));
     }, [])
   );
 
-  const rootStyle = { ...styles.root,  paddingTop: statusBarHeight };
-  const cardStyle = { ...styles.card,  paddingBottom: bottomSafeHeight };
+  const rootStyle = { ...styles.root, paddingTop: statusBarHeight };
+  const cardStyle = { ...styles.card, paddingBottom: bottomSafeHeight };
 
   return (
     <View style={rootStyle}>
@@ -534,6 +639,18 @@ export default function VerifyCode() {
           </View>
         </View>
       </View>
+      {toastMessage && (
+        <Animated.View
+          style={[
+            styles.toastContainer,
+            { top: statusBarHeight + scaleHeight(12), opacity: toastOpacity, transform: [{ translateY: toastTranslateY }] }
+          ]}
+        >
+          <TouchableOpacity style={styles.toast} activeOpacity={0.9} onPress={dismissToast}>
+            <CustomText style={styles.toastText}>{toastMessage}</CustomText>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
     </View>
   );
 }

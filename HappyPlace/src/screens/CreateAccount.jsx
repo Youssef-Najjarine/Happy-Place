@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { View, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { View, TouchableOpacity, ScrollView, StyleSheet, Animated, Keyboard } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { 
@@ -15,6 +15,8 @@ import {
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
+import { useDispatch } from 'react-redux';
+import { showLoading, hideLoading } from 'store/loadingSlice';
 import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
 import CustomMaskedTextInput from 'src/components/FontFamilyMaskedTextInput';
@@ -28,6 +30,8 @@ import KeyIcon from 'assets/images/global/key-icon.svg';
 import EyeIcon from 'assets/images/global/eye-icon.svg';
 import EyeSlashIcon from 'assets/images/global/eye-slash-icon.svg';
 import authenticationService from 'services/authenticationService';
+
+const TOAST_DISPLAY_DURATION = 4000;
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -175,7 +179,6 @@ const phoneStyles = StyleSheet.create({
   passwordCheckIcons: {
     width: scaleWidth(16),
     height: scaleHeight(16)
-
   },
   passwordRequirementTxt: {
     fontSize: scaleFont(14),
@@ -183,6 +186,30 @@ const phoneStyles = StyleSheet.create({
     opacity: 0.7,
     fontWeight: 400,
     color: Black
+  },
+  toastContainer: {
+    position: 'absolute',
+    left: scaleWidth(20),
+    right: scaleWidth(20),
+    zIndex: 100
+  },
+  toast: {
+    borderRadius: scaleWidth(12),
+    paddingHorizontal: scaleWidth(16),
+    paddingVertical: scaleHeight(12),
+    backgroundColor: HappyColor,
+    shadowColor: Black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6
+  },
+  toastText: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(20),
+    fontWeight: 600,
+    color: White,
+    textAlign: 'center'
   },
   signUp: {
     marginBottom: scaleHeight(10)
@@ -371,7 +398,6 @@ const tabletStyles = StyleSheet.create({
   passwordCheckIcons: {
     width: scaleWidth(21.461),
     height: scaleHeight(21.461)
-
   },
   passwordRequirementTxt: {
     fontSize: scaleFont(18),
@@ -379,6 +405,30 @@ const tabletStyles = StyleSheet.create({
     opacity: 0.7,
     fontWeight: 400,
     color: Black
+  },
+  toastContainer: {
+    position: 'absolute',
+    left: scaleWidth(24),
+    right: scaleWidth(24),
+    zIndex: 100
+  },
+  toast: {
+    borderRadius: scaleWidth(16),
+    paddingHorizontal: scaleWidth(20),
+    paddingVertical: scaleHeight(16),
+    backgroundColor: HappyColor,
+    shadowColor: Black,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8
+  },
+  toastText: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    fontWeight: 600,
+    color: White,
+    textAlign: 'center'
   },
   signUp: {
     marginBottom: scaleHeight(12)
@@ -421,6 +471,7 @@ const tabletStyles = StyleSheet.create({
 });
 
 export default function CreateAccount() {
+  const dispatch = useDispatch();
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
@@ -432,7 +483,10 @@ export default function CreateAccount() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const toastTranslateY = useRef(new Animated.Value(-20)).current;
+  const toastTimerRef = useRef(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -441,19 +495,55 @@ export default function CreateAccount() {
       setPhone('');
       setPassword('');
       setConfirmPassword('');
-      setError(null);
+      setToastMessage(null);
+      toastOpacity.setValue(0);
+      toastTranslateY.setValue(-20);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     }, [])
   );
+
+  const showToast = (message) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage(message);
+    toastOpacity.setValue(0);
+    toastTranslateY.setValue(-20);
+    Animated.parallel([
+      Animated.timing(toastOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
+      Animated.timing(toastTranslateY, { toValue: 0, duration: 250, useNativeDriver: true })
+    ]).start();
+    toastTimerRef.current = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(toastOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.timing(toastTranslateY, { toValue: -20, duration: 200, useNativeDriver: true })
+      ]).start(() => setToastMessage(null));
+    }, TOAST_DISPLAY_DURATION);
+  };
+
+  const dismissToast = () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    Animated.parallel([
+      Animated.timing(toastOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(toastTranslateY, { toValue: -20, duration: 200, useNativeDriver: true })
+    ]).start(() => setToastMessage(null));
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
   const hasMinLen = (v) => v.length >= 8;
   const hasNumber = (v) => /\d/.test(v);
   const hasLowerUpper = (v) => /[a-z]/.test(v) && /[A-Z]/.test(v);
+  const hasSpecialChar = (v) => /[^a-zA-Z0-9]/.test(v);
 
   const rules = useMemo(() => ({
     minLen: hasMinLen(password),
     number: hasNumber(password),
     lowerUpper: hasLowerUpper(password),
+    specialChar: hasSpecialChar(password),
     match: password.length > 0 && password === confirmPassword,
   }), [password, confirmPassword]);
 
@@ -464,31 +554,32 @@ export default function CreateAccount() {
   const canSubmit = nameValid &&
     (emailValid || phoneValid) &&
     rules.minLen && rules.number && 
-    rules.lowerUpper && rules.match;
+    rules.lowerUpper && rules.specialChar && rules.match;
 
   const handleSignUp = async () => {
     if (!canSubmit) return;
-
+    Keyboard.dismiss();
+    setToastMessage(null);
+    toastOpacity.setValue(0);
+    toastTranslateY.setValue(-20);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    dispatch(showLoading());
     try {
-      console.log("START OF TRY CATCH");
-      const response = await authenticationService.signUp({
-        name: name.trim(),
-        email: selectedCreateAccountType === 'email' ? email.trim() : null,
-        phone: selectedCreateAccountType === 'phone' ? phone.replace(/\D/g, '') : null,
-        password: password
-      });
-      console.log("AFTER SIGN UP");
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.log("!response.ok ", errorData.message);
-        throw new Error(errorData.message || 'Registration failed');
+      let response;
+      if (selectedCreateAccountType === 'email') {
+        response = await authenticationService.signUpWithEmail(name.trim(), email.trim(), password);
+      } else {
+        response = await authenticationService.signUpWithPhone(name.trim(), phone.replace(/\D/g, ''), password);
       }
-
-      const contact = selectedCreateAccountType === 'email' ? email : phone;
+      if (!response.ok) {
+        throw new Error();
+      }
+      const contact = selectedCreateAccountType === 'email' ? email.trim() : phone.replace(/\D/g, '');
       navigation.navigate('VerifyCode', { contact, source: 'createAccount' });
     } catch (err) {
-      console.log("CATCH ERROR: ", error.message);
-      setError(err.message || 'An error occurred during registration');
+      showToast('Unable to create your account. Please check your information and try again.');
+    } finally {
+      dispatch(hideLoading());
     }
   };
 
@@ -516,7 +607,6 @@ export default function CreateAccount() {
           </TouchableOpacity>
           <CustomText style={styles.createAccount}>Create an Account</CustomText>
           <CustomText style={styles.createAccountDesc}>Fill the Details to setup your account</CustomText>
-          {error && <CustomText style={{ color: 'red', marginBottom: scaleHeight(10) }}>{error}</CustomText>}
           <View style={styles.inputsCredentials}>
             <View style={styles.createAccountType}>
               <TouchableOpacity
@@ -617,6 +707,7 @@ export default function CreateAccount() {
                 { ok: rules.minLen, text: 'Minimum 8 characters' },
                 { ok: rules.number, text: 'At least 1 number (0–9)' },
                 { ok: rules.lowerUpper, text: 'At least 1 lowercase and 1 uppercase letter' },
+                { ok: rules.specialChar, text: 'At least 1 special character' },
                 { ok: rules.match, text: 'Passwords matching' },
               ].map((r, i) => (
                 <View key={i} style={styles.passwordRequirements}>
@@ -650,6 +741,18 @@ export default function CreateAccount() {
           </View>
         </View>
       </ScrollView>
+      {toastMessage && (
+        <Animated.View
+          style={[
+            styles.toastContainer,
+            { top: statusBarHeight + scaleHeight(12), opacity: toastOpacity, transform: [{ translateY: toastTranslateY }] }
+          ]}
+        >
+          <TouchableOpacity style={styles.toast} activeOpacity={0.9} onPress={dismissToast}>
+            <CustomText style={styles.toastText}>{toastMessage}</CustomText>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
     </View>
   );
 }

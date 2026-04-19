@@ -1,14 +1,17 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import { HappyColor, White, Black, TranslucentWhite } from 'src/constants/colors';
+import { HappyColor, White, TranslucentWhite } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
-import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
+import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
+import { useDispatch } from 'react-redux';
+import { showLoading, hideLoading } from 'store/loadingSlice';
 import CustomText from 'src/components/FontFamilyText';
 import SuccessLogo from 'assets/images/accountVerified/account-verified-success-logo.png';
 import HappyCheck from 'assets/images/accountVerified/happy-check-icon.svg';
+
 const phoneStyles = StyleSheet.create({
   root: {
     backgroundColor: HappyColor,
@@ -17,9 +20,9 @@ const phoneStyles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   part1: {
-      height: scaleHeight(388),
-      paddingHorizontal: scaleWidth(32),
-      width: '100%',
+    height: scaleHeight(388),
+    paddingHorizontal: scaleWidth(32),
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'flex-end'
   },
@@ -60,7 +63,7 @@ const phoneStyles = StyleSheet.create({
     height: scaleHeight(20),
     borderWidth: scaleWidth(1.5),
     borderRadius: scaleWidth(8),
-     borderColor: White,
+    borderColor: White,
     backgroundColor: TranslucentWhite
   },
   checkboxSelected: {
@@ -110,9 +113,9 @@ const tabletStyles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   part1: {
-      height: scaleHeight(641.125),
-      paddingHorizontal: scaleWidth(163.84),
-      width: '100%',
+    height: scaleHeight(641.125),
+    paddingHorizontal: scaleWidth(163.84),
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'flex-end'
   },
@@ -153,7 +156,7 @@ const tabletStyles = StyleSheet.create({
     height: 37.21,
     borderWidth: scaleWidth(2),
     borderRadius: scaleWidth(10.731),
-     borderColor: White,
+    borderColor: White,
     backgroundColor: TranslucentWhite
   },
   checkboxSelected: {
@@ -196,51 +199,59 @@ const tabletStyles = StyleSheet.create({
 });
 
 export default function AccountVerified() {
-    const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
-    const styles = useResponsiveStyles(phoneStyles, tabletStyles);
-    const navigation = useNavigation();
-    const [rememberMe, setRememberMe] = useState(false);
-    const route = useRoute();
+  const dispatch = useDispatch();
+  const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
+  const styles = useResponsiveStyles(phoneStyles, tabletStyles);
+  const navigation = useNavigation();
+  const [rememberMe, setRememberMe] = useState(false);
 
-    const rootStyle = {
+  const handleGetStarted = () => {
+    dispatch(showLoading());
+    setTimeout(() => {
+      dispatch(hideLoading());
+      navigation.navigate('ChatGroups');
+    }, 1000);
+  };
+
+  const rootStyle = {
     ...styles.root,
     paddingTop: statusBarHeight,
     paddingBottom: bottomSafeHeight
-    };
+  };
 
-    return (
+  return (
     <View style={rootStyle}>
-        <View style={styles.part1}>
-          <Image
-            source={SuccessLogo}
-            style={styles.successLogo}
-            accessible={true}
-            accessibilityLabel="Success logo"
-          />
-          <CustomText style={styles.accountVerifiedTxt}>Account Verified</CustomText>
-          <CustomText style={styles.descriptionTxt}>Your account has been verified succesfully, now let’s enjoy Happy Place features!</CustomText>
+      <View style={styles.part1}>
+        <Image
+          source={SuccessLogo}
+          style={styles.successLogo}
+          accessible={true}
+          accessibilityLabel="Success logo"
+        />
+        <CustomText style={styles.accountVerifiedTxt}>Account Verified</CustomText>
+        <CustomText style={styles.descriptionTxt}>Your account has been verified successfully, now let's enjoy Happy Place features!</CustomText>
+      </View>
+      <View style={styles.part2}>
+        <View style={styles.rememberMeRow}>
+          <TouchableOpacity 
+            style={rememberMe ? styles.checkboxSelected : styles.checkbox} 
+            onPress={() => setRememberMe(!rememberMe)}
+          >
+            {rememberMe && (
+              <HappyCheck {...styles.happyCheckIcon}/>
+            )}
+          </TouchableOpacity>
+          <CustomText style={styles.rememberMeTxt}>Login & Remember me</CustomText>
         </View>
-        <View style={styles.part2}>
-            <View style={styles.rememberMeRow}>
-                <TouchableOpacity 
-                style={rememberMe ? styles.checkboxSelected : styles.checkbox} 
-                    onPress={() => setRememberMe(!rememberMe)}
-                >
-                    {rememberMe && (
-                        <HappyCheck {...styles.happyCheckIcon}/>
-                    )}
-                </TouchableOpacity>
-                <CustomText style={styles.rememberMeTxt}>Login & Remember me</CustomText>
-            </View>
-            <View style={styles.getStartedView}>
-                <TouchableOpacity 
-                    style={styles.getStartedBtn}
-                    onPress={() => navigation.navigate('ChatGroups')}
-                >
-                    <CustomText style={styles.getStartedTxt}>Get Started</CustomText>
-                </TouchableOpacity>
-            </View>
+        <View style={styles.getStartedView}>
+          <TouchableOpacity 
+            style={styles.getStartedBtn}
+            onPress={handleGetStarted}
+          >
+            <CustomText style={styles.getStartedTxt}>Get Started</CustomText>
+          </TouchableOpacity>
         </View>
+      </View>
     </View>
-    );
+  );
 }
