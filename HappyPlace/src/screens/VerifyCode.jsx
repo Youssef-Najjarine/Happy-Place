@@ -377,15 +377,18 @@ export default function VerifyCode() {
 
   const isEmailContact = contact.includes('@');
   const maskEmail = (email) => {
-    const [name, domain] = email.split('@');
-    if (!domain || name.length <= 4) return email;
-    return `${name.slice(0, 4)}${'*'.repeat(name.length - 4)}@${domain}`;
+    const [localPart, domain] = email.split('@');
+    if (!domain) return email;
+    if (localPart.length <= 1) return `${localPart}**@${domain}`;
+    const visibleStart = localPart.slice(0, 2);
+    const maskedRemainder = '*'.repeat(Math.max(localPart.length - 2, 2));
+    return `${visibleStart}${maskedRemainder}@${domain}`;
   };
-  const maskPhone = (phone) => {
-    if (phone.length <= 4) return phone;
-    const visibleStart = phone.slice(0, 5);
-    const visibleEnd = phone.slice(-3);
-    const maskedMiddle = '*'.repeat(phone.length - 8);
+  const maskPhone = (phoneNumber) => {
+    if (phoneNumber.length <= 4) return phoneNumber;
+    const visibleStart = phoneNumber.slice(0, 3);
+    const visibleEnd = phoneNumber.slice(-2);
+    const maskedMiddle = '*'.repeat(Math.max(phoneNumber.length - 5, 2));
     return `${visibleStart}${maskedMiddle}${visibleEnd}`;
   };
 
@@ -494,9 +497,9 @@ export default function VerifyCode() {
   }, [isCounting]);
 
   const timeLeft = useMemo(() => {
-    const m = Math.floor(secondsLeft / 60);
-    const s = secondsLeft % 60;
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    const minutes = Math.floor(secondsLeft / 60);
+    const seconds = secondsLeft % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   }, [secondsLeft]);
 
   const handleResend = () => {
