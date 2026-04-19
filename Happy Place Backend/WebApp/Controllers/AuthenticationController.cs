@@ -32,6 +32,12 @@ public class AuthenticationController : ControllerBase {
     }
 
     [HttpPost]
+    public IActionResult ResendEmailCode(AuthenticationResendEmailCodeModel model) {
+        model.Resend();
+        return this.Ok();
+    }
+
+    [HttpPost]
     public IActionResult SignUpWithPhone(AuthenticationSignUpWithPhoneModel model) {
         var response = model.SignUp();
         if (response.IsSuccessful)
@@ -45,5 +51,11 @@ public class AuthenticationController : ControllerBase {
         if (response == null)
             return this.BadRequest();
         return this.Ok(response);
+    }
+
+    [HttpPost]
+    public IActionResult ResendPhoneCode(AuthenticationResendPhoneCodeModel model) {
+        model.Resend();
+        return this.Ok();
     }
 }

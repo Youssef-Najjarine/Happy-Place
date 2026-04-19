@@ -1,7 +1,8 @@
-using DotNetEnv;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using DotNetEnv;
 
 namespace HappyWorld.HappyPlace;
 
@@ -23,6 +24,7 @@ public class UserAuthenticationToken {
         this.ExpirationDateUtc = DateTimeOffset.UtcNow.AddDays(TokenExpirationDays);
     }
 
+    [JsonConstructor]
     private UserAuthenticationToken() { }
 
     // Properties

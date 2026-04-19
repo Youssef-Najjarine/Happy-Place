@@ -13,7 +13,7 @@ public abstract class SmsSender {
 
     internal static SmsSender Create() {
         if (_initializer != null) return _initializer();
-        throw new InvalidOperationException("No SMS sender has been configured. Set an initializer before sending SMS messages.");
+        return new TwilioSmsSender();
     }
 
     public abstract SmsMessage NewSmsMessage();

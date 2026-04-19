@@ -1,3 +1,5 @@
+using HappyWorld.HappyPlace.Data;
+
 namespace HappyWorld.HappyPlace;
 
 public class TestingMockProvidersContainer : IDisposable {
@@ -9,6 +11,7 @@ public class TestingMockProvidersContainer : IDisposable {
 
     // Constructors
     public TestingMockProvidersContainer() {
+        HappyPlaceDbContext.SetConnectionString("Server=.;Database=HappyPlaceTests;Trusted_Connection=True;MultipleActiveResultSets=true;trustservercertificate=yes");
         this._webClient = new WebClient();
         this._emailProvider = new InMemoryEmailSenderProvider();
         this._smsProvider = new InMemorySmsSenderProvider();
@@ -38,6 +41,7 @@ public class TestingMockProvidersContainer : IDisposable {
         this._smsProvider = null;
         this._webClient?.Dispose();
         this._webClient = null;
+        HappyPlaceDbContext.ResetConnectionString();
     }
 
     public void Dispose() {

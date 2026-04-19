@@ -8,6 +8,7 @@ public class GenerateUsernameTest {
 
     [Fact]
     public void LongNameProducesUsernameUnder20Characters() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         using var dbContext = HappyPlaceDbContext.Create();
 
         string username = UserAccountRegistrar.GenerateUsername("ynajjarine@gmail.com", "Youssef Najjarine Youssef Najjarine Youssef Najjarine", dbContext);
@@ -17,6 +18,7 @@ public class GenerateUsernameTest {
 
     [Fact]
     public void ShortNameProducesUsernameWithAtLeastFiveCharacters() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         using var dbContext = HappyPlaceDbContext.Create();
 
         string username = UserAccountRegistrar.GenerateUsername("ynajjarine@gmail.com", "Y", dbContext);
@@ -28,6 +30,7 @@ public class GenerateUsernameTest {
 
     [Fact]
     public void UsernameIsAllLowercase() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         using var dbContext = HappyPlaceDbContext.Create();
 
         string username = UserAccountRegistrar.GenerateUsername("ynajjarine@gmail.com", "Youssef Najjarine", dbContext);
@@ -37,6 +40,7 @@ public class GenerateUsernameTest {
 
     [Fact]
     public void UsernameContainsNoSpaces() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         using var dbContext = HappyPlaceDbContext.Create();
 
         string username = UserAccountRegistrar.GenerateUsername("ynajjarine@gmail.com", "Youssef Najjarine", dbContext);
@@ -46,6 +50,7 @@ public class GenerateUsernameTest {
 
     [Fact]
     public void UsernameEndsWithNumber() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         using var dbContext = HappyPlaceDbContext.Create();
 
         string username = UserAccountRegistrar.GenerateUsername("ynajjarine@gmail.com", "Youssef Najjarine", dbContext);
@@ -57,11 +62,14 @@ public class GenerateUsernameTest {
 
     [Fact]
     public void TwoGeneratedUsernamesForSameNameAreDifferent() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         using var dbContext = HappyPlaceDbContext.Create();
+        string uniqueEmail1 = $"user1{Guid.NewGuid():N}@gmail.com";
+        string uniqueEmail2 = $"user2{Guid.NewGuid():N}@gmail.com";
 
-        string firstUsername = UserAccountRegistrar.GenerateUsername("user1@gmail.com", "John Smith", dbContext);
+        string firstUsername = UserAccountRegistrar.GenerateUsername(uniqueEmail1, "John Smith", dbContext);
         dbContext.PendingUserAccounts.Add(new PendingUserAccount {
-            EmailAddress = "user1@gmail.com",
+            EmailAddress = uniqueEmail1,
             DisplayName = "John Smith",
             Username = firstUsername,
             HashedPassword = "hashed",
@@ -69,7 +77,7 @@ public class GenerateUsernameTest {
             CreatedAtUtc = DateTime.UtcNow
         });
         dbContext.SaveChanges();
-        string secondUsername = UserAccountRegistrar.GenerateUsername("user2@gmail.com", "John Smith", dbContext);
+        string secondUsername = UserAccountRegistrar.GenerateUsername(uniqueEmail2, "John Smith", dbContext);
 
         Assert.NotEqual(firstUsername, secondUsername);
     }
@@ -78,6 +86,7 @@ public class GenerateUsernameTest {
 
     [Fact]
     public void NameWithSpecialCharactersKeepsThemInUsername() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         using var dbContext = HappyPlaceDbContext.Create();
 
         string username = UserAccountRegistrar.GenerateUsername("obrien@gmail.com", "O'Brien", dbContext);
@@ -87,6 +96,7 @@ public class GenerateUsernameTest {
 
     [Fact]
     public void NameWithNumbersKeepsThemInUsername() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         using var dbContext = HappyPlaceDbContext.Create();
 
         string username = UserAccountRegistrar.GenerateUsername("john3@gmail.com", "John3", dbContext);
@@ -98,6 +108,7 @@ public class GenerateUsernameTest {
 
     [Fact]
     public void NameAtExactly3CharsGetsPaddedToAtLeast4() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         using var dbContext = HappyPlaceDbContext.Create();
 
         string username = UserAccountRegistrar.GenerateUsername("joe@gmail.com", "Joe", dbContext);
@@ -108,6 +119,7 @@ public class GenerateUsernameTest {
 
     [Fact]
     public void NameAtExactly4CharsDoesNotGetPadded() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         using var dbContext = HappyPlaceDbContext.Create();
 
         string username = UserAccountRegistrar.GenerateUsername("john@gmail.com", "John", dbContext);
@@ -117,6 +129,7 @@ public class GenerateUsernameTest {
 
     [Fact]
     public void NameAtExactly18CharsGetsTruncated() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         using var dbContext = HappyPlaceDbContext.Create();
         string eighteenCharName = new string('a', 18);
 
@@ -128,6 +141,7 @@ public class GenerateUsernameTest {
 
     [Fact]
     public void NameThatIsAllSpacesProducesValidUsername() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         using var dbContext = HappyPlaceDbContext.Create();
 
         string username = UserAccountRegistrar.GenerateUsername("spaces@gmail.com", "     ", dbContext);

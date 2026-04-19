@@ -1,13 +1,14 @@
-namespace HappyWorld.HappyPlace.Web.Models.Authentication {
-    public record AuthenticationVerifyEmailModel(string Email, string VerificationCode) {
-        public LoginSuccessModel VerifyEmail() {
-            bool isVerified = UserAccountRegistrar.VerifyEmailAddress(this.Email, this.VerificationCode);
-            if (!isVerified) {
-                return null;
-            }
+using HappyWorld.HappyPlace.Data;
 
-            UserAuthenticationToken authToken = UserAuthenticationToken.GenerateForUser(this.Email);
-            return new LoginSuccessModel(authToken.ToAuthTokenString());
-        }
+namespace HappyWorld.HappyPlace.Web.Models.Authentication;
+
+public record AuthenticationVerifyEmailModel(string Email, string VerificationCode) {
+    // Methods
+    public LoginSuccessModel VerifyEmail() {
+        UserAccount userAccount = UserAccountRegistrar.VerifyEmailAddress(this.Email, this.VerificationCode);
+        if (userAccount == null)
+            return null;
+        UserAuthenticationToken authToken = UserAuthenticationToken.GenerateForUser(userAccount.Id.ToString());
+        return new LoginSuccessModel(authToken.ToAuthTokenString());
     }
 }

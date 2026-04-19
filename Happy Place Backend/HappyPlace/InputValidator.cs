@@ -15,7 +15,7 @@ public class InputValidator {
         if (validationErrors.Count > 0)
             throw new ValidationErrorsException(validationErrors);
 
-        if (dbContext.PendingUserAccounts.Any(field => field.EmailAddress == email))
+        if (dbContext.UserAccounts.Any(field => field.EmailAddress == email))
             validationErrors.Add("An account with this email address already exists.");
 
         if (validationErrors.Count > 0)
@@ -32,7 +32,7 @@ public class InputValidator {
         if (validationErrors.Count > 0)
             throw new ValidationErrorsException(validationErrors);
 
-        if (dbContext.PendingUserAccounts.Any(field => field.PhoneNumber == phoneNumber))
+        if (dbContext.UserAccounts.Any(field => field.PhoneNumber == phoneNumber))
             validationErrors.Add("An account with this phone number already exists.");
 
         if (validationErrors.Count > 0)

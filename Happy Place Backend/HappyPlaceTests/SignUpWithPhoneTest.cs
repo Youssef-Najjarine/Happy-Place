@@ -1,6 +1,6 @@
-using System.Net;
 using HappyWorld.HappyPlace.Data;
 using HappyWorld.HappyPlace.Sms;
+using System.Net;
 
 namespace HappyWorld.HappyPlace;
 
@@ -208,8 +208,10 @@ public class SignUpWithPhoneTest {
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    // Tests - Re-Signup and Duplicate Prevention
+
     [Fact]
-    public void DuplicatePhoneNumberReturnsBadRequest() {
+    public void ReSignUpWithSamePhoneBeforeVerifyingSucceeds() {
         string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
         var jsonData = new {
             Name = "Youssef Najjarine",
@@ -221,7 +223,70 @@ public class SignUpWithPhoneTest {
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
         HttpResponseMessage secondAttempt = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
 
-        Assert.Equal(HttpStatusCode.BadRequest, secondAttempt.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, secondAttempt.StatusCode);
+    }
+
+    [Fact]
+    public void OldVerificationCodeInvalidAfterReSignUp() {
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        var jsonData = new {
+            Name = "Youssef Najjarine",
+            PhoneNumber = uniquePhone,
+            Password = "Seven74!"
+        };
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
+        SmsMessage firstSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
+        string oldVerificationCode = SmsVerificationNotification.ExtractVerificationCode(firstSms);
+
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
+
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = oldVerificationCode });
+
+        Assert.Equal(HttpStatusCode.BadRequest, verifyResponse.StatusCode);
+    }
+
+    [Fact]
+    public void NewVerificationCodeWorksAfterReSignUp() {
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        var jsonData = new {
+            Name = "Youssef Najjarine",
+            PhoneNumber = uniquePhone,
+            Password = "Seven74!"
+        };
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
+
+        SmsMessage secondSms = testingMockProvidersContainer.SmsProvider.SentMessages.Last();
+        string newVerificationCode = SmsVerificationNotification.ExtractVerificationCode(secondSms);
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = newVerificationCode });
+
+        var verifyResponseData = verifyResponse.ReadContentAsJsonDocument();
+        Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
+        Assert.NotNull(verifyResponseData.RootElement.GetProperty("authToken").GetString());
+    }
+
+    [Fact]
+    public void SignUpWithAlreadyVerifiedPhoneReturnsBadRequest() {
+        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        var jsonData = new {
+            Name = "Youssef Najjarine",
+            PhoneNumber = uniquePhone,
+            Password = "Seven74!"
+        };
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
+        SmsMessage verificationSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
+        string verificationCode = SmsVerificationNotification.ExtractVerificationCode(verificationSms);
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
+
+        HttpResponseMessage secondSignUp = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData);
+
+        Assert.Equal(HttpStatusCode.BadRequest, secondSignUp.StatusCode);
     }
 
     // Tests - Password Validation

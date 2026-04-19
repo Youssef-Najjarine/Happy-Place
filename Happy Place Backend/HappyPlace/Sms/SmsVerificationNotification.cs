@@ -18,7 +18,7 @@ public class SmsVerificationNotification {
         var smsSender = SmsSender.Create();
         SmsMessage message = smsSender.NewSmsMessage();
         message.ToPhoneNumber = toPhoneNumber;
-        message.BodyText = $"Hi {name}, your Happy Place verification code is: {verificationCode}. This code expires in 10 minutes.";
+        message.BodyText = $"Your Happy Place verification code is: {verificationCode}. This code expires in 10 minutes.\n\n@happy.place #{verificationCode}";
         smsSender.Send(message);
     }
 }

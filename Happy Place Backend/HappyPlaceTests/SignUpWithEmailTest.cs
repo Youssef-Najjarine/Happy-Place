@@ -1,6 +1,6 @@
-using System.Net;
 using HappyWorld.HappyPlace.Data;
 using HappyWorld.HappyPlace.Email;
+using System.Net;
 
 namespace HappyWorld.HappyPlace;
 
@@ -250,9 +250,11 @@ public class SignUpWithEmailTest {
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    // Tests - Re-Signup and Duplicate Prevention
+
     [Fact]
-    public void DuplicateEmailReturnsBadRequest() {
-        string uniqueEmail = $"dup{Guid.NewGuid():N}@gmail.com";
+    public void ReSignUpWithSameEmailBeforeVerifyingSucceeds() {
+        string uniqueEmail = $"resign{Guid.NewGuid():N}@gmail.com";
         var jsonData = new {
             Name = "Youssef Najjarine",
             Email = uniqueEmail,
@@ -263,7 +265,70 @@ public class SignUpWithEmailTest {
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
         HttpResponseMessage secondAttempt = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
 
-        Assert.Equal(HttpStatusCode.BadRequest, secondAttempt.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, secondAttempt.StatusCode);
+    }
+
+    [Fact]
+    public void OldVerificationCodeInvalidAfterReSignUp() {
+        string uniqueEmail = $"oldcode{Guid.NewGuid():N}@gmail.com";
+        var jsonData = new {
+            Name = "Youssef Najjarine",
+            Email = uniqueEmail,
+            Password = "Seven74!"
+        };
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        MailMessage firstEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
+        string oldVerificationCode = EmailVerificationNotification.ExtractVerificationCode(firstEmail);
+
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = oldVerificationCode });
+
+        Assert.Equal(HttpStatusCode.BadRequest, verifyResponse.StatusCode);
+    }
+
+    [Fact]
+    public void NewVerificationCodeWorksAfterReSignUp() {
+        string uniqueEmail = $"newcode{Guid.NewGuid():N}@gmail.com";
+        var jsonData = new {
+            Name = "Youssef Najjarine",
+            Email = uniqueEmail,
+            Password = "Seven74!"
+        };
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+
+        MailMessage secondEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Last();
+        string newVerificationCode = EmailVerificationNotification.ExtractVerificationCode(secondEmail);
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = newVerificationCode });
+
+        var verifyResponseData = verifyResponse.ReadContentAsJsonDocument();
+        Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
+        Assert.NotNull(verifyResponseData.RootElement.GetProperty("authToken").GetString());
+    }
+
+    [Fact]
+    public void SignUpWithAlreadyVerifiedEmailReturnsBadRequest() {
+        string uniqueEmail = $"verified{Guid.NewGuid():N}@gmail.com";
+        var jsonData = new {
+            Name = "Youssef Najjarine",
+            Email = uniqueEmail,
+            Password = "Seven74!"
+        };
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
+        string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
+        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
+
+        HttpResponseMessage secondSignUp = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+
+        Assert.Equal(HttpStatusCode.BadRequest, secondSignUp.StatusCode);
     }
 
     // Tests - Password Validation
