@@ -32,10 +32,10 @@ public class AuthenticationController : ControllerBase {
 
     [HttpPost]
     public IActionResult SignInWithEmail(AuthenticationSignInWithEmailModel model) {
-        SignInResult SignInResult = model.SignIn();
-        if (SignInResult == null)
+        SignInResult signInResult = model.SignIn();
+        if (signInResult == null)
             return this.BadRequest();
-        return this.Ok(SignInResult);
+        return this.Ok(signInResult);
     }
 
     [HttpPost]
@@ -62,9 +62,17 @@ public class AuthenticationController : ControllerBase {
 
     [HttpPost]
     public IActionResult SignInWithPhone(AuthenticationSignInWithPhoneModel model) {
-        SignInResult SignInResult = model.SignIn();
-        if (SignInResult == null)
+        SignInResult signInResult = model.SignIn();
+        if (signInResult == null)
             return this.BadRequest();
-        return this.Ok(SignInResult);
+        return this.Ok(signInResult);
+    }
+
+    [HttpPost]
+    public IActionResult ValidateToken(AuthenticationValidateTokenModel model) {
+        UserProfileResult userProfile = model.Validate();
+        if (userProfile == null)
+            return this.Unauthorized();
+        return this.Ok(userProfile);
     }
 }
