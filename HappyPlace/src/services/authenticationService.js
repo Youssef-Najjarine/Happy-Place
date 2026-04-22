@@ -1,4 +1,4 @@
-import baseService from "./baseService";
+import baseService from './baseService';
 
 export default authenticationService = {
     signUpWithEmail: function(name, email, password) {
@@ -18,5 +18,11 @@ export default authenticationService = {
     },
     resendPhoneCode: function(phoneNumber) {
         return baseService.postJson("authentication/resendPhoneCode", { PhoneNumber: phoneNumber });
+    },
+    signInWithEmail: function(email, password) {
+        return baseService.postJson("authentication/signInWithEmail", { Email: email, Password: password });
+    },
+    signInWithPhone: function(phoneNumber, password) {
+        return baseService.postJson("authentication/signInWithPhone", { PhoneNumber: phoneNumber, Password: password });
     }
 };

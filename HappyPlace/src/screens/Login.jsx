@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { View, TouchableOpacity, ScrollView, StyleSheet, Animated, Keyboard } from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { 
   HappyColor, 
@@ -16,6 +16,8 @@ import {
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
+import { useDispatch } from 'react-redux';
+import { showLoading, hideLoading } from 'store/loadingSlice';
 import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
 import CustomMaskedTextInput from 'src/components/FontFamilyMaskedTextInput';
@@ -26,6 +28,9 @@ import PhoneIcon from 'assets/images/global/phone-icon.svg';
 import KeyIcon from 'assets/images/global/key-icon.svg';
 import EyeIcon from 'assets/images/global/eye-icon.svg';
 import EyeSlashIcon from 'assets/images/global/eye-slash-icon.svg';
+import authenticationService from 'services/authenticationService';
+
+const TOAST_DISPLAY_DURATION = 4000;
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -211,6 +216,30 @@ const phoneStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.28),
     fontWeight: 600,
     color: HappyColor
+  },
+  toastContainer: {
+    position: 'absolute',
+    left: scaleWidth(20),
+    right: scaleWidth(20),
+    zIndex: 100
+  },
+  toast: {
+    borderRadius: scaleWidth(12),
+    paddingHorizontal: scaleWidth(16),
+    paddingVertical: scaleHeight(12),
+    backgroundColor: HappyColor,
+    shadowColor: Black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6
+  },
+  toastText: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(20),
+    fontWeight: 600,
+    color: White,
+    textAlign: 'center'
   },
   login: {
     marginBottom: scaleHeight(10)
@@ -409,7 +438,7 @@ const tabletStyles = StyleSheet.create({
     borderRadius: scaleWidth(10.731),
     width: 37,
     height: 37,
-     borderColor: HappyColor,
+    borderColor: HappyColor,
     backgroundColor: BlushRose
   },
   rememberMeBtnSelected: {
@@ -437,6 +466,30 @@ const tabletStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.36),
     fontWeight: 600,
     color: HappyColor
+  },
+  toastContainer: {
+    position: 'absolute',
+    left: scaleWidth(24),
+    right: scaleWidth(24),
+    zIndex: 100
+  },
+  toast: {
+    borderRadius: scaleWidth(16),
+    paddingHorizontal: scaleWidth(20),
+    paddingVertical: scaleHeight(16),
+    backgroundColor: HappyColor,
+    shadowColor: Black,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8
+  },
+  toastText: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    fontWeight: 600,
+    color: White,
+    textAlign: 'center'
   },
   login: {
     marginBottom: scaleHeight(12)
@@ -479,6 +532,7 @@ const tabletStyles = StyleSheet.create({
 });
 
 export default function Login() {
+  const dispatch = useDispatch();
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
@@ -488,11 +542,91 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+  const [toastMessage, setToastMessage] = useState(null);
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const toastTranslateY = useRef(new Animated.Value(-20)).current;
+  const toastTimerRef = useRef(null);
+
+  const isEmail = (emailValue) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue.trim());
   const emailValid = selectedSignInType === 'email' ? isEmail(email) : false;
   const phoneValid = selectedSignInType === 'phone' ? phone.replace(/\D/g, '').length >= 10 : false;
   const passwordValid = password.trim().length > 0;
-  const canLogin = passwordValid && (emailValid || phoneValid);
+  const canSignIn = passwordValid && (emailValid || phoneValid);
+
+  useFocusEffect(
+    useCallback(() => {
+      setEmail('');
+      setPhone('');
+      setPassword('');
+      setToastMessage(null);
+      toastOpacity.setValue(0);
+      toastTranslateY.setValue(-20);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    }, [])
+  );
+
+  const showToast = (message) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage(message);
+    toastOpacity.setValue(0);
+    toastTranslateY.setValue(-20);
+    Animated.parallel([
+      Animated.timing(toastOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
+      Animated.timing(toastTranslateY, { toValue: 0, duration: 250, useNativeDriver: true })
+    ]).start();
+    toastTimerRef.current = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(toastOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.timing(toastTranslateY, { toValue: -20, duration: 200, useNativeDriver: true })
+      ]).start(() => setToastMessage(null));
+    }, TOAST_DISPLAY_DURATION);
+  };
+
+  const dismissToast = () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    Animated.parallel([
+      Animated.timing(toastOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(toastTranslateY, { toValue: -20, duration: 200, useNativeDriver: true })
+    ]).start(() => setToastMessage(null));
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  const handleSignIn = async () => {
+    if (!canSignIn) return;
+    Keyboard.dismiss();
+    setToastMessage(null);
+    toastOpacity.setValue(0);
+    toastTranslateY.setValue(-20);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    dispatch(showLoading());
+    try {
+      let response;
+      if (selectedSignInType === 'email') {
+        response = await authenticationService.signInWithEmail(email.trim(), password);
+      } else {
+        response = await authenticationService.signInWithPhone(phone.replace(/\D/g, ''), password);
+      }
+      if (!response.ok) {
+        showToast('Unable to sign in. Please check your information and try again.');
+        return;
+      }
+      const responseData = await response.json();
+      if (responseData.status === 'pending') {
+        navigation.navigate('VerifyCode', { contact: responseData.contact, source: 'signIn' });
+      } else if (responseData.status === 'verified') {
+        navigation.navigate('ChatGroups');
+      }
+    } catch (err) {
+      showToast('Something went wrong. Please try again.');
+    } finally {
+      dispatch(hideLoading());
+    }
+  };
 
   const rootStyle = {
     ...styles.root,
@@ -507,113 +641,122 @@ export default function Login() {
     <View style={rootStyle}>
       <View style={cardStyle}>
         <View style={styles.part1}>
-            <TouchableOpacity 
-              style={styles.BackArrow}
-              onPress={() => navigation.goBack()}
+          <TouchableOpacity 
+            style={styles.BackArrow}
+            onPress={() => navigation.goBack()}
+          >
+            <BackArrow {...styles.backArrowIcon}/>
+          </TouchableOpacity>
+          <CustomText style={styles.signIn}>Sign in</CustomText>
+          <CustomText style={styles.signInDesc}>Sign In to your account</CustomText>
+          <View style={styles.signInType}>
+            <TouchableOpacity
+              style={selectedSignInType === 'email' ? styles.signInTypeSelectedBtn : styles.signInTypeNotSelectedBtn}
+              onPress={() => setSelectedSignInType('email')}
             >
-              <BackArrow {...styles.backArrowIcon}/>
+              <CustomText style={selectedSignInType === 'email' ? styles.signInTypeSelectedtxt : styles.signInTypeNotSelectedTxt}>Email Address</CustomText>
             </TouchableOpacity>
-            <CustomText style={styles.signIn}>Sign in</CustomText>
-            <CustomText style={styles.signInDesc}>Sign In to your account</CustomText>
-            <View style={styles.signInType}>
-              <TouchableOpacity
-                  style={selectedSignInType === 'email' ? styles.signInTypeSelectedBtn : styles.signInTypeNotSelectedBtn}
-                  onPress={() => setSelectedSignInType('email')}
-              >
-                  <CustomText style={selectedSignInType === 'email' ? styles.signInTypeSelectedtxt : styles.signInTypeNotSelectedTxt}>Email Address</CustomText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                  style={selectedSignInType === 'phone' ? styles.signInTypeSelectedBtn : styles.signInTypeNotSelectedBtn}
-                  onPress={() => setSelectedSignInType('phone')}
-              >
-                  <CustomText style={selectedSignInType === 'phone' ? styles.signInTypeSelectedtxt : styles.signInTypeNotSelectedTxt}>Phone Number</CustomText>
-              </TouchableOpacity>
-            </View>
-            {selectedSignInType === 'email' && (
+            <TouchableOpacity
+              style={selectedSignInType === 'phone' ? styles.signInTypeSelectedBtn : styles.signInTypeNotSelectedBtn}
+              onPress={() => setSelectedSignInType('phone')}
+            >
+              <CustomText style={selectedSignInType === 'phone' ? styles.signInTypeSelectedtxt : styles.signInTypeNotSelectedTxt}>Phone Number</CustomText>
+            </TouchableOpacity>
+          </View>
+          {selectedSignInType === 'email' && (
             <View style={styles.emailPhoneView}>
-                <CustomText style={styles.textBoxLabel}>Email</CustomText>
-                <View>
-                    <CustomTextInput
-                    style={styles.input}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    value={email}
-                    onChangeText={setEmail}
-                    />
-                    <EmailIcon {...styles.textBoxIcon}/>
-                </View>
+              <CustomText style={styles.textBoxLabel}>Email</CustomText>
+              <View>
+                <CustomTextInput
+                  style={styles.input}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+                <EmailIcon {...styles.textBoxIcon}/>
+              </View>
             </View>
-            )}
-            {selectedSignInType === 'phone' && (
-                <View style={styles.emailPhoneView}>
-                    <CustomText style={styles.textBoxLabel}>Phone Number</CustomText>
-                    <View>
-                        <CustomMaskedTextInput
-                        style={styles.input}
-                        mask="(999) 999-9999"
-                        keyboardType="phone-pad"
-                        value={phone}
-                        onChangeText={setPhone}
-                        />
-                        <PhoneIcon {...styles.textBoxIcon}/>
-                    </View>
-                </View>
-            )}
-            <View style={styles.passwordView}>
-                <CustomText style={styles.textBoxLabel}>Password</CustomText>
-                <View>
-                    <CustomTextInput
-                        style={[styles.input, styles.largeRightPadding]}
-                        secureTextEntry={!showPassword}
-                        value={password}
-                        onChangeText={setPassword}
-                    />
-                    <TouchableOpacity style={styles.eyeIcons} onPress={() => setShowPassword(!showPassword)}>
-                    {showPassword ? <EyeSlashIcon {...styles.eyeIcon} /> : <EyeIcon {...styles.eyeIcon} />}
-                    </TouchableOpacity>
-                    <KeyIcon {...styles.textBoxIcon}/>
-                </View>
+          )}
+          {selectedSignInType === 'phone' && (
+            <View style={styles.emailPhoneView}>
+              <CustomText style={styles.textBoxLabel}>Phone Number</CustomText>
+              <View>
+                <CustomMaskedTextInput
+                  style={styles.input}
+                  mask="(999) 999-9999"
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={setPhone}
+                />
+                <PhoneIcon {...styles.textBoxIcon}/>
+              </View>
             </View>
-            <View style={styles.rememberMeRow}>
-                <View style={styles.rememberMe}>
-                    <TouchableOpacity 
-                        style={rememberMe ? styles.rememberMeBtnSelected : styles.rememberMeBtn}
-                        onPress={() => setRememberMe(!rememberMe)}
-                    >
-                        {rememberMe && (
-                                <Check {...styles.checkIcon}/>
-                            )
-                        }
-                    </TouchableOpacity>
-                    <CustomText style={styles.rememberMeTxt}>Remember me</CustomText>
-                </View>
-                <View>
-                    <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                      <CustomText style={styles.forgotPasswordTxt}>Forgot Password?</CustomText>
-                    </TouchableOpacity>
-                </View>
+          )}
+          <View style={styles.passwordView}>
+            <CustomText style={styles.textBoxLabel}>Password</CustomText>
+            <View>
+              <CustomTextInput
+                style={[styles.input, styles.largeRightPadding]}
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity style={styles.eyeIcons} onPress={() => setShowPassword(!showPassword)}>
+                {showPassword ? <EyeSlashIcon {...styles.eyeIcon} /> : <EyeIcon {...styles.eyeIcon} />}
+              </TouchableOpacity>
+              <KeyIcon {...styles.textBoxIcon}/>
             </View>
+          </View>
+          <View style={styles.rememberMeRow}>
+            <View style={styles.rememberMe}>
+              <TouchableOpacity 
+                style={rememberMe ? styles.rememberMeBtnSelected : styles.rememberMeBtn}
+                onPress={() => setRememberMe(!rememberMe)}
+              >
+                {rememberMe && (
+                  <Check {...styles.checkIcon}/>
+                )}
+              </TouchableOpacity>
+              <CustomText style={styles.rememberMeTxt}>Remember me</CustomText>
+            </View>
+            <View>
+              <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+                <CustomText style={styles.forgotPasswordTxt}>Forgot Password?</CustomText>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
         <View style={styles.part2}>
-            <View style={styles.login}>
-              <TouchableOpacity
-                style={[styles.loginBtn, !canLogin && { opacity: 0.5 }]}
-                disabled={!canLogin}
-                onPress={() => {
-                  if (canLogin) navigation.navigate('ChatGroups', { from: 'login' });
-                }}
-              >
-                <CustomText style={styles.loginBtnText}>Login</CustomText>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.dontHaveAccount}>
-                <CustomText style={styles.dontHaveAccountTxt}>Don't have an account?</CustomText>
-                <TouchableOpacity onPress={() => navigation.navigate('CreateAccount')}>
-                    <CustomText style={styles.signUp}>Sign up</CustomText>
-                </TouchableOpacity>
-            </View>
+          <View style={styles.login}>
+            <TouchableOpacity
+              style={[styles.loginBtn, !canSignIn && { opacity: 0.5 }]}
+              disabled={!canSignIn}
+              onPress={handleSignIn}
+            >
+              <CustomText style={styles.loginBtnText}>Login</CustomText>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.dontHaveAccount}>
+            <CustomText style={styles.dontHaveAccountTxt}>Don't have an account?</CustomText>
+            <TouchableOpacity onPress={() => navigation.navigate('CreateAccount')}>
+              <CustomText style={styles.signUp}>Sign up</CustomText>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
+      {toastMessage && (
+        <Animated.View
+          style={[
+            styles.toastContainer,
+            { top: statusBarHeight + scaleHeight(12), opacity: toastOpacity, transform: [{ translateY: toastTranslateY }] }
+          ]}
+        >
+          <TouchableOpacity style={styles.toast} activeOpacity={0.9} onPress={dismissToast}>
+            <CustomText style={styles.toastText}>{toastMessage}</CustomText>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
     </View>
   );
 }
