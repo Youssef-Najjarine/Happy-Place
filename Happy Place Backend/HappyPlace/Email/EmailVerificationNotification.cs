@@ -1,17 +1,19 @@
+
+
 using System.Text.RegularExpressions;
 
 namespace HappyWorld.HappyPlace.Email;
 
 public class EmailVerificationNotification {
     // Fields
-    private static readonly Regex SixDigits = new(@"\b(\d{6})\b", RegexOptions.Compiled);
+    private const string SixDigitPattern = @"\b(\d{6})\b";
 
     // Methods
     public static string ExtractVerificationCode(MailMessage verificationEmail) {
         var bodyProp = verificationEmail.GetType().GetProperty("BodyText");
         var body = bodyProp?.GetValue(verificationEmail) as string ?? string.Empty;
 
-        var verificationCodeMatch = SixDigits.Match(body);
+        var verificationCodeMatch = Regex.Match(body, SixDigitPattern);
         if (verificationCodeMatch.Success) return verificationCodeMatch.Groups[1].Value;
 
         throw new InvalidOperationException("Verification code not found in email body.");

@@ -1,5 +1,5 @@
 namespace HappyWorld.HappyPlace.Web.Models.Authentication {
-    public record LoginSuccessModel(String AuthToken) {
+    public record SignInSuccessModel(String AuthToken) {
 
     }
 }

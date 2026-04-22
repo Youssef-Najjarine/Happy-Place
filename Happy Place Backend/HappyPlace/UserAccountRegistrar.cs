@@ -1,6 +1,7 @@
 using HappyWorld.HappyPlace.Data;
 using HappyWorld.HappyPlace.Email;
 using HappyWorld.HappyPlace.Sms;
+using Microsoft.EntityFrameworkCore;
 using System;
 
 namespace HappyWorld.HappyPlace;
@@ -8,6 +9,9 @@ namespace HappyWorld.HappyPlace;
 public class UserAccountRegistrar {
     // Fields
     private static readonly int VerificationCodeExpirationMinutes = 10;
+    private static readonly int MaxEmailLength = 255;
+    private static readonly int MaxPhoneLength = 20;
+    private static readonly int MaxPasswordLength = 1000;
 
     // Methods
 
@@ -16,8 +20,13 @@ public class UserAccountRegistrar {
         InputValidator.ValidateEmailRegistration(name, email, password, dbContext);
         RemoveExistingPendingEmail(email, dbContext);
         String username = GenerateUsername(email, name, dbContext);
-        String verificationCode = CreateEmailUserRecordAndGetVerificationCode(email, name, password, username, dbContext);
-        EmailVerificationNotification.Send(email, name, verificationCode);
+        try {
+            String verificationCode = CreateEmailUserRecordAndGetVerificationCode(email, name, password, username, dbContext);
+            EmailVerificationNotification.Send(email, name, verificationCode);
+        }
+        catch (DbUpdateException) {
+            throw new ValidationErrorsException(["Unable to create account. Please try again."]);
+        }
     }
 
     public static void RegisterWithPhoneNumber(String phoneNumber, String name, String password) {
@@ -25,8 +34,75 @@ public class UserAccountRegistrar {
         InputValidator.ValidatePhoneRegistration(name, phoneNumber, password, dbContext);
         RemoveExistingPendingPhone(phoneNumber, dbContext);
         String username = GenerateUsername(phoneNumber, name, dbContext);
-        String verificationCode = CreatePhoneUserRecordAndGetVerificationCode(phoneNumber, name, password, username, dbContext);
-        SmsVerificationNotification.Send(phoneNumber, name, verificationCode);
+        try {
+            String verificationCode = CreatePhoneUserRecordAndGetVerificationCode(phoneNumber, name, password, username, dbContext);
+            SmsVerificationNotification.Send(phoneNumber, name, verificationCode);
+        }
+        catch (DbUpdateException) {
+            throw new ValidationErrorsException(["Unable to create account. Please try again."]);
+        }
+    }
+
+    public static SignInResult SignInWithEmailAddress(String email, String password) {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            return null;
+
+        string trimmedEmail = email.Trim();
+        string trimmedPassword = password;
+
+        if (trimmedEmail.Length > MaxEmailLength || trimmedPassword.Length > MaxPasswordLength)
+            return null;
+
+        using var dbContext = HappyPlaceDbContext.Create();
+
+        var verifiedAccount = dbContext.UserAccounts.SingleOrDefault(field => field.EmailAddress == trimmedEmail);
+        if (verifiedAccount != null) {
+            if (!PasswordHasher.VerifyPassword(trimmedPassword, verifiedAccount.HashedPassword))
+                return null;
+            UserAuthenticationToken authToken = UserAuthenticationToken.GenerateForUser(verifiedAccount.Id.ToString());
+            return SignInResult.AsVerified(authToken.ToAuthTokenString());
+        }
+
+        var pendingAccount = dbContext.PendingUserAccounts.SingleOrDefault(field => field.EmailAddress == trimmedEmail);
+        if (pendingAccount != null) {
+            if (!PasswordHasher.VerifyPassword(trimmedPassword, pendingAccount.HashedPassword))
+                return null;
+            ResendEmailVerificationCode(trimmedEmail);
+            return SignInResult.AsPending(trimmedEmail, "email");
+        }
+
+        return null;
+    }
+
+    public static SignInResult SignInWithPhoneNumber(String phoneNumber, String password) {
+        if (string.IsNullOrWhiteSpace(phoneNumber) || string.IsNullOrWhiteSpace(password))
+            return null;
+
+        string trimmedPhone = phoneNumber.Trim();
+        string trimmedPassword = password;
+
+        if (trimmedPhone.Length > MaxPhoneLength || trimmedPassword.Length > MaxPasswordLength)
+            return null;
+
+        using var dbContext = HappyPlaceDbContext.Create();
+
+        var verifiedAccount = dbContext.UserAccounts.SingleOrDefault(field => field.PhoneNumber == trimmedPhone);
+        if (verifiedAccount != null) {
+            if (!PasswordHasher.VerifyPassword(trimmedPassword, verifiedAccount.HashedPassword))
+                return null;
+            UserAuthenticationToken authToken = UserAuthenticationToken.GenerateForUser(verifiedAccount.Id.ToString());
+            return SignInResult.AsVerified(authToken.ToAuthTokenString());
+        }
+
+        var pendingAccount = dbContext.PendingUserAccounts.SingleOrDefault(field => field.PhoneNumber == trimmedPhone);
+        if (pendingAccount != null) {
+            if (!PasswordHasher.VerifyPassword(trimmedPassword, pendingAccount.HashedPassword))
+                return null;
+            ResendPhoneVerificationCode(trimmedPhone);
+            return SignInResult.AsPending(trimmedPhone, "phone");
+        }
+
+        return null;
     }
 
     public static void ResendEmailVerificationCode(String email) {
@@ -34,7 +110,7 @@ public class UserAccountRegistrar {
         var pendingUserAccount = dbContext.PendingUserAccounts.SingleOrDefault(field => field.EmailAddress == email);
         if (pendingUserAccount == null)
             return;
-        Random random = new Random();
+        Random random = new();
         String verificationCode = random.Next(100000, 1000000).ToString();
         pendingUserAccount.VerificationCode = verificationCode;
         pendingUserAccount.CreatedAtUtc = DateTime.UtcNow;
@@ -47,7 +123,7 @@ public class UserAccountRegistrar {
         var pendingUserAccount = dbContext.PendingUserAccounts.SingleOrDefault(field => field.PhoneNumber == phoneNumber);
         if (pendingUserAccount == null)
             return;
-        Random random = new Random();
+        Random random = new();
         String verificationCode = random.Next(100000, 1000000).ToString();
         pendingUserAccount.VerificationCode = verificationCode;
         pendingUserAccount.CreatedAtUtc = DateTime.UtcNow;
@@ -80,61 +156,60 @@ public class UserAccountRegistrar {
     }
 
     public static string GenerateUsername(string emailOrPhone, string name, HappyPlaceDbContext dbContext) {
-        Random random = new Random();
-        bool validUserName = false;
+        Random random = new();
         int usernameEqualityAttempts = 0;
-        int randomNumber;
-        string uniqueUsername = "";
+        string uniqueUsername;
 
         string baseUsername = name.ToLower().Replace(" ", "");
         baseUsername = ResizeBaseUsername(baseUsername, random);
 
         do {
-            randomNumber = random.Next(1, 100);
+            int randomNumber = random.Next(1, 100);
             uniqueUsername = $"{baseUsername}{randomNumber}";
-            validUserName = IsUsernameAvailable(uniqueUsername, dbContext);
+            bool validUserName = IsUsernameAvailable(uniqueUsername, dbContext);
 
             if (!validUserName) ++usernameEqualityAttempts;
+            else break;
             if (usernameEqualityAttempts >= 5) break;
-        } while (!validUserName);
+        } while (true);
 
         if (usernameEqualityAttempts >= 5) {
-            baseUsername = emailOrPhone.Contains("@")
-                ? emailOrPhone.ToLower().Split("@")[0]
+            baseUsername = emailOrPhone.Contains('@')
+                ? emailOrPhone.ToLower().Split('@')[0]
                 : emailOrPhone.ToLower();
             baseUsername = ResizeBaseUsername(baseUsername, random);
 
-            validUserName = false;
             usernameEqualityAttempts = 0;
 
             do {
-                randomNumber = random.Next(1, 100);
+                int randomNumber = random.Next(1, 100);
                 uniqueUsername = $"{baseUsername}{randomNumber}";
-                validUserName = IsUsernameAvailable(uniqueUsername, dbContext);
+                bool validUserName = IsUsernameAvailable(uniqueUsername, dbContext);
 
                 if (!validUserName) ++usernameEqualityAttempts;
+                else break;
                 if (usernameEqualityAttempts >= 5) {
                     throw new Exception("Unable to generate unique username after multiple attempts.");
                 }
-            } while (!validUserName);
+            } while (true);
         }
         return uniqueUsername;
     }
 
     public static String CreateEmailUserRecordAndGetVerificationCode(String email, String name, String password, String username, HappyPlaceDbContext dbContext) {
         String hashedPassword = PasswordHasher.HashPassword(password);
-        Random random = new Random();
+        Random random = new();
         String verificationCode = random.Next(100000, 1000000).ToString();
-        dbContext.PendingUserAccounts.Add(new PendingUserAccount { EmailAddress = email, DisplayName = name, Username = username, HashedPassword = hashedPassword, VerificationCode = verificationCode, CreatedAtUtc = DateTime.UtcNow });
+        dbContext.PendingUserAccounts.Add(new() { EmailAddress = email, DisplayName = name, Username = username, HashedPassword = hashedPassword, VerificationCode = verificationCode, CreatedAtUtc = DateTime.UtcNow });
         dbContext.SaveChanges();
         return verificationCode;
     }
 
     public static String CreatePhoneUserRecordAndGetVerificationCode(String phoneNumber, String name, String password, String username, HappyPlaceDbContext dbContext) {
         String hashedPassword = PasswordHasher.HashPassword(password);
-        Random random = new Random();
+        Random random = new();
         String verificationCode = random.Next(100000, 1000000).ToString();
-        dbContext.PendingUserAccounts.Add(new PendingUserAccount { PhoneNumber = phoneNumber, DisplayName = name, Username = username, HashedPassword = hashedPassword, VerificationCode = verificationCode, CreatedAtUtc = DateTime.UtcNow });
+        dbContext.PendingUserAccounts.Add(new() { PhoneNumber = phoneNumber, DisplayName = name, Username = username, HashedPassword = hashedPassword, VerificationCode = verificationCode, CreatedAtUtc = DateTime.UtcNow });
         dbContext.SaveChanges();
         return verificationCode;
     }
@@ -179,7 +254,7 @@ public class UserAccountRegistrar {
     private static string ResizeBaseUsername(string baseUsername, Random random) {
         string newBaseUsername = baseUsername;
         if (newBaseUsername.Length >= 18) {
-            newBaseUsername = newBaseUsername.Substring(0, 18);
+            newBaseUsername = newBaseUsername[..18];
         }
         else if (newBaseUsername.Length <= 3) {
             newBaseUsername = GenerateMinimumBaseUsername(newBaseUsername, random);

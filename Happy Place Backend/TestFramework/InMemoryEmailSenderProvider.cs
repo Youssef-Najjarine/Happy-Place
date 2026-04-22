@@ -5,7 +5,7 @@ namespace HappyWorld.HappyPlace;
 
 public class InMemoryEmailSenderProvider : IDisposable {
     // Fields
-    private InMemoryEmailSender _emailSender = new();
+    private readonly InMemoryEmailSender _emailSender = new();
 
     // Constructors
     public InMemoryEmailSenderProvider() {
@@ -18,6 +18,7 @@ public class InMemoryEmailSenderProvider : IDisposable {
     // Methods
 
     public void Dispose() {
+        GC.SuppressFinalize(this);
         EmailSender.ResetInitializer();
     }
 }

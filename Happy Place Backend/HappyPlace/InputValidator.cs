@@ -6,7 +6,7 @@ public class InputValidator {
     // Methods
 
     public static void ValidateEmailRegistration(string name, string email, string password, HappyPlaceDbContext dbContext) {
-        List<string> validationErrors = new List<string>();
+        List<string> validationErrors = [];
 
         ValidateName(name, validationErrors);
         ValidateEmailAddress(email, validationErrors);
@@ -23,7 +23,7 @@ public class InputValidator {
     }
 
     public static void ValidatePhoneRegistration(string name, string phoneNumber, string password, HappyPlaceDbContext dbContext) {
-        List<string> validationErrors = new List<string>();
+        List<string> validationErrors = [];
 
         ValidateName(name, validationErrors);
         ValidatePhoneNumber(phoneNumber, validationErrors);
@@ -73,7 +73,7 @@ public class InputValidator {
             return;
         }
 
-        string domain = email.Substring(firstAtIndex + 1);
+        string domain = email[(firstAtIndex + 1)..];
         if (!domain.Contains('.') || domain.StartsWith('.') || domain.EndsWith('.'))
             validationErrors.Add("Please enter a valid email address.");
     }

@@ -10,7 +10,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void ValidPhoneAccountCredentials() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -33,7 +33,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void EmptyNameReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "",
             PhoneNumber = uniquePhone,
@@ -48,7 +48,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void WhitespaceOnlyNameReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "   ",
             PhoneNumber = uniquePhone,
@@ -63,7 +63,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void NameAtExactly200CharactersSucceeds() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = new string('A', 200),
             PhoneNumber = uniquePhone,
@@ -78,7 +78,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void NameExceedingMaxLengthReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = new string('A', 201),
             PhoneNumber = uniquePhone,
@@ -165,7 +165,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void PhoneNumberAtExactly7DigitsSucceeds() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(7).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(7));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -180,7 +180,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void PhoneNumberAtExactly20DigitsSucceeds() {
-        string guidDigits = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string guidDigits = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         string uniquePhone = guidDigits + "0123456789";
         var jsonData = new {
             Name = "Youssef Najjarine",
@@ -212,7 +212,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void ReSignUpWithSamePhoneBeforeVerifyingSucceeds() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -228,7 +228,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void OldVerificationCodeInvalidAfterReSignUp() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -249,7 +249,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void NewVerificationCodeWorksAfterReSignUp() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -271,7 +271,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void SignUpWithAlreadyVerifiedPhoneReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -293,7 +293,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void EmptyPasswordReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -308,7 +308,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void WhitespaceOnlyPasswordReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -323,7 +323,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void PasswordAtExactly8CharactersMeetingAllRequirementsSucceeds() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -338,7 +338,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void PasswordUnderEightCharactersReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -353,7 +353,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void PasswordMissingUppercaseReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -368,7 +368,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void PasswordMissingLowercaseReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -383,7 +383,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void PasswordMissingNumberReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -398,7 +398,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void PasswordMissingSpecialCharacterReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -415,7 +415,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void WrongVerificationCodeReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -431,7 +431,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void EmptyVerificationCodeReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -447,7 +447,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void PartialVerificationCodeReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -463,7 +463,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void VerificationCodeWithLettersReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -479,7 +479,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void VerificationWithNonExistentPhoneReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = "123456" });
@@ -491,7 +491,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void VerificationCodeReusedAfterSuccessReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -514,7 +514,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void ExpiredVerificationCodeReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -539,7 +539,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void VerificationCodeAt9Minutes59SecondsSucceeds() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -564,7 +564,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void VerificationCodeAt10Minutes1SecondReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -589,7 +589,7 @@ public class SignUpWithPhoneTest {
 
     [Fact]
     public void VerificationCodeWithCorruptedCreatedAtReturnsBadRequest() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,

@@ -254,7 +254,7 @@ public class ResendVerificationCodeTest {
 
     [Fact]
     public void ResendPhoneCodeReturnsOk() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -265,7 +265,7 @@ public class ResendVerificationCodeTest {
 
     [Fact]
     public void NewCodeWorksAfterPhoneResend() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -280,7 +280,7 @@ public class ResendVerificationCodeTest {
 
     [Fact]
     public void OldCodeFailsAfterPhoneResend() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -296,7 +296,7 @@ public class ResendVerificationCodeTest {
 
     [Fact]
     public void OnlyLatestCodeWorksAfterMultiplePhoneResends() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -321,7 +321,7 @@ public class ResendVerificationCodeTest {
 
     [Fact]
     public void PhoneResendResetsExpirationTimer() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -341,7 +341,7 @@ public class ResendVerificationCodeTest {
 
     [Fact]
     public void ResendWorksAfterPhoneCodeExpires() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -364,7 +364,7 @@ public class ResendVerificationCodeTest {
 
     [Fact]
     public void ResendPhoneCodeForNonExistentPhoneReturnsOk() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         HttpResponseMessage resendResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/resendPhoneCode", new { PhoneNumber = uniquePhone });
@@ -374,7 +374,7 @@ public class ResendVerificationCodeTest {
 
     [Fact]
     public void ResendPhoneCodeForNonExistentPhoneSendsNoNotification() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/resendPhoneCode", new { PhoneNumber = uniquePhone });
@@ -384,7 +384,7 @@ public class ResendVerificationCodeTest {
 
     [Fact]
     public void ResendPhoneCodeAfterVerificationReturnsOk() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -401,7 +401,7 @@ public class ResendVerificationCodeTest {
 
     [Fact]
     public void PhoneResendDoesNotDuplicatePendingRecord() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -416,7 +416,7 @@ public class ResendVerificationCodeTest {
 
     [Fact]
     public void PhoneResendPreservesAccountData() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -442,7 +442,7 @@ public class ResendVerificationCodeTest {
 
     [Fact]
     public void PhoneResendSendsExactlyOneAdditionalNotification() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -457,7 +457,7 @@ public class ResendVerificationCodeTest {
 
     [Fact]
     public void PasswordMatchesAfterPhoneResendAndVerify() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         string originalPassword = "Seven74!";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 

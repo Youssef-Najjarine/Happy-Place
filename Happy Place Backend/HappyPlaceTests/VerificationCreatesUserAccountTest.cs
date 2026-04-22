@@ -116,7 +116,7 @@ public class VerificationCreatesUserAccountTest {
 
     [Fact]
     public void VerifiedPhoneUserHasCorrectAccountData() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -147,7 +147,7 @@ public class VerificationCreatesUserAccountTest {
 
     [Fact]
     public void VerifiedPhoneUserPasswordMatchesOriginal() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         string originalPassword = "Seven74!";
         var jsonData = new {
             Name = "Youssef Najjarine",
@@ -170,7 +170,7 @@ public class VerificationCreatesUserAccountTest {
 
     [Fact]
     public void VerifiedPhonePendingRecordIsDeleted() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,
@@ -193,7 +193,7 @@ public class VerificationCreatesUserAccountTest {
 
     [Fact]
     public void VerifiedPhoneAuthTokenContainsCorrectUserId() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         var jsonData = new {
             Name = "Youssef Najjarine",
             PhoneNumber = uniquePhone,

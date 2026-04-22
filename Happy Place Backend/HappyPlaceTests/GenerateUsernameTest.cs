@@ -55,7 +55,7 @@ public class GenerateUsernameTest {
 
         string username = UserAccountRegistrar.GenerateUsername("ynajjarine@gmail.com", "Youssef Najjarine", dbContext);
 
-        Assert.True(char.IsDigit(username[username.Length - 1]));
+        Assert.True(char.IsDigit(username[^1]));
     }
 
     // Tests - Username Uniqueness
@@ -131,7 +131,7 @@ public class GenerateUsernameTest {
     public void NameAtExactly18CharsGetsTruncated() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         using var dbContext = HappyPlaceDbContext.Create();
-        string eighteenCharName = new string('a', 18);
+        string eighteenCharName = new('a', 18);
 
         string username = UserAccountRegistrar.GenerateUsername("test@gmail.com", eighteenCharName, dbContext);
         string baseWithoutNumber = username.TrimEnd("0123456789".ToCharArray());
@@ -147,6 +147,6 @@ public class GenerateUsernameTest {
         string username = UserAccountRegistrar.GenerateUsername("spaces@gmail.com", "     ", dbContext);
 
         Assert.True(username.Length >= 5);
-        Assert.True(char.IsDigit(username[username.Length - 1]));
+        Assert.True(char.IsDigit(username[^1]));
     }
 }

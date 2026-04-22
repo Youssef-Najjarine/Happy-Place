@@ -16,7 +16,9 @@ indent_size = 2
 indent_size = 4
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false
-
+dotnet_naming_rule.interface_should_begin_with_i.severity = none
+dotnet_diagnostic.SYSLIB1045.severity = none
+dotnet_diagnostic.IDE0130.severity = none
 # Indentation preferences
 csharp_indent_case_contents = true
 csharp_indent_switch_labels = true

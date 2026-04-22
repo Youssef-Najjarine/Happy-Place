@@ -1,19 +1,12 @@
+using HappyWorld.HappyPlace;
 using HappyWorld.HappyPlace.Web.Models.Authentication;
 using Microsoft.AspNetCore.Mvc;
 
-namespace WebApp.Controllers;
+namespace HappyWorld.HappyPlace.Web.Controllers;
 
 [ApiController]
 [Route("api/[controller]/[action]")]
 public class AuthenticationController : ControllerBase {
-    // Fields
-    private readonly ILogger<AuthenticationController> _logger;
-
-    // Constructors
-    public AuthenticationController(ILogger<AuthenticationController> logger) {
-        _logger = logger;
-    }
-
     // Methods
     [HttpPost]
     public IActionResult SignUpWithEmail(AuthenticationSignUpWithEmailModel model) {
@@ -38,6 +31,14 @@ public class AuthenticationController : ControllerBase {
     }
 
     [HttpPost]
+    public IActionResult SignInWithEmail(AuthenticationSignInWithEmailModel model) {
+        SignInResult SignInResult = model.SignIn();
+        if (SignInResult == null)
+            return this.BadRequest();
+        return this.Ok(SignInResult);
+    }
+
+    [HttpPost]
     public IActionResult SignUpWithPhone(AuthenticationSignUpWithPhoneModel model) {
         var response = model.SignUp();
         if (response.IsSuccessful)
@@ -57,5 +58,13 @@ public class AuthenticationController : ControllerBase {
     public IActionResult ResendPhoneCode(AuthenticationResendPhoneCodeModel model) {
         model.Resend();
         return this.Ok();
+    }
+
+    [HttpPost]
+    public IActionResult SignInWithPhone(AuthenticationSignInWithPhoneModel model) {
+        SignInResult SignInResult = model.SignIn();
+        if (SignInResult == null)
+            return this.BadRequest();
+        return this.Ok(SignInResult);
     }
 }

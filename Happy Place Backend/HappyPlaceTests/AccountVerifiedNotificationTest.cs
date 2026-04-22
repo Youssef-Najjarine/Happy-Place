@@ -9,7 +9,7 @@ namespace HappyWorld.HappyPlace;
 [Collection("Integration")]
 public class AccountVerifiedNotificationTest {
     // Fields
-    private static readonly Regex SixDigits = new(@"\b(\d{6})\b", RegexOptions.Compiled);
+    private const string SixDigitPattern = @"\b(\d{6})\b";
 
     // Tests - Email Confirmation Sent On Success
 
@@ -74,7 +74,7 @@ public class AccountVerifiedNotificationTest {
         var bodyProp = confirmationEmail.GetType().GetProperty("BodyText");
         string body = bodyProp?.GetValue(confirmationEmail) as string ?? string.Empty;
 
-        Assert.DoesNotMatch(SixDigits.ToString(), body);
+        Assert.DoesNotMatch(SixDigitPattern, body);
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class AccountVerifiedNotificationTest {
 
     [Fact]
     public void SuccessfulPhoneVerificationSendsConfirmationSms() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Timmy Turner", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -168,7 +168,7 @@ public class AccountVerifiedNotificationTest {
 
     [Fact]
     public void PhoneConfirmationGoesToCorrectRecipient() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Timmy Turner", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -183,7 +183,7 @@ public class AccountVerifiedNotificationTest {
 
     [Fact]
     public void PhoneConfirmationContainsUserDisplayName() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Timmy Turner", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -198,7 +198,7 @@ public class AccountVerifiedNotificationTest {
 
     [Fact]
     public void PhoneConfirmationDoesNotContainVerificationCode() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Timmy Turner", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -208,14 +208,14 @@ public class AccountVerifiedNotificationTest {
 
         SmsMessage confirmationSms = testingMockProvidersContainer.SmsProvider.SentMessages.Last();
 
-        Assert.DoesNotMatch(SixDigits.ToString(), confirmationSms.BodyText);
+        Assert.DoesNotMatch(SixDigitPattern, confirmationSms.BodyText);
     }
 
     // Tests - Phone Confirmation NOT Sent On Failure
 
     [Fact]
     public void WrongPhoneCodeDoesNotSendConfirmation() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Timmy Turner", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -226,7 +226,7 @@ public class AccountVerifiedNotificationTest {
 
     [Fact]
     public void ExpiredPhoneCodeDoesNotSendConfirmation() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Timmy Turner", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
@@ -245,7 +245,7 @@ public class AccountVerifiedNotificationTest {
 
     [Fact]
     public void NonExistentPhoneDoesNotSendConfirmation() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = "123456" });
@@ -257,7 +257,7 @@ public class AccountVerifiedNotificationTest {
 
     [Fact]
     public void ResendThenVerifyPhoneSendsExactlyThreeSms() {
-        string uniquePhone = new string(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10).ToArray());
+        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
         testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Timmy Turner", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();

@@ -35,7 +35,7 @@ internal class TwilioSmsSender : SmsSender {
     }
 
     private static string FormatToE164(string phoneNumber) {
-        if (phoneNumber.StartsWith("+"))
+        if (phoneNumber.StartsWith('+'))
             return phoneNumber;
         return $"+1{phoneNumber}";
     }

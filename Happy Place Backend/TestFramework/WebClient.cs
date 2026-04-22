@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
-using WebApp;
+using HappyWorld.HappyPlace.WebApp;
 
 namespace HappyWorld.HappyPlace {
     public class WebClient : IDisposable {
@@ -17,6 +17,7 @@ namespace HappyWorld.HappyPlace {
         // Methods
 
         public void Dispose() {
+            GC.SuppressFinalize(this);
             this._httpClient?.Dispose();
             this._httpClient = null;
             this._webApplicationFactory?.Dispose();
