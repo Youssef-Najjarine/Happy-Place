@@ -8,6 +8,7 @@ module.exports = {
         alias: {
           assets: './assets',
           components: './src/components',
+          hooks: './src/hooks',
           screens: './src/screens',
           services: './src/services',
           store: './src/store',

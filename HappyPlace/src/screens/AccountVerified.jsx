@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { HappyColor, White, TranslucentWhite } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
@@ -11,6 +11,7 @@ import { showLoading, hideLoading } from 'store/loadingSlice';
 import CustomText from 'src/components/FontFamilyText';
 import SuccessLogo from 'assets/images/accountVerified/account-verified-success-logo.png';
 import HappyCheck from 'assets/images/accountVerified/happy-check-icon.svg';
+import tokenStorage from 'services/tokenStorage';
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -203,13 +204,19 @@ export default function AccountVerified() {
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
+  const route = useRoute();
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleGetStarted = () => {
+  const authToken = route.params?.authToken || null;
+
+  const handleGetStarted = async () => {
+    if (rememberMe && authToken) {
+      await tokenStorage.saveToken(authToken);
+    }
     dispatch(showLoading());
     setTimeout(() => {
       dispatch(hideLoading());
-      navigation.navigate('ChatGroups');
+      navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
     }, 1000);
   };
 
@@ -241,7 +248,7 @@ export default function AccountVerified() {
               <HappyCheck {...styles.happyCheckIcon}/>
             )}
           </TouchableOpacity>
-          <CustomText style={styles.rememberMeTxt}>Login & Remember me</CustomText>
+          <CustomText style={styles.rememberMeTxt}>Remember me</CustomText>
         </View>
         <View style={styles.getStartedView}>
           <TouchableOpacity 

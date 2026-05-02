@@ -541,10 +541,11 @@ export default function VerifyCode() {
           showToast('The code entered is incorrect or has expired. Please try again.');
           return;
         }
+        const responseData = await response.json();
         if (source === 'forgotPassword') {
           navigation.replace('SetupPassword', { contact });
         } else {
-          navigation.replace('AccountVerified', { contact, source });
+          navigation.replace('AccountVerified', { contact, source, authToken: responseData.authToken });
         }
       } catch (err) {
         showToast('Something went wrong. Please try again.');

@@ -24,5 +24,8 @@ export default authenticationService = {
     },
     signInWithPhone: function(phoneNumber, password) {
         return baseService.postJson("authentication/signInWithPhone", { PhoneNumber: phoneNumber, Password: password });
+    },
+    validateToken: function(authToken) {
+        return baseService.postJson("authentication/validateToken", { AuthToken: authToken });
     }
 };

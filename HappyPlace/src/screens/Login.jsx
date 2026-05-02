@@ -29,6 +29,7 @@ import KeyIcon from 'assets/images/global/key-icon.svg';
 import EyeIcon from 'assets/images/global/eye-icon.svg';
 import EyeSlashIcon from 'assets/images/global/eye-slash-icon.svg';
 import authenticationService from 'services/authenticationService';
+import tokenStorage from 'services/tokenStorage';
 
 const TOAST_DISPLAY_DURATION = 4000;
 
@@ -552,7 +553,6 @@ export default function Login() {
   const phoneValid = selectedSignInType === 'phone' ? phone.replace(/\D/g, '').length >= 10 : false;
   const passwordValid = password.trim().length > 0;
   const canSignIn = passwordValid && (emailValid || phoneValid);
-
   useFocusEffect(
     useCallback(() => {
       setEmail('');
@@ -619,7 +619,10 @@ export default function Login() {
       if (responseData.status === 'pending') {
         navigation.navigate('VerifyCode', { contact: responseData.contact, source: 'signIn' });
       } else if (responseData.status === 'verified') {
-        navigation.navigate('ChatGroups');
+        if (rememberMe) {
+          await tokenStorage.saveToken(responseData.authToken);
+        }
+        navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
       }
     } catch (err) {
       showToast('Something went wrong. Please try again.');

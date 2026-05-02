@@ -1,17 +1,19 @@
-import React, {useCallback} from 'react';
+import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { HappyColor, White, Black } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
-import { scaleWidth, scaleHeight, moderateScale} from 'src/utils/scaleLayout';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
+import { useNavigation } from '@react-navigation/native';
+import useAutoSignIn from 'src/hooks/useAutoSignIn';
 import CustomText from 'src/components/FontFamilyText';
 import Logo from 'assets/images/global/logo.png';
 import HappyEmoji from 'assets/images/global/happy-emoji.svg';
 import SadEmoji from 'assets/images/global/sad-emoji.svg';
 import { useDispatch } from 'react-redux';
 import { showLoading, hideLoading } from 'store/loadingSlice'; 
+
 const phoneStyles = StyleSheet.create({
   root: {
     backgroundColor: HappyColor,
@@ -349,6 +351,13 @@ export default function Home() {
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
+  const isCheckingToken = useAutoSignIn(navigation);
+
+  if (isCheckingToken) {
+    return (
+      <View style={{ flex: 1, backgroundColor: HappyColor }} />
+    );
+  }
 
   const handleHelpMe = () => {
     dispatch(showLoading());
