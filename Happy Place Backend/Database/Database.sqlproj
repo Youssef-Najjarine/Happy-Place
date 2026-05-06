@@ -65,6 +65,5 @@
   <ItemGroup>
     <None Include="Local.SqlServer.HappyPlace.publish.xml" />
     <None Include="Local.SqlServer.HappyPlaceTests.publish.xml" />
-    <None Include="Local.SqlServer.HappyPlaceMaestroTests.publish.xml" />
   </ItemGroup>
 </Project>
