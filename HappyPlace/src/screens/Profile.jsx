@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Image, FlatList, Pressable, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
+import useLogout from 'src/hooks/useLogout';
 import { 
   HappyColor, 
   White, 
@@ -480,6 +481,7 @@ export default function Profile() {
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
+  const logout = useLogout();
   const profile = {
     background: ProfileBg,
     photo: Image1,
@@ -535,6 +537,7 @@ export default function Profile() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.logout}
+            onPress={logout}
           >
             <LogoutIcon {...styles.iconsMatchingSize}/>
           </TouchableOpacity>
