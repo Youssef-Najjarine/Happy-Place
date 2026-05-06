@@ -1,4 +1,4 @@
-﻿{
+{
   "$schema": "https://json.schemastore.org/launchsettings.json",
   "profiles": {
     "http": {
@@ -17,6 +17,16 @@
       "applicationUrl": "https://0.0.0.0:7115;http://0.0.0.0:5094",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "E2ETests": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://0.0.0.0:5094",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "E2E_TEST_DB": "HappyPlaceMaestroTests"
       }
     }
   }
