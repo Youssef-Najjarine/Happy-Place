@@ -13,5 +13,6 @@ public class UserAccount {
     public String PhoneNumber { get; set; }
     public String Bio { get; set; }
     public String ProfilePhotoUrl { get; set; }
+    public String BackgroundPhotoUrl { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 }

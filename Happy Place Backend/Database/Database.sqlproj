@@ -61,6 +61,7 @@
   <ItemGroup>
     <Build Include="PendingUserAccount.sql" />
     <Build Include="UserAccount.sql" />
+    <Build Include="PasswordResetRequest.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Local.SqlServer.HappyPlace.publish.xml" />

@@ -11,6 +11,7 @@ CREATE TABLE [dbo].[UserAccount]
 	[PhoneNumber] varchar(20) NULL,
 	[Bio] nvarchar(500) NULL,
 	[ProfilePhotoUrl] nvarchar(500) NULL,
+    [BackgroundPhotoUrl] nvarchar(500) NULL,
 	[CreatedAtUtc] datetime2(0) NOT NULL
 		constraint [DF-UserAccount-CreatedAtUtc] default sysutcdatetime(),
 )

@@ -1,9 +1,11 @@
 using HappyWorld.HappyPlace.Data;
+using Microsoft.Data.SqlClient;
 
 namespace HappyWorld.HappyPlace;
 
 public class TestingMockProvidersContainer : IDisposable {
     // Fields
+    private const string TestConnectionString = "Server=.;Database=HappyPlaceTests;Trusted_Connection=True;MultipleActiveResultSets=true;trustservercertificate=yes";
     private InMemoryEmailSenderProvider _emailProvider;
     private InMemorySmsSenderProvider _smsProvider;
     private bool _isDisposed;
@@ -11,10 +13,11 @@ public class TestingMockProvidersContainer : IDisposable {
 
     // Constructors
     public TestingMockProvidersContainer() {
-        HappyPlaceDbContext.SetConnectionString("Server=.;Database=HappyPlaceTests;Trusted_Connection=True;MultipleActiveResultSets=true;trustservercertificate=yes");
+        HappyPlaceDbContext.SetConnectionString(TestConnectionString);
         this._webClient = new WebClient();
         this._emailProvider = new InMemoryEmailSenderProvider();
         this._smsProvider = new InMemorySmsSenderProvider();
+        this.ResetDatabase();
     }
     ~TestingMockProvidersContainer() {
         Dispose(disposing: false);
@@ -47,5 +50,16 @@ public class TestingMockProvidersContainer : IDisposable {
     public void Dispose() {
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
+    }
+
+    private void ResetDatabase() {
+        using var connection = new SqlConnection(TestConnectionString);
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
+DELETE FROM [dbo].[PasswordResetRequest];
+DELETE FROM [dbo].[PendingUserAccount];
+DELETE FROM [dbo].[UserAccount];";
+        connection.Open();
+        command.ExecuteNonQuery();
     }
 }

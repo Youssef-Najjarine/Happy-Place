@@ -39,6 +39,29 @@ public class InputValidator {
             throw new ValidationErrorsException(validationErrors);
     }
 
+    public static void ValidateForgotPasswordEmail(string email) {
+        List<string> validationErrors = [];
+        ValidateEmailAddress(email, validationErrors);
+        if (validationErrors.Count > 0)
+            throw new ValidationErrorsException(validationErrors);
+    }
+
+    public static void ValidateForgotPasswordPhone(string phoneNumber) {
+        List<string> validationErrors = [];
+        ValidatePhoneNumber(phoneNumber, validationErrors);
+        if (validationErrors.Count > 0)
+            throw new ValidationErrorsException(validationErrors);
+    }
+
+    public static void ValidateResetPassword(string resetToken, string newPassword) {
+        List<string> validationErrors = [];
+        if (string.IsNullOrWhiteSpace(resetToken))
+            validationErrors.Add("Reset token is required.");
+        ValidatePassword(newPassword, validationErrors);
+        if (validationErrors.Count > 0)
+            throw new ValidationErrorsException(validationErrors);
+    }
+
     private static void ValidateName(string name, List<string> validationErrors) {
         if (string.IsNullOrWhiteSpace(name)) {
             validationErrors.Add("Name is required.");

@@ -75,4 +75,44 @@ public class AuthenticationController : ControllerBase {
             return this.Unauthorized();
         return this.Ok(userProfile);
     }
+
+    [HttpPost]
+    public IActionResult ForgotPasswordWithEmail(AuthenticationForgotPasswordWithEmailModel model) {
+        var response = model.RequestReset();
+        if (response.IsSuccessful)
+            return this.Ok();
+        return this.BadRequest(response.ErrorMessages);
+    }
+
+    [HttpPost]
+    public IActionResult ForgotPasswordWithPhone(AuthenticationForgotPasswordWithPhoneModel model) {
+        var response = model.RequestReset();
+        if (response.IsSuccessful)
+            return this.Ok();
+        return this.BadRequest(response.ErrorMessages);
+    }
+
+    [HttpPost]
+    public IActionResult VerifyForgotPasswordEmail(AuthenticationVerifyForgotPasswordEmailModel model) {
+        var response = model.Verify();
+        if (response == null)
+            return this.BadRequest();
+        return this.Ok(response);
+    }
+
+    [HttpPost]
+    public IActionResult VerifyForgotPasswordPhone(AuthenticationVerifyForgotPasswordPhoneModel model) {
+        var response = model.Verify();
+        if (response == null)
+            return this.BadRequest();
+        return this.Ok(response);
+    }
+
+    [HttpPost]
+    public IActionResult ResetPassword(AuthenticationResetPasswordModel model) {
+        var response = model.Reset();
+        if (response.IsSuccessful)
+            return this.Ok();
+        return this.BadRequest(response.ErrorMessages);
+    }
 }
