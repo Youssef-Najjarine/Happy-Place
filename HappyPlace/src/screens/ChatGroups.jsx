@@ -1791,7 +1791,7 @@ export default function ChatGroups() {
     <>
       <View style={styles.root} onTouchEndCapture={handleRootTouchEndCapture}>
         <View style={topNavStyle}>
-          {cameFromLogin ? (
+          {true ? (
             <View style={styles.profileAndLogin}>
               <CustomText style={styles.welcomeBackTxt}>Welcome Back!</CustomText>
               <View>
