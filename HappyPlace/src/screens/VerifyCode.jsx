@@ -509,10 +509,18 @@ export default function VerifyCode() {
     dispatch(showLoading());
     setTimeout(async () => {
       try {
-        if (isEmailContact) {
-          await authenticationService.resendEmailCode(contact);
+        if (source === 'forgotPassword') {
+          if (isEmailContact) {
+            await authenticationService.forgotPasswordWithEmail(contact);
+          } else {
+            await authenticationService.forgotPasswordWithPhone(contact);
+          }
         } else {
-          await authenticationService.resendPhoneCode(contact);
+          if (isEmailContact) {
+            await authenticationService.resendEmailCode(contact);
+          } else {
+            await authenticationService.resendPhoneCode(contact);
+          }
         }
         setSecondsLeft(INITIAL_SECONDS);
         setIsCounting(true);
@@ -532,10 +540,18 @@ export default function VerifyCode() {
     setTimeout(async () => {
       try {
         let response;
-        if (isEmailContact) {
-          response = await authenticationService.verifyEmail(contact, codeValue);
+        if (source === 'forgotPassword') {
+          if (isEmailContact) {
+            response = await authenticationService.verifyForgotPasswordEmail(contact, codeValue);
+          } else {
+            response = await authenticationService.verifyForgotPasswordPhone(contact, codeValue);
+          }
         } else {
-          response = await authenticationService.verifyPhone(contact, codeValue);
+          if (isEmailContact) {
+            response = await authenticationService.verifyEmail(contact, codeValue);
+          } else {
+            response = await authenticationService.verifyPhone(contact, codeValue);
+          }
         }
         if (!response.ok) {
           showToast('The code entered is incorrect or has expired. Please try again.');
@@ -543,7 +559,7 @@ export default function VerifyCode() {
         }
         const responseData = await response.json();
         if (source === 'forgotPassword') {
-          navigation.replace('SetupPassword', { contact });
+          navigation.replace('SetupPassword', { contact, resetToken: responseData.resetToken });
         } else {
           navigation.replace('AccountVerified', { contact, source, authToken: responseData.authToken });
         }

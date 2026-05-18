@@ -621,6 +621,8 @@ export default function Login() {
       } else if (responseData.status === 'verified') {
         if (rememberMe) {
           await tokenStorage.saveToken(responseData.authToken);
+        } else {
+          tokenStorage.setSessionToken(responseData.authToken);
         }
         navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
       }

@@ -156,7 +156,7 @@ export default function PasswordReset() {
             <View style={styles.loginView}>
                 <TouchableOpacity 
                     style={styles.loginBtn}
-                    onPress={() => navigation.navigate('LoginOptions')}
+                    onPress={() => navigation.reset({ index: 0, routes: [{ name: 'LoginOptions' }] })}
                 >
                     <CustomText style={styles.loginTxt}>Login</CustomText>
                 </TouchableOpacity>

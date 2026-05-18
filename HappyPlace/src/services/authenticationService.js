@@ -27,5 +27,20 @@ export default authenticationService = {
     },
     validateToken: function(authToken) {
         return baseService.postJson("authentication/validateToken", { AuthToken: authToken });
+    },
+    forgotPasswordWithEmail: function(email) {
+        return baseService.postJson("authentication/forgotPasswordWithEmail", { Email: email });
+    },
+    forgotPasswordWithPhone: function(phoneNumber) {
+        return baseService.postJson("authentication/forgotPasswordWithPhone", { PhoneNumber: phoneNumber });
+    },
+    verifyForgotPasswordEmail: function(email, verificationCode) {
+        return baseService.postJson("authentication/verifyForgotPasswordEmail", { Email: email, VerificationCode: verificationCode });
+    },
+    verifyForgotPasswordPhone: function(phoneNumber, verificationCode) {
+        return baseService.postJson("authentication/verifyForgotPasswordPhone", { PhoneNumber: phoneNumber, VerificationCode: verificationCode });
+    },
+    resetPassword: function(resetToken, newPassword) {
+        return baseService.postJson("authentication/resetPassword", { ResetToken: resetToken, NewPassword: newPassword });
     }
 };
