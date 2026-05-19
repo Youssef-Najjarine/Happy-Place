@@ -18,6 +18,7 @@ import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleF
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
 import { useDispatch } from 'react-redux';
 import { showLoading, hideLoading } from 'store/loadingSlice';
+import { setUser } from 'store/userSlice';
 import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
 import CustomMaskedTextInput from 'src/components/FontFamilyMaskedTextInput';
@@ -623,6 +624,11 @@ export default function Login() {
           await tokenStorage.saveToken(responseData.authToken);
         } else {
           tokenStorage.setSessionToken(responseData.authToken);
+        }
+        const profileResponse = await authenticationService.validateToken(responseData.authToken);
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          dispatch(setUser(profileData));
         }
         navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
       }

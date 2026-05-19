@@ -3,6 +3,7 @@ import { View, TouchableOpacity, StyleSheet, Image, FlatList, useWindowDimension
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
+import { useSelector } from 'react-redux';
 import { 
   HappyColor, 
   White, 
@@ -164,7 +165,7 @@ const CHAT_GROUPS_DATA = [
     public: false,
     joinRequest: true,
     pendingMembers: false,
-    title: 'I’m depressed!'
+    title: "I'm depressed!"
   },
   {
     id: 'grp-3',
@@ -235,6 +236,18 @@ const phoneStyles = StyleSheet.create({
     height: scaleHeight(44), 
     borderRadius: scaleWidth(99),
     resizeMode: 'contain' 
+  },
+  avatarCircle: {
+    width: scaleWidth(44),
+    height: scaleHeight(44),
+    borderRadius: scaleWidth(99),
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  avatarInitial: {
+    fontSize: scaleFont(20),
+    fontWeight: 700,
+    color: White
   },
   loginBg: { 
     backgroundColor: VeryLightGray 
@@ -809,6 +822,18 @@ const tabletStyles = StyleSheet.create({
     borderRadius: scaleWidth(132.792),
     resizeMode: 'contain' 
   },
+  avatarCircle: {
+    width: 83.23,
+    height: 83.23,
+    borderRadius: scaleWidth(132.792),
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  avatarInitial: {
+    fontSize: scaleFont(32),
+    fontWeight: 700,
+    color: White
+  },
   loginBg: { 
     backgroundColor: VeryLightGray 
   },
@@ -1349,6 +1374,7 @@ export default function ChatGroups() {
     []
   );
   const route = useRoute();
+  const user = useSelector(state => state.user);
   const sortOptions = ['Popular', 'Latest', 'A - Z', 'Z - A'];
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [sortBy, setSortBy] = useState('Popular');
@@ -1791,12 +1817,20 @@ export default function ChatGroups() {
     <>
       <View style={styles.root} onTouchEndCapture={handleRootTouchEndCapture}>
         <View style={topNavStyle}>
-          {true ? (
+          {user.isLoggedIn ? (
             <View style={styles.profileAndLogin}>
               <CustomText style={styles.welcomeBackTxt}>Welcome Back!</CustomText>
               <View>
                 <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-                  <Image source={Image1} style={styles.profileImage} fadeDuration={0} />
+                  {user.profilePhotoUrl ? (
+                    <Image source={{ uri: user.profilePhotoUrl }} style={styles.profileImage} fadeDuration={0} />
+                  ) : (
+                    <View style={[styles.avatarCircle, { backgroundColor: user.avatarColor }]}>
+                      <CustomText style={styles.avatarInitial}>
+                        {user.displayName ? user.displayName[0].toUpperCase() : '?'}
+                      </CustomText>
+                    </View>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>

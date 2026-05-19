@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { setUser } from 'store/userSlice';
 import tokenStorage from 'services/tokenStorage';
 import authenticationService from 'services/authenticationService';
 
 export default function useAutoSignIn(navigation) {
+    const dispatch = useDispatch();
     const [isCheckingToken, setIsCheckingToken] = useState(true);
 
     useEffect(() => {
@@ -15,6 +18,8 @@ export default function useAutoSignIn(navigation) {
                 }
                 const response = await authenticationService.validateToken(storedToken);
                 if (response.ok) {
+                    const profileData = await response.json();
+                    dispatch(setUser(profileData));
                     navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
                     return;
                 }
@@ -25,7 +30,7 @@ export default function useAutoSignIn(navigation) {
             setIsCheckingToken(false);
         };
         checkStoredToken();
-    }, [navigation]);
+    }, [navigation, dispatch]);
 
     return isCheckingToken;
 }
