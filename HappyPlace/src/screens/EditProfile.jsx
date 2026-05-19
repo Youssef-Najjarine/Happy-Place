@@ -547,7 +547,7 @@ export default function EditProfile() {
                 </View>
               </View>
               <View>
-                <CustomText style={styles.textBoxLabel}>Full Name</CustomText>
+                <CustomText style={styles.textBoxLabel}>Name</CustomText>
                 <View>
                   <CustomTextInput
                     style={[styles.input, styles.namesInput]}

@@ -623,7 +623,7 @@ export default function CreateAccount() {
               </TouchableOpacity>
             </View>
             <View style={styles.emailPhoneView}>
-              <CustomText style={styles.textBoxLabel}>Full Name</CustomText>
+              <CustomText style={styles.textBoxLabel}>Name</CustomText>
               <View>
                 <CustomTextInput
                   style={styles.input}
