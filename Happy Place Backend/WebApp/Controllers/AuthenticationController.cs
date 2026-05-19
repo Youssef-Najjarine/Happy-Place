@@ -7,6 +7,7 @@ namespace HappyWorld.HappyPlace.Web.Controllers;
 [Route("api/[controller]/[action]")]
 public class AuthenticationController : ControllerBase {
     // Methods
+
     [HttpPost]
     public IActionResult SignUpWithEmail(AuthenticationSignUpWithEmailModel model) {
         var response = model.SignUp();

@@ -14,20 +14,7 @@ public class UserAccountRegistrar {
     private static readonly int MaxPhoneLength = 20;
     private static readonly int MaxPasswordLength = 1000;
     private static readonly int ResetTokenByteLength = 32;
-    public static readonly string[] AvatarColorPalette = [
-        "#E17055",
-        "#00B894",
-        "#6C5CE7",
-        "#FDCB6E",
-        "#0984E3",
-        "#E84393",
-        "#00CEC9",
-        "#D63031",
-        "#A29BFE",
-        "#55EFC4",
-        "#FF7675",
-        "#74B9FF"
-    ];
+    public static readonly string[] AvatarColorPalette = ["#E17055", "#00B894", "#6C5CE7", "#FDCB6E", "#0984E3", "#E84393", "#00CEC9", "#D63031", "#A29BFE", "#55EFC4", "#FF7675", "#74B9FF"];
 
     // Methods
 
