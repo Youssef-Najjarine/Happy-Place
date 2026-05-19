@@ -1,19 +1,23 @@
-import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, Image, FlatList, Pressable, ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useCallback } from 'react';
+import { View, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import useLogout from 'src/hooks/useLogout';
+import LinearGradient from 'react-native-linear-gradient';
+import { useDispatch } from 'react-redux';
+import { showLoading, hideLoading } from 'store/loadingSlice';
 import { 
   HappyColor, 
   White, 
   Black, 
   VeryLightGray, 
   WarmIvory,
-  Rosewater
+  Rosewater,
+  Charcoal
 } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
-import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
+import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import CustomText from 'src/components/FontFamilyText';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
 import EditRedIcon from 'assets/images/profile/edit-red-icon.svg';
@@ -21,8 +25,29 @@ import LogoutIcon from 'assets/images/profile/logout-icon.svg';
 import EditWhiteIcon from 'assets/images/profile/edit-white-icon.svg';
 import PhoneIcon from 'assets/images/profile/grey-phone-icon.svg';
 import MailIcon from 'assets/images/profile/grey-mail-icon.svg';
-import ProfileBg from 'assets/images/placeholderProfiles/profile-bg.jpg';
-import Image1 from 'assets/images/placeholderProfiles/profile-1.png';
+import tokenStorage from 'services/tokenStorage';
+import profileService from 'services/profileService';
+
+const getBackgroundGradient = (avatarColor) => {
+  if (!avatarColor) return ['#E17055', '#C0392B'];
+  const r = parseInt(avatarColor.slice(1, 3), 16);
+  const g = parseInt(avatarColor.slice(3, 5), 16);
+  const b = parseInt(avatarColor.slice(5, 7), 16);
+  return [
+    `rgb(${Math.min(255, r + 40)}, ${Math.min(255, g + 40)}, ${Math.min(255, b + 40)})`,
+    `rgb(${Math.max(0, r - 40)}, ${Math.max(0, g - 40)}, ${Math.max(0, b - 40)})`
+  ];
+};
+
+const formatPhoneNumber = (number) => {
+  if (!number) return '';
+  const cleaned = ('' + number).replace(/\D/g, '');
+  if (cleaned.length === 10) {
+    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+  }
+  return number;
+};
+
 const phoneStyles = StyleSheet.create({
   root: {
     backgroundColor: WarmIvory,
@@ -112,6 +137,18 @@ const phoneStyles = StyleSheet.create({
     width: '100%',
     height: '100%'
   },
+  avatarCircle: {
+    width: '100%',
+    height: '100%',
+    borderRadius: scaleWidth(99),
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  avatarInitial: {
+    fontSize: scaleFont(36),
+    fontWeight: 700,
+    color: White
+  },
   whiteEditBackground: {
     width: scaleWidth(31),
     height: scaleHeight(31),
@@ -121,7 +158,7 @@ const phoneStyles = StyleSheet.create({
     right: scaleWidth(0.5),
     position: 'absolute',
     borderColor: WarmIvory,
-      justifyContent: 'center',
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: HappyColor
   },
@@ -159,7 +196,7 @@ const phoneStyles = StyleSheet.create({
     width: scaleWidth(127),
     height: scaleHeight(41),
     borderRadius: scaleWidth(99),
-      justifyContent: 'center',
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: HappyColor
   },
@@ -248,8 +285,60 @@ const phoneStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.14),
     fontWeight: 600,
     color: HappyColor
+  },
+  errorBackArrowContainer: {
+    paddingTop: scaleHeight(20),
+    paddingLeft: scaleWidth(20)
+  },
+  errorBackArrow: {
+    width: scaleWidth(39),
+    height: scaleHeight(39),
+    borderRadius: scaleWidth(99),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: VeryLightGray
+  },
+  errorContent: {
+    flex: 1,
+    paddingHorizontal: scaleWidth(40),
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  errorHeading: {
+    marginBottom: scaleHeight(8),
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    fontWeight: 700,
+    color: Black,
+    textAlign: 'center'
+  },
+  errorMessage: {
+    marginBottom: scaleHeight(24),
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    fontWeight: 500,
+    color: Charcoal,
+    textAlign: 'center'
+  },
+  retryBtn: {
+    width: scaleWidth(140),
+    height: scaleHeight(44),
+    borderRadius: scaleWidth(99),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: HappyColor
+  },
+  retryBtnTxt: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    fontWeight: 700,
+    color: White
   }
 });
+
 const tabletStyles = StyleSheet.create({
   root: {
     backgroundColor: WarmIvory,
@@ -318,7 +407,7 @@ const tabletStyles = StyleSheet.create({
     bottom: scaleHeight(26.83),
     right: scaleWidth(26.83),
     width: 72.56,
-     height: 72.56,
+    height: 72.56,
     position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
@@ -339,6 +428,18 @@ const tabletStyles = StyleSheet.create({
     width: '100%',
     height: '100%'
   },
+  avatarCircle: {
+    width: '100%',
+    height: '100%',
+    borderRadius: scaleWidth(132.792),
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  avatarInitial: {
+    fontSize: scaleFont(56),
+    fontWeight: 700,
+    color: White
+  },
   whiteEditBackground: {
     width: 57.68,
     height: 57.68,
@@ -348,7 +449,7 @@ const tabletStyles = StyleSheet.create({
     right: scaleWidth(0.67),
     position: 'absolute',
     borderColor: WarmIvory,
-      justifyContent: 'center',
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: HappyColor
   },
@@ -475,88 +576,220 @@ const tabletStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 600,
     color: HappyColor
+  },
+  errorBackArrowContainer: {
+    paddingTop: scaleHeight(26.83),
+    paddingLeft: scaleWidth(26.83)
+  },
+  errorBackArrow: {
+    width: 72.56,
+    height: 72.56,
+    borderRadius: scaleWidth(132.792),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: VeryLightGray
+  },
+  errorContent: {
+    flex: 1,
+    paddingHorizontal: scaleWidth(60),
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  errorHeading: {
+    marginBottom: scaleHeight(10.73),
+    fontSize: scaleFont(24),
+    lineHeight: scaleLineHeight(36),
+    letterSpacing: scaleLetterSpacing(-0.24),
+    fontWeight: 700,
+    color: Black,
+    textAlign: 'center'
+  },
+  errorMessage: {
+    marginBottom: scaleHeight(32),
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    fontWeight: 500,
+    color: Charcoal,
+    textAlign: 'center'
+  },
+  retryBtn: {
+    width: scaleWidth(188),
+    height: scaleHeight(56),
+    borderRadius: scaleWidth(132.792),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: HappyColor
+  },
+  retryBtnTxt: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    fontWeight: 700,
+    color: White
   }
 });
+
 export default function Profile() {
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
+  const route = useRoute();
   const logout = useLogout();
-  const profile = {
-    background: ProfileBg,
-    photo: Image1,
-    username: 'youssef34Youssef Najjarine',
-    name: 'Youssef Najjarine',
-    friends: 48,
-    bio: 'Sometimes the world feels heavy, and the colors fade to grey — but I’m here, still searching for the light. Life hasn’t been the easiest, and some days I carry more sadness than I’d like to admit. But I believe in the small magic that happens when people share a smile, a laugh, or even just a moment of kindness. Ready to heal, to open my heart, and to find happiness again — not just in myself, but in the warmth of others. If you’ve got a little sunshine to spare, I’d be glad to share it with you. Sometimes the world feels heavy, and the colors fade to grey — but I’m here, still searching for the light. Life hasn’t been the easiest, and some days I carry more sadness than I’d like to admit. But I believe in the small magic that happens when people share a smile, a laugh, or even just a moment of kindness. Ready to heal, to open my heart, and to find happiness again — not just in myself, but in the warmth of others. If you’ve got a little sunshine to spare, I’d be glad to share it with you.',
-    phoneNumber: '',
-    email: 'ynajjarine@gmail.com'
-  }
-  const formatPhoneNumber = (number) => {
-    if (!number) return '';
-    const cleaned = ('' + number).replace(/\D/g, '');
-    if (cleaned.length === 10) {
-      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+  const dispatch = useDispatch();
+
+  const targetUsername = route.params?.username;
+  const isOwnProfile = !targetUsername;
+
+  const [profile, setProfile] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [bioExpanded, setBioExpanded] = useState(false);
+
+  const fetchProfile = useCallback(async () => {
+    setProfile(null);
+    setIsLoading(true);
+    setHasError(false);
+    setBioExpanded(false);
+    dispatch(showLoading());
+    try {
+      const token = await tokenStorage.getToken();
+      if (!token) {
+        setHasError(true);
+        return;
+      }
+      let response;
+      if (isOwnProfile) {
+        response = await profileService.getMyProfile(token);
+      } else {
+        response = await profileService.getPublicUserProfile(token, targetUsername);
+      }
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data);
+      } else {
+        setHasError(true);
+      }
+    } catch {
+      setHasError(true);
+    } finally {
+      setIsLoading(false);
+      dispatch(hideLoading());
     }
-    return number;
-  };
+  }, [isOwnProfile, targetUsername, dispatch]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [fetchProfile])
+  );
+
   const rootStyle = {
     ...styles.root,
     paddingTop: statusBarHeight,
     paddingBottom: bottomSafeHeight
   };
-  const [bioExpanded, setBioExpanded] = useState(false);
+
+  if (isLoading) {
+    return <View style={rootStyle} />;
+  }
+
+  if (hasError || !profile) {
+    return (
+      <View style={rootStyle}>
+        <View style={styles.errorBackArrowContainer}>
+          <TouchableOpacity
+            style={styles.errorBackArrow}
+            onPress={() => navigation.goBack()}
+          >
+            <BackArrow {...styles.iconsMatchingSize} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.errorContent}>
+          <CustomText style={styles.errorHeading}>Unable to load profile</CustomText>
+          <CustomText style={styles.errorMessage}>Please check your connection and try again.</CustomText>
+          <TouchableOpacity style={styles.retryBtn} onPress={fetchProfile}>
+            <CustomText style={styles.retryBtnTxt}>Try Again</CustomText>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   const isTablet = styles.bioTxt.fontSize === scaleFont(18);
   const BIO_LIMIT = isTablet ? 501 : 313;
   const BIO_COLLAPSED_HEIGHT = isTablet ? scaleHeight(187.28) : scaleHeight(132);
   const BIO_EXPANDED_HEIGHT = isTablet ? scaleHeight(187.28) : scaleHeight(132);
-  const isLongBio = profile.bio.length > BIO_LIMIT;
-  const shownBio = bioExpanded ? profile.bio : (isLongBio ? profile.bio.slice(0, BIO_LIMIT) : profile.bio);
+  const hasBio = profile.bio && profile.bio.length > 0;
+  const isLongBio = hasBio && profile.bio.length > BIO_LIMIT;
+  const shownBio = hasBio ? (bioExpanded ? profile.bio : (isLongBio ? profile.bio.slice(0, BIO_LIMIT) : profile.bio)) : '';
+
   return (
     <View style={rootStyle}>
       <View style={styles.ProfileBg}>
-        <Image
-          source={profile.background}
-          fadeDuration={0}
-          progressiveRenderingEnabled={false}
-          style={styles.backgroundImage}
-        />
+        {profile.backgroundPhotoUrl ? (
+          <Image
+            source={{ uri: profile.backgroundPhotoUrl }}
+            fadeDuration={0}
+            progressiveRenderingEnabled={false}
+            style={styles.backgroundImage}
+          />
+        ) : (
+          <LinearGradient
+            colors={getBackgroundGradient(profile.avatarColor)}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.backgroundImage}
+          />
+        )}
         <TouchableOpacity
           style={styles.BackArrow}
           onPress={() => navigation.goBack()}
         >
-          <BackArrow {...styles.iconsMatchingSize}/>
+          <BackArrow {...styles.iconsMatchingSize} />
         </TouchableOpacity>
-        <View style={styles.editAndLogout}>
-          <TouchableOpacity
-            style={styles.editProfile}
-            onPress={() => navigation.navigate('EditProfile')}
-          >
-            <EditRedIcon {...styles.iconsMatchingSize}/>
-            <CustomText style={styles.editProfileTxt}>Edit Profile</CustomText>
+        {isOwnProfile && (
+          <View style={styles.editAndLogout}>
+            <TouchableOpacity
+              style={styles.editProfile}
+              onPress={() => navigation.navigate('EditProfile')}
+            >
+              <EditRedIcon {...styles.iconsMatchingSize} />
+              <CustomText style={styles.editProfileTxt}>Edit Profile</CustomText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.logout}
+              onPress={logout}
+            >
+              <LogoutIcon {...styles.iconsMatchingSize} />
+            </TouchableOpacity>
+          </View>
+        )}
+        {isOwnProfile && (
+          <TouchableOpacity style={styles.editBackground}>
+            <EditRedIcon {...styles.iconsMatchingSize} />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.logout}
-            onPress={logout}
-          >
-            <LogoutIcon {...styles.iconsMatchingSize}/>
-          </TouchableOpacity>
-        </View>
-        <TouchableOpacity
-          style={styles.editBackground}
-        >
-          <EditRedIcon {...styles.iconsMatchingSize}/>
-        </TouchableOpacity>
+        )}
         <View style={styles.profilePhotoContainer}>
-          <Image
-            source={profile.photo}
-            fadeDuration={0}
-            progressiveRenderingEnabled={false}
-            style={styles.profilePhoto}
-          />
-          <TouchableOpacity style={styles.whiteEditBackground}>
-            <EditWhiteIcon {...styles.whiteEditIcon}/>
-          </TouchableOpacity>
+          {profile.profilePhotoUrl ? (
+            <Image
+              source={{ uri: profile.profilePhotoUrl }}
+              fadeDuration={0}
+              progressiveRenderingEnabled={false}
+              style={styles.profilePhoto}
+            />
+          ) : (
+            <View style={[styles.avatarCircle, { backgroundColor: profile.avatarColor }]}>
+              <CustomText style={styles.avatarInitial}>
+                {profile.displayName ? profile.displayName[0].toUpperCase() : profile.username ? profile.username[0].toUpperCase() : '?'}
+              </CustomText>
+            </View>
+          )}
+          {isOwnProfile && (
+            <TouchableOpacity style={styles.whiteEditBackground}>
+              <EditWhiteIcon {...styles.whiteEditIcon} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
       <View style={styles.profileDetails}>
@@ -568,78 +801,80 @@ export default function Profile() {
           >
             @{profile.username}
           </CustomText>
-          <CustomText
-            style={styles.nameTxt}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {profile.name}
-          </CustomText>
-          <TouchableOpacity 
+          {isOwnProfile && (
+            <CustomText
+              style={styles.nameTxt}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {profile.displayName}
+            </CustomText>
+          )}
+          <TouchableOpacity
             style={styles.friends}
             onPress={() => navigation.navigate('Friends')}
           >
-            <CustomText style={styles.friendsTxt}>{profile.friends} Friends</CustomText>
+            <CustomText style={styles.friendsTxt}>0 Friends</CustomText>
           </TouchableOpacity>
         </View>
-        <View
-          style={[
-            styles.bioContainer,
-            { 
-              height: bioExpanded ? BIO_EXPANDED_HEIGHT : BIO_COLLAPSED_HEIGHT,
-              maxHeight: bioExpanded ? BIO_EXPANDED_HEIGHT : BIO_COLLAPSED_HEIGHT 
-            }
-          ]}
-        >
-          <ScrollView
-            scrollEnabled={bioExpanded}
-            showsVerticalScrollIndicator={false}
+        {hasBio && (
+          <View
+            style={[
+              styles.bioContainer,
+              {
+                height: bioExpanded ? BIO_EXPANDED_HEIGHT : BIO_COLLAPSED_HEIGHT,
+                maxHeight: bioExpanded ? BIO_EXPANDED_HEIGHT : BIO_COLLAPSED_HEIGHT
+              }
+            ]}
           >
-            <CustomText style={styles.bioTxt}>
-              {shownBio}
-              {isLongBio && (
-                <CustomText
-                  style={styles.readMoreTxt}
-                  onPress={() => setBioExpanded(v => !v)}
-                >
-                  {bioExpanded ? ' Read less' : ' Read more...'}
-                </CustomText>
-              )}
-            </CustomText>
-          </ScrollView>
-        </View>
-        <View style={styles.information}>
-          <CustomText style={styles.informationTxt}>Information</CustomText>
-          <View style={styles.informationDetails}>
-            <View style={!profile.phoneNumber ? styles.informationDetailMissing : styles.informationDetail}>
-              <View style={styles.informationDetailsLabelAndEditRow}>
-                <View style={styles.informationDetailsLabelRow}>
-                  <PhoneIcon {...styles.iconsMatchingSize}/>
-                  <CustomText style={styles.informationDetailsLabelTxt}>Mobile Number:</CustomText>
+            <ScrollView
+              scrollEnabled={bioExpanded}
+              showsVerticalScrollIndicator={false}
+            >
+              <CustomText style={styles.bioTxt}>
+                {shownBio}
+                {isLongBio && (
+                  <CustomText
+                    style={styles.readMoreTxt}
+                    onPress={() => setBioExpanded(v => !v)}
+                  >
+                    {bioExpanded ? ' Read less' : ' Read more...'}
+                  </CustomText>
+                )}
+              </CustomText>
+            </ScrollView>
+          </View>
+        )}
+        {isOwnProfile && (
+          <View style={styles.information}>
+            <CustomText style={styles.informationTxt}>Information</CustomText>
+            <View style={styles.informationDetails}>
+              <View style={!profile.phoneNumber ? styles.informationDetailMissing : styles.informationDetail}>
+                <View style={styles.informationDetailsLabelAndEditRow}>
+                  <View style={styles.informationDetailsLabelRow}>
+                    <PhoneIcon {...styles.iconsMatchingSize} />
+                    <CustomText style={styles.informationDetailsLabelTxt}>Mobile Number:</CustomText>
+                  </View>
+                  {profile.phoneNumber && (
+                    <View>
+                      <TouchableOpacity
+                        onPress={() => navigation.navigate('EditEmailOrPhone', { source: 'phone' })}
+                      >
+                        <EditRedIcon {...styles.iconsMatchingSize} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
-                {profile.phoneNumber &&
+                {!profile.phoneNumber ? (
                   <View>
                     <TouchableOpacity
-                      onPress={() => navigation.navigate('EditEmailOrPhone', { source: 'phone' })}
-                    >
-                      <EditRedIcon {...styles.iconsMatchingSize}/>
-                    </TouchableOpacity>
-                  </View>
-                }
-              </View>
-              {!profile.phoneNumber ?
-                (
-                  <View>
-                    <TouchableOpacity 
                       style={styles.addInformationBtn}
                       onPress={() => navigation.navigate('AddNewEmailOrPhone', { source: 'phone' })}
                     >
                       <CustomText style={styles.addInformationTxt}>Add Mobile Number</CustomText>
                     </TouchableOpacity>
                   </View>
-                )
-              :
-                (
+                ) : (
                   <View>
                     <CustomText
                       style={styles.informationDetailTxt}
@@ -649,52 +884,48 @@ export default function Profile() {
                       {formatPhoneNumber(profile.phoneNumber)}
                     </CustomText>
                   </View>
-                )
-              }
-            </View>
-            <View style={!profile.email ? styles.informationDetailMissing : styles.informationDetail}>
-              <View style={styles.informationDetailsLabelAndEditRow}>
-                <View style={styles.informationDetailsLabelRow}>
-                  <MailIcon {...styles.iconsMatchingSize}/>
-                  <CustomText style={styles.informationDetailsLabelTxt}>Email Address:</CustomText>
+                )}
+              </View>
+              <View style={!profile.emailAddress ? styles.informationDetailMissing : styles.informationDetail}>
+                <View style={styles.informationDetailsLabelAndEditRow}>
+                  <View style={styles.informationDetailsLabelRow}>
+                    <MailIcon {...styles.iconsMatchingSize} />
+                    <CustomText style={styles.informationDetailsLabelTxt}>Email Address:</CustomText>
+                  </View>
+                  {profile.emailAddress && (
+                    <View>
+                      <TouchableOpacity
+                        onPress={() => navigation.navigate('EditEmailOrPhone', { source: 'email' })}
+                      >
+                        <EditRedIcon {...styles.iconsMatchingSize} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
-                {profile.email &&
+                {!profile.emailAddress ? (
                   <View>
                     <TouchableOpacity
-                      onPress={() => navigation.navigate('EditEmailOrPhone', { source: 'email' })}
-                    >
-                      <EditRedIcon {...styles.iconsMatchingSize}/>
-                    </TouchableOpacity>
-                  </View>
-                }
-              </View>
-              {!profile.email ?
-                (
-                  <View>
-                    <TouchableOpacity 
                       style={styles.addInformationBtn}
                       onPress={() => navigation.navigate('AddNewEmailOrPhone', { source: 'email' })}
                     >
                       <CustomText style={styles.addInformationTxt}>Add Email Address</CustomText>
                     </TouchableOpacity>
                   </View>
-                )
-              :
-                (
+                ) : (
                   <View>
                     <CustomText
                       style={styles.informationDetailTxt}
                       numberOfLines={1}
                       ellipsizeMode="tail"
                     >
-                      {profile.email}
+                      {profile.emailAddress}
                     </CustomText>
                   </View>
-                )
-              }
+                )}
+              </View>
             </View>
           </View>
-        </View>
+        )}
       </View>
     </View>
   );
