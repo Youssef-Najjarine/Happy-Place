@@ -93,34 +93,6 @@ public class ValidateTokenTest {
     // Tests - Valid Token Returns Correct User Data
 
     [Fact]
-    public void ValidTokenReturnsCorrectUserId() {
-        string uniqueEmail = $"userid{Guid.NewGuid():N}@gmail.com";
-        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
-
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
-        MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
-        string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
-
-        HttpResponseMessage signInResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signInWithEmail", new { Email = uniqueEmail, Password = "Seven74!" });
-        using var signInStream = signInResponse.Content.ReadAsStream();
-        using var signInReader = new StreamReader(signInStream);
-        string signInBody = signInReader.ReadToEnd();
-        string authToken = JsonSerializer.Deserialize<JsonElement>(signInBody).GetProperty("authToken").GetString();
-
-        HttpResponseMessage validateResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/validateToken", new { AuthToken = authToken });
-        using var validateStream = validateResponse.Content.ReadAsStream();
-        using var validateReader = new StreamReader(validateStream);
-        string validateBody = validateReader.ReadToEnd();
-        var userData = JsonSerializer.Deserialize<JsonElement>(validateBody);
-
-        using var dbContext = HappyPlaceDbContext.Create();
-        var userAccount = dbContext.UserAccounts.Single(field => field.EmailAddress == uniqueEmail);
-
-        Assert.Equal(userAccount.Id.ToString(), userData.GetProperty("userId").GetString());
-    }
-
-    [Fact]
     public void ValidTokenReturnsCorrectDisplayName() {
         string uniqueEmail = $"name{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
@@ -171,56 +143,6 @@ public class ValidateTokenTest {
         var userAccount = dbContext.UserAccounts.Single(field => field.EmailAddress == uniqueEmail);
 
         Assert.Equal(userAccount.Username, userData.GetProperty("username").GetString());
-    }
-
-    [Fact]
-    public void ValidTokenForEmailUserReturnsEmailAddress() {
-        string uniqueEmail = $"emailfield{Guid.NewGuid():N}@gmail.com";
-        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
-
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
-        MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
-        string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
-
-        HttpResponseMessage signInResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signInWithEmail", new { Email = uniqueEmail, Password = "Seven74!" });
-        using var signInStream = signInResponse.Content.ReadAsStream();
-        using var signInReader = new StreamReader(signInStream);
-        string signInBody = signInReader.ReadToEnd();
-        string authToken = JsonSerializer.Deserialize<JsonElement>(signInBody).GetProperty("authToken").GetString();
-
-        HttpResponseMessage validateResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/validateToken", new { AuthToken = authToken });
-        using var validateStream = validateResponse.Content.ReadAsStream();
-        using var validateReader = new StreamReader(validateStream);
-        string validateBody = validateReader.ReadToEnd();
-        var userData = JsonSerializer.Deserialize<JsonElement>(validateBody);
-
-        Assert.Equal(uniqueEmail, userData.GetProperty("emailAddress").GetString());
-    }
-
-    [Fact]
-    public void ValidTokenForPhoneUserReturnsPhoneNumber() {
-        string uniquePhone = string.Concat(Guid.NewGuid().ToString().Where(char.IsDigit).Take(10));
-        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
-
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
-        SmsMessage verificationSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
-        string verificationCode = SmsVerificationNotification.ExtractVerificationCode(verificationSms);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
-
-        HttpResponseMessage signInResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signInWithPhone", new { PhoneNumber = uniquePhone, Password = "Seven74!" });
-        using var signInStream = signInResponse.Content.ReadAsStream();
-        using var signInReader = new StreamReader(signInStream);
-        string signInBody = signInReader.ReadToEnd();
-        string authToken = JsonSerializer.Deserialize<JsonElement>(signInBody).GetProperty("authToken").GetString();
-
-        HttpResponseMessage validateResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/validateToken", new { AuthToken = authToken });
-        using var validateStream = validateResponse.Content.ReadAsStream();
-        using var validateReader = new StreamReader(validateStream);
-        string validateBody = validateReader.ReadToEnd();
-        var userData = JsonSerializer.Deserialize<JsonElement>(validateBody);
-
-        Assert.Equal(uniquePhone, userData.GetProperty("phoneNumber").GetString());
     }
 
     // Tests - Multiple Tokens

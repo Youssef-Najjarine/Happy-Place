@@ -1,4 +1,3 @@
-using HappyWorld.HappyPlace;
 using HappyWorld.HappyPlace.Web.Models.Authentication;
 using Microsoft.AspNetCore.Mvc;
 
@@ -70,10 +69,10 @@ public class AuthenticationController : ControllerBase {
 
     [HttpPost]
     public IActionResult ValidateToken(AuthenticationValidateTokenModel model) {
-        UserProfileResult userProfile = model.Validate();
-        if (userProfile == null)
+        UserProfileSummaryResult userProfileSummary = model.Validate();
+        if (userProfileSummary == null)
             return this.Unauthorized();
-        return this.Ok(userProfile);
+        return this.Ok(userProfileSummary);
     }
 
     [HttpPost]

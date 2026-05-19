@@ -4,7 +4,7 @@ namespace HappyWorld.HappyPlace.Web.Models.Authentication;
 
 public record AuthenticationValidateTokenModel(string AuthToken) {
     // Methods
-    public UserProfileResult Validate() {
+    public UserProfileSummaryResult Validate() {
         if (string.IsNullOrWhiteSpace(this.AuthToken))
             return null;
 
@@ -27,6 +27,6 @@ public record AuthenticationValidateTokenModel(string AuthToken) {
         if (userAccount == null)
             return null;
 
-        return UserProfileResult.FromUserAccount(userAccount);
+        return UserProfileSummaryResult.FromUserAccount(userAccount);
     }
 }
