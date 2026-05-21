@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
-import { HappyColor, White, Black, VeryLightGray, SoftGray, SemiTransparentCharcoal, VeryLightLavenderTint, VividBlueViolet } from 'src/constants/colors';
+import { HappyColor, White, Black, VeryLightGray, FrostedWhite, SoftGray, SemiTransparentCharcoal, VeryLightLavenderTint, VividBlueViolet } from 'src/constants/colors';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
-import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
+import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import CustomText from 'src/components/FontFamilyText';
+import CustomTextInput from 'src/components/FontFamilyTextInput';
 import DeleteProfileIcon from 'assets/images/modals/delete-profile-modal-icon.svg';
+import KeyIcon from 'assets/images/global/key-icon.svg';
+import EyeIcon from 'assets/images/global/eye-icon.svg';
+import EyeSlashIcon from 'assets/images/global/eye-slash-icon.svg';
+
 const phoneStyles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -53,6 +58,40 @@ const phoneStyles = StyleSheet.create({
     textAlign: 'center',
     color: Black,
   },
+  passwordInputContainer: {
+    width: '100%'
+  },
+  passwordInput: {
+    height: scaleHeight(48),
+    borderWidth: scaleWidth(1),
+    borderRadius: scaleWidth(67.067),
+    paddingLeft: scaleWidth(48),
+    paddingVertical: scaleHeight(12),
+    paddingRight: scaleWidth(48),
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    fontWeight: 500,
+    borderColor: VeryLightGray,
+    backgroundColor: FrostedWhite,
+    color: Black
+  },
+  keyIcon: {
+    width: scaleWidth(24),
+    height: scaleHeight(24),
+    top: scaleHeight(12),
+    left: scaleWidth(16),
+    position: 'absolute',
+  },
+  eyeIcons: {
+    top: scaleHeight(12),
+    right: scaleWidth(16),
+    position: 'absolute'
+  },
+  eyeIcon: {
+    width: scaleWidth(24),
+    height: scaleHeight(24)
+  },
   buttonRow: {
     height: scaleHeight(48),
     flexDirection: 'row',
@@ -90,6 +129,7 @@ const phoneStyles = StyleSheet.create({
     color: White,
   }
 });
+
 const tabletStyles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -137,6 +177,40 @@ const tabletStyles = StyleSheet.create({
     textAlign: 'center',
     color: Black,
   },
+  passwordInputContainer: {
+    width: '100%'
+  },
+  passwordInput: {
+    height: scaleHeight(64.382),
+    borderWidth: scaleWidth(1.341),
+    borderRadius: scaleWidth(89.959),
+    paddingLeft: scaleWidth(64.38),
+    paddingVertical: scaleHeight(16.1),
+    paddingRight: scaleWidth(64.38),
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    fontWeight: 500,
+    borderColor: VeryLightGray,
+    backgroundColor: FrostedWhite,
+    color: Black
+  },
+  keyIcon: {
+    width: scaleWidth(32.192),
+    height: scaleHeight(32.192),
+    top: scaleHeight(16.1),
+    left: scaleWidth(21.46),
+    position: 'absolute',
+  },
+  eyeIcons: {
+    top: scaleHeight(16.1),
+    right: scaleWidth(21.46),
+    position: 'absolute'
+  },
+  eyeIcon: {
+    width: scaleWidth(32.192),
+    height: scaleHeight(32.192)
+  },
   buttonRow: {
     height: scaleHeight(62.192),
     flexDirection: 'row',
@@ -174,8 +248,19 @@ const tabletStyles = StyleSheet.create({
     color: White,
   }
 });
+
 const DeleteAccountModal = ({ visible, onConfirm, onCancel }) => {
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (!visible) {
+      setPassword('');
+      setShowPassword(false);
+    }
+  }, [visible]);
+
   return (
     <Modal
       visible={visible}
@@ -185,33 +270,53 @@ const DeleteAccountModal = ({ visible, onConfirm, onCancel }) => {
     >
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
-            <View style={styles.logoAndBodyText}>
-                <View>
-                    <DeleteProfileIcon {...styles.deleteIcon}/>
-                </View>
-                <View>
-                    <CustomText style={styles.headerTxt}>Delete Account</CustomText>
-                </View>
-                <View>
-                    <CustomText style={styles.messageTxt}>
-                        Are you sure you want to delete your account? 
-                        This action is permanent and cannot be undone. 
-                        Please make sure to back up any important 
-                        information before proceeding.
-                    </CustomText>
-                </View>
+          <View style={styles.logoAndBodyText}>
+            <View>
+              <DeleteProfileIcon {...styles.deleteIcon} />
             </View>
-            <View style={styles.buttonRow}>
-                <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
-                    <CustomText style={styles.cancelTxt}>Cancel</CustomText>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.deleteBtn} onPress={onConfirm}>
-                    <CustomText style={styles.deleteTxt}>Delete</CustomText>
-                </TouchableOpacity>                
+            <View>
+              <CustomText style={styles.headerTxt}>Delete Account</CustomText>
             </View>
+            <View>
+              <CustomText style={styles.messageTxt}>
+                Are you sure you want to delete your account? 
+                This action is permanent and cannot be undone. 
+                Enter your password to confirm.
+              </CustomText>
+            </View>
+          </View>
+          <View style={styles.passwordInputContainer}>
+            <View>
+              <CustomTextInput
+                style={styles.passwordInput}
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Enter your password"
+                placeholderTextColor="#999"
+              />
+              <KeyIcon {...styles.keyIcon} />
+              <TouchableOpacity style={styles.eyeIcons} onPress={() => setShowPassword(!showPassword)}>
+                {showPassword ? <EyeSlashIcon {...styles.eyeIcon} /> : <EyeIcon {...styles.eyeIcon} />}
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
+              <CustomText style={styles.cancelTxt}>Cancel</CustomText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.deleteBtn, !password.trim() && { opacity: 0.5 }]}
+              disabled={!password.trim()}
+              onPress={() => onConfirm(password)}
+            >
+              <CustomText style={styles.deleteTxt}>Delete</CustomText>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
   );
 };
+
 export default DeleteAccountModal;
