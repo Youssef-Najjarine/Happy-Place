@@ -676,8 +676,8 @@ export default function CreateAccount() {
                   secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={setPassword}
-                  textContentType="newPassword"
-                  autoComplete="password-new"
+                  textContentType="oneTimeCode"
+                  autoComplete="off"
                 />
                 <TouchableOpacity style={styles.eyeIcons} onPress={() => setShowPassword(!showPassword)}>
                   {showPassword ? <EyeSlashIcon {...styles.eyeIcon} /> : <EyeIcon {...styles.eyeIcon} />}
@@ -693,8 +693,8 @@ export default function CreateAccount() {
                   secureTextEntry={!showConfirmPassword}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
-                  textContentType="password"
-                  autoComplete="password"
+                  textContentType="oneTimeCode"
+                  autoComplete="off"
                 />
                 <TouchableOpacity style={styles.eyeIcons} onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
                   {showConfirmPassword ? <EyeSlashIcon {...styles.eyeIcon} /> : <EyeIcon {...styles.eyeIcon} />}
