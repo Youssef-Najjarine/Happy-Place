@@ -5,7 +5,7 @@ namespace HappyWorld.HappyPlace.Web.Controllers;
 
 [ApiController]
 [Route("api/[controller]/[action]")]
-public class AuthenticationController : ControllerBase {
+public class UserAuthenticationController : ControllerBase {
     // Methods
 
     [HttpPost]

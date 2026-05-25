@@ -9,7 +9,7 @@ CREATE TABLE [dbo].[UserAccount]
 	[DisplayName] nvarchar(200) NOT NULL,
 	[EmailAddress] nvarchar(255) NULL,
 	[PhoneNumber] varchar(20) NULL,
-	[Bio] nvarchar(500) NULL,
+	[Bio] nvarchar(MAX) NULL,
 	[ProfilePhotoUrl] nvarchar(500) NULL,
     [BackgroundPhotoUrl] nvarchar(500) NULL,
 	[CreatedAtUtc] datetime2(0) NOT NULL
