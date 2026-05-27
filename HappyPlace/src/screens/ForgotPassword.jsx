@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, TouchableOpacity, StyleSheet, Animated, Keyboard } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, TouchableOpacity, StyleSheet, Keyboard } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { 
@@ -17,6 +17,7 @@ import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleF
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
 import { useDispatch } from 'react-redux';
 import { showLoading, hideLoading } from 'store/loadingSlice';
+import { showToast } from 'src/components/Toast';
 import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
 import CustomMaskedTextInput from 'src/components/FontFamilyMaskedTextInput';
@@ -24,8 +25,6 @@ import authenticationService from 'services/authenticationService';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
 import EmailIcon from 'assets/images/global/email-outline-icon.svg';
 import PhoneIcon from 'assets/images/global/phone-icon.svg';
-
-const TOAST_DISPLAY_DURATION = 4000;
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -164,30 +163,6 @@ const phoneStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.14),
     fontWeight: 700,
     color: White
-  },
-  toastContainer: {
-    position: 'absolute',
-    left: scaleWidth(20),
-    right: scaleWidth(20),
-    zIndex: 100
-  },
-  toast: {
-    borderRadius: scaleWidth(12),
-    paddingHorizontal: scaleWidth(16),
-    paddingVertical: scaleHeight(12),
-    backgroundColor: HappyColor,
-    shadowColor: Black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6
-  },
-  toastText: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(20),
-    fontWeight: 600,
-    color: White,
-    textAlign: 'center'
   }
 });
 
@@ -329,30 +304,6 @@ const tabletStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 700,
     color: White
-  },
-  toastContainer: {
-    position: 'absolute',
-    left: scaleWidth(24),
-    right: scaleWidth(24),
-    zIndex: 100
-  },
-  toast: {
-    borderRadius: scaleWidth(16),
-    paddingHorizontal: scaleWidth(20),
-    paddingVertical: scaleHeight(16),
-    backgroundColor: HappyColor,
-    shadowColor: Black,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8
-  },
-  toastText: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    fontWeight: 600,
-    color: White,
-    textAlign: 'center'
   }
 });
 
@@ -364,63 +315,23 @@ export default function ForgotPassword() {
   const [selectedForgotPasswordType, setSelectedForgotPasswordType] = useState('email');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [toastMessage, setToastMessage] = useState(null);
-  const toastOpacity = useRef(new Animated.Value(0)).current;
-  const toastTranslateY = useRef(new Animated.Value(-20)).current;
-  const toastTimerRef = useRef(null);
 
   const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
   const phoneValid = selectedForgotPasswordType === 'phone' ? phone.length >= 10 : false;
   const emailValid = selectedForgotPasswordType === 'email' ? isEmail(email) : false;
   const canConfirm = emailValid || phoneValid;
 
-  const showToast = (message) => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToastMessage(message);
-    toastOpacity.setValue(0);
-    toastTranslateY.setValue(-20);
-    Animated.parallel([
-      Animated.timing(toastOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
-      Animated.timing(toastTranslateY, { toValue: 0, duration: 250, useNativeDriver: true })
-    ]).start();
-    toastTimerRef.current = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(toastOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-        Animated.timing(toastTranslateY, { toValue: -20, duration: 200, useNativeDriver: true })
-      ]).start(() => setToastMessage(null));
-    }, TOAST_DISPLAY_DURATION);
-  };
-
-  const dismissToast = () => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    Animated.parallel([
-      Animated.timing(toastOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-      Animated.timing(toastTranslateY, { toValue: -20, duration: 200, useNativeDriver: true })
-    ]).start(() => setToastMessage(null));
-  };
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    };
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
       setEmail('');
       setPhone('');
       setSelectedForgotPasswordType('email');
-      setToastMessage(null);
-      toastOpacity.setValue(0);
-      toastTranslateY.setValue(-20);
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     }, [])
   );
 
   const goToVerifyCode = () => {
     if (!canConfirm) return;
     Keyboard.dismiss();
-    if (toastMessage) dismissToast();
     const contact = selectedForgotPasswordType === 'email' ? email.trim() : phone;
     dispatch(showLoading());
     setTimeout(async () => {
@@ -432,12 +343,12 @@ export default function ForgotPassword() {
           response = await authenticationService.forgotPasswordWithPhone(contact);
         }
         if (!response.ok) {
-          showToast('Unable to send verification code. Please try again.');
+          showToast('Unable to send verification code. Please try again.', 'error');
           return;
         }
         navigation.navigate('VerifyCode', { contact, source: 'forgotPassword' });
       } catch (err) {
-        showToast('Something went wrong. Please try again.');
+        showToast('Something went wrong. Please try again.', 'error');
       } finally {
         dispatch(hideLoading());
       }
@@ -522,18 +433,6 @@ export default function ForgotPassword() {
             </View>
         </View>
       </View>
-      {toastMessage && (
-        <Animated.View
-          style={[
-            styles.toastContainer,
-            { top: statusBarHeight + scaleHeight(12), opacity: toastOpacity, transform: [{ translateY: toastTranslateY }] }
-          ]}
-        >
-          <TouchableOpacity style={styles.toast} activeOpacity={0.9} onPress={dismissToast}>
-            <CustomText style={styles.toastText}>{toastMessage}</CustomText>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
     </View>
   );
 }

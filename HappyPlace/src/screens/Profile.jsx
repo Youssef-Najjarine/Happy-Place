@@ -1,11 +1,13 @@
 import React, { useState, useCallback } from 'react';
-import { View, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import useLogout from 'src/hooks/useLogout';
 import LinearGradient from 'react-native-linear-gradient';
 import { useDispatch } from 'react-redux';
 import { showLoading, hideLoading } from 'store/loadingSlice';
+import { setUser } from 'store/userSlice';
+import ImagePicker from 'react-native-image-crop-picker';
 import { 
   HappyColor, 
   White, 
@@ -19,6 +21,9 @@ import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import CustomText from 'src/components/FontFamilyText';
+import RemoteImage from 'src/components/RemoteImage';
+import PhotoActionSheet from 'src/components/PhotoActionSheet';
+import { showToast } from 'src/components/Toast';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
 import EditRedIcon from 'assets/images/profile/edit-red-icon.svg';
 import LogoutIcon from 'assets/images/profile/logout-icon.svg';
@@ -27,6 +32,28 @@ import PhoneIcon from 'assets/images/profile/grey-phone-icon.svg';
 import MailIcon from 'assets/images/profile/grey-mail-icon.svg';
 import tokenStorage from 'services/tokenStorage';
 import profileService from 'services/profileService';
+
+const ACTION_SHEET_DISMISS_DELAY_MS = 600;
+
+const PROFILE_PHOTO_PICKER_OPTIONS = {
+  width: 800,
+  height: 800,
+  cropping: true,
+  forceJpg: true,
+  mediaType: 'photo',
+  compressImageQuality: 0.9,
+  cropperToolbarTitle: 'Crop Profile Photo'
+};
+
+const BACKGROUND_PHOTO_PICKER_OPTIONS = {
+  width: 1200,
+  height: 400,
+  cropping: true,
+  forceJpg: true,
+  mediaType: 'photo',
+  compressImageQuality: 0.9,
+  cropperToolbarTitle: 'Crop Background Photo'
+};
 
 const getBackgroundGradient = (avatarColor) => {
   if (!avatarColor) return ['#E17055', '#C0392B'];
@@ -47,6 +74,8 @@ const formatPhoneNumber = (number) => {
   }
   return number;
 };
+
+const waitForActionSheetDismiss = () => new Promise(resolve => setTimeout(resolve, ACTION_SHEET_DISMISS_DELAY_MS));
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -645,6 +674,7 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [bioExpanded, setBioExpanded] = useState(false);
+  const [photoActionSheet, setPhotoActionSheet] = useState(null);
 
   const fetchProfile = useCallback(async () => {
     setProfile(null);
@@ -683,6 +713,143 @@ export default function Profile() {
       fetchProfile();
     }, [fetchProfile])
   );
+
+  const showPermissionDeniedAlert = () => {
+    Alert.alert(
+      'Permission Required',
+      'Please enable camera and photo access in Settings to upload photos.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Open Settings', onPress: () => Linking.openSettings() }
+      ]
+    );
+  };
+
+  const handlePickerError = (error) => {
+    if (error?.code === 'E_PICKER_CANCELLED') return;
+    if (error?.code === 'E_PICKER_CANNOT_RUN_CAMERA_ON_SIMULATOR') {
+      showToast('Camera is not available in the iOS Simulator. Use a real device to take a photo.', 'error');
+      return;
+    }
+    if (error?.code === 'E_NO_CAMERA_PERMISSION' || error?.code === 'E_NO_LIBRARY_PERMISSION' || error?.code === 'E_PERMISSION_MISSING') {
+      showPermissionDeniedAlert();
+      return;
+    }
+    showToast('Unable to open photo picker. Please try again.', 'error');
+  };
+
+  const uploadPhoto = async (photoType, image) => {
+    dispatch(showLoading());
+    try {
+      const token = await tokenStorage.getToken();
+      if (!token) {
+        showToast('Session expired. Please log in again.', 'error');
+        return;
+      }
+      const fileName = image.filename || 'photo.jpg';
+      const mimeType = image.mime || 'image/jpeg';
+      let response;
+      if (photoType === 'profile') {
+        response = await profileService.uploadProfilePhoto(token, image.path, fileName, mimeType);
+      } else {
+        response = await profileService.uploadBackgroundPhoto(token, image.path, fileName, mimeType);
+      }
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data);
+        if (photoType === 'profile') {
+          dispatch(setUser({
+            displayName: data.displayName,
+            username: data.username,
+            avatarColor: data.avatarColor,
+            profilePhotoUrl: data.profilePhotoUrl
+          }));
+        }
+        showToast(photoType === 'profile' ? 'Profile photo updated' : 'Background photo updated', 'success');
+      } else if (response.status === 413) {
+        showToast('Photo is too large. Maximum 50 MB.', 'error');
+      } else if (response.status === 401) {
+        showToast('Session expired. Please log in again.', 'error');
+      } else {
+        showToast('Unable to upload photo. Please try again.', 'error');
+      }
+    } catch {
+      showToast('Network error. Please check your connection.', 'error');
+    } finally {
+      dispatch(hideLoading());
+    }
+  };
+
+  const removePhoto = async (photoType) => {
+    dispatch(showLoading());
+    try {
+      const token = await tokenStorage.getToken();
+      if (!token) {
+        showToast('Session expired. Please log in again.', 'error');
+        return;
+      }
+      let response;
+      if (photoType === 'profile') {
+        response = await profileService.removeProfilePhoto(token);
+      } else {
+        response = await profileService.removeBackgroundPhoto(token);
+      }
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data);
+        if (photoType === 'profile') {
+          dispatch(setUser({
+            displayName: data.displayName,
+            username: data.username,
+            avatarColor: data.avatarColor,
+            profilePhotoUrl: data.profilePhotoUrl
+          }));
+        }
+        showToast(photoType === 'profile' ? 'Profile photo removed' : 'Background photo removed', 'success');
+      } else if (response.status === 401) {
+        showToast('Session expired. Please log in again.', 'error');
+      } else {
+        showToast('Unable to remove photo. Please try again.', 'error');
+      }
+    } catch {
+      showToast('Network error. Please check your connection.', 'error');
+    } finally {
+      dispatch(hideLoading());
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const photoType = photoActionSheet;
+    setPhotoActionSheet(null);
+    await waitForActionSheetDismiss();
+    try {
+      const options = photoType === 'profile' ? PROFILE_PHOTO_PICKER_OPTIONS : BACKGROUND_PHOTO_PICKER_OPTIONS;
+      const image = await ImagePicker.openCamera(options);
+      await uploadPhoto(photoType, image);
+    } catch (error) {
+      handlePickerError(error);
+    }
+  };
+
+  const handleChooseFromLibrary = async () => {
+    const photoType = photoActionSheet;
+    setPhotoActionSheet(null);
+    await waitForActionSheetDismiss();
+    try {
+      const options = photoType === 'profile' ? PROFILE_PHOTO_PICKER_OPTIONS : BACKGROUND_PHOTO_PICKER_OPTIONS;
+      const image = await ImagePicker.openPicker(options);
+      await uploadPhoto(photoType, image);
+    } catch (error) {
+      handlePickerError(error);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    const photoType = photoActionSheet;
+    setPhotoActionSheet(null);
+    await waitForActionSheetDismiss();
+    await removePhoto(photoType);
+  };
 
   const rootStyle = {
     ...styles.root,
@@ -728,8 +895,8 @@ export default function Profile() {
     <View style={rootStyle}>
       <View style={styles.ProfileBg}>
         {profile.backgroundPhotoUrl ? (
-          <Image
-            source={{ uri: profile.backgroundPhotoUrl }}
+          <RemoteImage
+            uri={profile.backgroundPhotoUrl}
             fadeDuration={0}
             progressiveRenderingEnabled={false}
             style={styles.backgroundImage}
@@ -766,14 +933,17 @@ export default function Profile() {
           </View>
         )}
         {isOwnProfile && (
-          <TouchableOpacity style={styles.editBackground}>
+          <TouchableOpacity
+            style={styles.editBackground}
+            onPress={() => setPhotoActionSheet('background')}
+          >
             <EditRedIcon {...styles.iconsMatchingSize} />
           </TouchableOpacity>
         )}
         <View style={styles.profilePhotoContainer}>
           {profile.profilePhotoUrl ? (
-            <Image
-              source={{ uri: profile.profilePhotoUrl }}
+            <RemoteImage
+              uri={profile.profilePhotoUrl}
               fadeDuration={0}
               progressiveRenderingEnabled={false}
               style={styles.profilePhoto}
@@ -786,7 +956,10 @@ export default function Profile() {
             </View>
           )}
           {isOwnProfile && (
-            <TouchableOpacity style={styles.whiteEditBackground}>
+            <TouchableOpacity
+              style={styles.whiteEditBackground}
+              onPress={() => setPhotoActionSheet('profile')}
+            >
               <EditWhiteIcon {...styles.whiteEditIcon} />
             </TouchableOpacity>
           )}
@@ -927,6 +1100,19 @@ export default function Profile() {
           </View>
         )}
       </View>
+      <PhotoActionSheet
+        visible={photoActionSheet !== null}
+        title={photoActionSheet === 'profile' ? 'Profile Photo' : 'Background Photo'}
+        hasExistingPhoto={
+          photoActionSheet === 'profile'
+            ? !!profile.profilePhotoUrl
+            : !!profile.backgroundPhotoUrl
+        }
+        onTakePhoto={handleTakePhoto}
+        onChooseFromLibrary={handleChooseFromLibrary}
+        onRemove={handleRemovePhoto}
+        onCancel={() => setPhotoActionSheet(null)}
+      />
     </View>
   );
 }

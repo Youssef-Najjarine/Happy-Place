@@ -8,10 +8,13 @@ import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleF
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import { useDispatch } from 'react-redux';
 import { showLoading, hideLoading } from 'store/loadingSlice';
+import { setUser } from 'store/userSlice';
+import { showToast } from 'src/components/Toast';
 import CustomText from 'src/components/FontFamilyText';
 import SuccessLogo from 'assets/images/accountVerified/account-verified-success-logo.png';
 import HappyCheck from 'assets/images/accountVerified/happy-check-icon.svg';
 import tokenStorage from 'services/tokenStorage';
+import authenticationService from 'services/authenticationService';
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -210,14 +213,28 @@ export default function AccountVerified() {
   const authToken = route.params?.authToken || null;
 
   const handleGetStarted = async () => {
-    if (rememberMe && authToken) {
-      await tokenStorage.saveToken(authToken);
+    if (!authToken) {
+      navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
+      return;
     }
     dispatch(showLoading());
-    setTimeout(() => {
-      dispatch(hideLoading());
+    try {
+      if (rememberMe) {
+        await tokenStorage.saveToken(authToken);
+      } else {
+        tokenStorage.setSessionToken(authToken);
+      }
+      const profileResponse = await authenticationService.validateToken(authToken);
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json();
+        dispatch(setUser(profileData));
+      }
       navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
-    }, 1000);
+    } catch (err) {
+      showToast('Something went wrong. Please try again.', 'error');
+    } finally {
+      dispatch(hideLoading());
+    }
   };
 
   const rootStyle = {

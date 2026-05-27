@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import store from 'store';
 import LoadingModal from 'components/LoadingModal';
+import ToastHost from 'src/components/Toast';
 import Home from 'screens/Home';
 import ChatGroups from 'screens/ChatGroups';
 import ChatGroup from 'screens/ChatGroup';
@@ -65,6 +66,7 @@ const App = () => {
           </Stack.Navigator>
           <LoadingModal />
         </NavigationContainer>
+        <ToastHost/>
       </SafeAreaProvider>
     </Provider>
   );

@@ -26,6 +26,7 @@ import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import { tabletBreakpoint } from 'src/constants/breakpoints';
 import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
+import RemoteImage from 'src/components/RemoteImage';
 import SadEmoji from 'assets/images/global/sad-emoji.svg';
 import HappyEmoji from 'assets/images/global/happy-emoji.svg';
 import SearchIcon from 'assets/images/global/search-icon.svg';
@@ -1823,7 +1824,7 @@ export default function ChatGroups() {
               <View>
                 <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
                   {user.profilePhotoUrl ? (
-                    <Image source={{ uri: user.profilePhotoUrl }} style={styles.profileImage} fadeDuration={0} />
+                    <RemoteImage uri={user.profilePhotoUrl} style={styles.profileImage} fadeDuration={0} />
                   ) : (
                     <View style={[styles.avatarCircle, { backgroundColor: user.avatarColor }]}>
                       <CustomText style={styles.avatarInitial}>

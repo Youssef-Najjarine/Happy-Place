@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet, Animated, Keyboard } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, TouchableOpacity, StyleSheet, Keyboard } from 'react-native';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { 
@@ -17,6 +17,7 @@ import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleF
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
 import { useDispatch } from 'react-redux';
 import { showLoading, hideLoading } from 'store/loadingSlice';
+import { showToast } from 'src/components/Toast';
 import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
 import authenticationService from 'services/authenticationService';
@@ -25,8 +26,6 @@ import RedXIcon from 'assets/images/global/red-x-icon.svg';
 import KeyIcon from 'assets/images/global/key-icon.svg';
 import EyeIcon from 'assets/images/global/eye-icon.svg';
 import EyeSlashIcon from 'assets/images/global/eye-slash-icon.svg';
-
-const TOAST_DISPLAY_DURATION = 4000;
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -176,30 +175,6 @@ const phoneStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.16),
     fontWeight: 600,
     color: HappyColor
-  },
-  toastContainer: {
-    position: 'absolute',
-    left: scaleWidth(20),
-    right: scaleWidth(20),
-    zIndex: 100
-  },
-  toast: {
-    borderRadius: scaleWidth(12),
-    paddingHorizontal: scaleWidth(16),
-    paddingVertical: scaleHeight(12),
-    backgroundColor: HappyColor,
-    shadowColor: Black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6
-  },
-  toastText: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(20),
-    fontWeight: 600,
-    color: White,
-    textAlign: 'center'
   }
 });
 
@@ -352,30 +327,6 @@ const tabletStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.2),
     fontWeight: 600,
     color: HappyColor
-  },
-  toastContainer: {
-    position: 'absolute',
-    left: scaleWidth(24),
-    right: scaleWidth(24),
-    zIndex: 100
-  },
-  toast: {
-    borderRadius: scaleWidth(16),
-    paddingHorizontal: scaleWidth(20),
-    paddingVertical: scaleHeight(16),
-    backgroundColor: HappyColor,
-    shadowColor: Black,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8
-  },
-  toastText: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    fontWeight: 600,
-    color: White,
-    textAlign: 'center'
   }
 });
 
@@ -391,10 +342,6 @@ export default function SetupPassword() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
-  const [toastMessage, setToastMessage] = useState(null);
-  const toastOpacity = useRef(new Animated.Value(0)).current;
-  const toastTranslateY = useRef(new Animated.Value(-20)).current;
-  const toastTimerRef = useRef(null);
 
   const hasMinLen = (v) => v.length >= 8;
   const hasNumber = (v) => /\d/.test(v);
@@ -410,58 +357,22 @@ export default function SetupPassword() {
 
   const canSubmit = rules.minLen && rules.number && rules.lowerUpper && rules.specialChar && rules.match;
 
-  const showToast = (message) => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToastMessage(message);
-    toastOpacity.setValue(0);
-    toastTranslateY.setValue(-20);
-    Animated.parallel([
-      Animated.timing(toastOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
-      Animated.timing(toastTranslateY, { toValue: 0, duration: 250, useNativeDriver: true })
-    ]).start();
-    toastTimerRef.current = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(toastOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-        Animated.timing(toastTranslateY, { toValue: -20, duration: 200, useNativeDriver: true })
-      ]).start(() => setToastMessage(null));
-    }, TOAST_DISPLAY_DURATION);
-  };
-
-  const dismissToast = () => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    Animated.parallel([
-      Animated.timing(toastOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-      Animated.timing(toastTranslateY, { toValue: -20, duration: 200, useNativeDriver: true })
-    ]).start(() => setToastMessage(null));
-  };
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    };
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
       setPassword('');
       setConfirmPassword('');
-      setToastMessage(null);
-      toastOpacity.setValue(0);
-      toastTranslateY.setValue(-20);
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     }, [])
   );
 
   const submitPasswordReset = () => {
     if (!canSubmit || !resetToken) return;
     Keyboard.dismiss();
-    if (toastMessage) dismissToast();
     dispatch(showLoading());
     setTimeout(async () => {
       try {
         const response = await authenticationService.resetPassword(resetToken, password);
         if (!response.ok) {
-          showToast('Unable to reset password. Please try again.');
+          showToast('Unable to reset password. Please try again.', 'error');
           return;
         }
         navigation.reset({
@@ -469,7 +380,7 @@ export default function SetupPassword() {
           routes: [{ name: 'PasswordReset' }]
         });
       } catch (err) {
-        showToast('Something went wrong. Please try again.');
+        showToast('Something went wrong. Please try again.', 'error');
       } finally {
         dispatch(hideLoading());
       }
@@ -582,18 +493,6 @@ export default function SetupPassword() {
             </View>
         </View>
       </View>
-      {toastMessage && (
-        <Animated.View
-          style={[
-            styles.toastContainer,
-            { top: statusBarHeight + scaleHeight(12), opacity: toastOpacity, transform: [{ translateY: toastTranslateY }] }
-          ]}
-        >
-          <TouchableOpacity style={styles.toast} activeOpacity={0.9} onPress={dismissToast}>
-            <CustomText style={styles.toastText}>{toastMessage}</CustomText>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
     </View>
   );
 }

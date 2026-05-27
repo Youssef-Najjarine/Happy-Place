@@ -33,6 +33,12 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>HappyPlace needs camera access so you can take a profile photo or background image.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>HappyPlace needs photo library access so you can choose a profile photo or background image.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>HappyPlace needs permission to save photos to your library.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIAppFonts</key>

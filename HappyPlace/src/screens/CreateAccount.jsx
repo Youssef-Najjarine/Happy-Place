@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { View, TouchableOpacity, ScrollView, StyleSheet, Animated, Keyboard } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, TouchableOpacity, ScrollView, StyleSheet, Keyboard } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { 
@@ -17,6 +17,7 @@ import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleF
 import { scaleWidth, scaleHeight, moderateScale } from 'src/utils/scaleLayout';
 import { useDispatch } from 'react-redux';
 import { showLoading, hideLoading } from 'store/loadingSlice';
+import { showToast } from 'src/components/Toast';
 import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
 import CustomMaskedTextInput from 'src/components/FontFamilyMaskedTextInput';
@@ -30,8 +31,6 @@ import KeyIcon from 'assets/images/global/key-icon.svg';
 import EyeIcon from 'assets/images/global/eye-icon.svg';
 import EyeSlashIcon from 'assets/images/global/eye-slash-icon.svg';
 import authenticationService from 'services/authenticationService';
-
-const TOAST_DISPLAY_DURATION = 4000;
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -186,30 +185,6 @@ const phoneStyles = StyleSheet.create({
     opacity: 0.7,
     fontWeight: 400,
     color: Black
-  },
-  toastContainer: {
-    position: 'absolute',
-    left: scaleWidth(20),
-    right: scaleWidth(20),
-    zIndex: 100
-  },
-  toast: {
-    borderRadius: scaleWidth(12),
-    paddingHorizontal: scaleWidth(16),
-    paddingVertical: scaleHeight(12),
-    backgroundColor: HappyColor,
-    shadowColor: Black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6
-  },
-  toastText: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(20),
-    fontWeight: 600,
-    color: White,
-    textAlign: 'center'
   },
   signUp: {
     marginBottom: scaleHeight(10)
@@ -406,30 +381,6 @@ const tabletStyles = StyleSheet.create({
     fontWeight: 400,
     color: Black
   },
-  toastContainer: {
-    position: 'absolute',
-    left: scaleWidth(24),
-    right: scaleWidth(24),
-    zIndex: 100
-  },
-  toast: {
-    borderRadius: scaleWidth(16),
-    paddingHorizontal: scaleWidth(20),
-    paddingVertical: scaleHeight(16),
-    backgroundColor: HappyColor,
-    shadowColor: Black,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8
-  },
-  toastText: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    fontWeight: 600,
-    color: White,
-    textAlign: 'center'
-  },
   signUp: {
     marginBottom: scaleHeight(12)
   },
@@ -483,10 +434,6 @@ export default function CreateAccount() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [toastMessage, setToastMessage] = useState(null);
-  const toastOpacity = useRef(new Animated.Value(0)).current;
-  const toastTranslateY = useRef(new Animated.Value(-20)).current;
-  const toastTimerRef = useRef(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -495,43 +442,8 @@ export default function CreateAccount() {
       setPhone('');
       setPassword('');
       setConfirmPassword('');
-      setToastMessage(null);
-      toastOpacity.setValue(0);
-      toastTranslateY.setValue(-20);
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     }, [])
   );
-
-  const showToast = (message) => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToastMessage(message);
-    toastOpacity.setValue(0);
-    toastTranslateY.setValue(-20);
-    Animated.parallel([
-      Animated.timing(toastOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
-      Animated.timing(toastTranslateY, { toValue: 0, duration: 250, useNativeDriver: true })
-    ]).start();
-    toastTimerRef.current = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(toastOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-        Animated.timing(toastTranslateY, { toValue: -20, duration: 200, useNativeDriver: true })
-      ]).start(() => setToastMessage(null));
-    }, TOAST_DISPLAY_DURATION);
-  };
-
-  const dismissToast = () => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    Animated.parallel([
-      Animated.timing(toastOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-      Animated.timing(toastTranslateY, { toValue: -20, duration: 200, useNativeDriver: true })
-    ]).start(() => setToastMessage(null));
-  };
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    };
-  }, []);
 
   const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
   const hasMinLen = (v) => v.length >= 8;
@@ -559,10 +471,6 @@ export default function CreateAccount() {
   const handleSignUp = async () => {
     if (!canSubmit) return;
     Keyboard.dismiss();
-    setToastMessage(null);
-    toastOpacity.setValue(0);
-    toastTranslateY.setValue(-20);
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     dispatch(showLoading());
     try {
       let response;
@@ -577,7 +485,7 @@ export default function CreateAccount() {
       const contact = selectedCreateAccountType === 'email' ? email.trim() : phone.replace(/\D/g, '');
       navigation.navigate('VerifyCode', { contact, source: 'createAccount' });
     } catch (err) {
-      showToast('Unable to create your account. Please check your information and try again.');
+      showToast('Unable to create your account. Please check your information and try again.', 'error');
     } finally {
       dispatch(hideLoading());
     }
@@ -741,18 +649,6 @@ export default function CreateAccount() {
           </View>
         </View>
       </ScrollView>
-      {toastMessage && (
-        <Animated.View
-          style={[
-            styles.toastContainer,
-            { top: statusBarHeight + scaleHeight(12), opacity: toastOpacity, transform: [{ translateY: toastTranslateY }] }
-          ]}
-        >
-          <TouchableOpacity style={styles.toast} activeOpacity={0.9} onPress={dismissToast}>
-            <CustomText style={styles.toastText}>{toastMessage}</CustomText>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
     </View>
   );
 }
