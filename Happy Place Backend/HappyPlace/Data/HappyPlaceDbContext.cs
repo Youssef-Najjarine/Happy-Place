@@ -15,6 +15,9 @@ public class HappyPlaceDbContext : DbContext {
     public DbSet<UserAccount> UserAccounts { get; set; }
     public DbSet<PasswordResetRequest> PasswordResetRequests { get; set; }
     public DbSet<UserProfilePhoto> UserProfilePhotos { get; set; }
+    public DbSet<PendingPhoneChange> PendingPhoneChanges { get; set; }
+    public DbSet<PendingEmailChange> PendingEmailChanges { get; set; }
+    public DbSet<ContactChangeAudit> ContactChangeAudits { get; set; }
 
     // Methods
     public static void SetConnectionString(string connectionString) => _connectionStringOverride = connectionString;

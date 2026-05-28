@@ -12,13 +12,13 @@ public class VerifyCurrentPasswordTest {
         string uniqueEmail = $"verpw{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/verifyCurrentPassword", new { AuthToken = authToken, Password = "Seven74!" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/verifyCurrentPassword", new { AuthToken = authToken, Password = "Seven74!" });
         bool isValid = response.ReadContentAsJsonDocument().RootElement.GetProperty("isValid").GetBoolean();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -30,13 +30,13 @@ public class VerifyCurrentPasswordTest {
         string uniqueEmail = $"verpw{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/verifyCurrentPassword", new { AuthToken = authToken, Password = "WrongPassword1!" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/verifyCurrentPassword", new { AuthToken = authToken, Password = "WrongPassword1!" });
         bool isValid = response.ReadContentAsJsonDocument().RootElement.GetProperty("isValid").GetBoolean();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -48,13 +48,13 @@ public class VerifyCurrentPasswordTest {
         string uniqueEmail = $"verpw{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/verifyCurrentPassword", new { AuthToken = authToken, Password = "" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/verifyCurrentPassword", new { AuthToken = authToken, Password = "" });
         bool isValid = response.ReadContentAsJsonDocument().RootElement.GetProperty("isValid").GetBoolean();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -66,13 +66,13 @@ public class VerifyCurrentPasswordTest {
         string uniqueEmail = $"verpw{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/verifyCurrentPassword", new { AuthToken = authToken });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/verifyCurrentPassword", new { AuthToken = authToken });
         bool isValid = response.ReadContentAsJsonDocument().RootElement.GetProperty("isValid").GetBoolean();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -85,7 +85,7 @@ public class VerifyCurrentPasswordTest {
     public void EmptyTokenReturnsUnauthorized() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/verifyCurrentPassword", new { AuthToken = "", Password = "Seven74!" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/verifyCurrentPassword", new { AuthToken = "", Password = "Seven74!" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -94,7 +94,7 @@ public class VerifyCurrentPasswordTest {
     public void InvalidTokenReturnsUnauthorized() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/verifyCurrentPassword", new { AuthToken = "not-a-real-token", Password = "Seven74!" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/verifyCurrentPassword", new { AuthToken = "not-a-real-token", Password = "Seven74!" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -103,7 +103,7 @@ public class VerifyCurrentPasswordTest {
     public void MissingTokenFieldReturnsUnauthorized() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/verifyCurrentPassword", new { Password = "Seven74!" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/verifyCurrentPassword", new { Password = "Seven74!" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }

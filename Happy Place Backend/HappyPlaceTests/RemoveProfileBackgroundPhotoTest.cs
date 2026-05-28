@@ -20,9 +20,9 @@ public class RemoveProfileBackgroundPhotoTest {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string authToken = SignUpAndGetToken(testingMockProvidersContainer, uniqueEmail);
         byte[] jpegBytes = TestImageGenerator.CreateJpeg(1500, 600);
-        testingMockProvidersContainer.WebClient.UploadMultipart("api/profile/uploadBackgroundPhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", jpegBytes, "bg.jpg", "image/jpeg")).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.UploadMultipart("api/userProfile/uploadBackgroundPhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", jpegBytes, "bg.jpg", "image/jpeg")).EnsureSuccessStatusCode();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/removeBackgroundPhoto", new { AuthToken = authToken });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/removeBackgroundPhoto", new { AuthToken = authToken });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -33,7 +33,7 @@ public class RemoveProfileBackgroundPhotoTest {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string authToken = SignUpAndGetToken(testingMockProvidersContainer, uniqueEmail);
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/removeBackgroundPhoto", new { AuthToken = authToken });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/removeBackgroundPhoto", new { AuthToken = authToken });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -44,9 +44,9 @@ public class RemoveProfileBackgroundPhotoTest {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string authToken = SignUpAndGetToken(testingMockProvidersContainer, uniqueEmail);
         byte[] jpegBytes = TestImageGenerator.CreateJpeg(1500, 600);
-        testingMockProvidersContainer.WebClient.UploadMultipart("api/profile/uploadBackgroundPhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", jpegBytes, "bg.jpg", "image/jpeg")).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.UploadMultipart("api/userProfile/uploadBackgroundPhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", jpegBytes, "bg.jpg", "image/jpeg")).EnsureSuccessStatusCode();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/profile/removeBackgroundPhoto", new { AuthToken = authToken }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userProfile/removeBackgroundPhoto", new { AuthToken = authToken }).EnsureSuccessStatusCode();
 
         using var dbContext = HappyPlaceDbContext.Create();
         var userAccount = dbContext.UserAccounts.Single(field => field.EmailAddress == uniqueEmail);
@@ -59,9 +59,9 @@ public class RemoveProfileBackgroundPhotoTest {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string authToken = SignUpAndGetToken(testingMockProvidersContainer, uniqueEmail);
         byte[] jpegBytes = TestImageGenerator.CreateJpeg(1500, 600);
-        testingMockProvidersContainer.WebClient.UploadMultipart("api/profile/uploadBackgroundPhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", jpegBytes, "bg.jpg", "image/jpeg")).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.UploadMultipart("api/userProfile/uploadBackgroundPhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", jpegBytes, "bg.jpg", "image/jpeg")).EnsureSuccessStatusCode();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/removeBackgroundPhoto", new { AuthToken = authToken });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/removeBackgroundPhoto", new { AuthToken = authToken });
         JsonElement backgroundPhotoUrlElement = response.ReadContentAsJsonDocument().RootElement.GetProperty("backgroundPhotoUrl");
 
         Assert.Equal(JsonValueKind.Null, backgroundPhotoUrlElement.ValueKind);
@@ -74,10 +74,10 @@ public class RemoveProfileBackgroundPhotoTest {
         string authToken = SignUpAndGetToken(testingMockProvidersContainer, uniqueEmail);
         byte[] profileJpegBytes = TestImageGenerator.CreateJpeg(800, 800);
         byte[] backgroundJpegBytes = TestImageGenerator.CreateJpeg(1500, 600);
-        testingMockProvidersContainer.WebClient.UploadMultipart("api/profile/uploadProfilePhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", profileJpegBytes, "profile.jpg", "image/jpeg")).EnsureSuccessStatusCode();
-        testingMockProvidersContainer.WebClient.UploadMultipart("api/profile/uploadBackgroundPhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", backgroundJpegBytes, "bg.jpg", "image/jpeg")).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.UploadMultipart("api/userProfile/uploadProfilePhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", profileJpegBytes, "profile.jpg", "image/jpeg")).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.UploadMultipart("api/userProfile/uploadBackgroundPhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", backgroundJpegBytes, "bg.jpg", "image/jpeg")).EnsureSuccessStatusCode();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/profile/removeBackgroundPhoto", new { AuthToken = authToken }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userProfile/removeBackgroundPhoto", new { AuthToken = authToken }).EnsureSuccessStatusCode();
 
         using var dbContext = HappyPlaceDbContext.Create();
         var userAccount = dbContext.UserAccounts.Single(field => field.EmailAddress == uniqueEmail);
@@ -90,7 +90,7 @@ public class RemoveProfileBackgroundPhotoTest {
     public void EmptyTokenReturnsUnauthorized() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/removeBackgroundPhoto", new { AuthToken = "" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/removeBackgroundPhoto", new { AuthToken = "" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -99,7 +99,7 @@ public class RemoveProfileBackgroundPhotoTest {
     public void InvalidTokenReturnsUnauthorized() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/removeBackgroundPhoto", new { AuthToken = "not-a-real-token" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/removeBackgroundPhoto", new { AuthToken = "not-a-real-token" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -107,10 +107,10 @@ public class RemoveProfileBackgroundPhotoTest {
     // Methods - Helpers
 
     private static string SignUpAndGetToken(TestingMockProvidersContainer container, string uniqueEmail) {
-        container.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        container.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = container.EmailProvider.EmailMessages.Last();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = container.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = container.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         return verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
     }
 }

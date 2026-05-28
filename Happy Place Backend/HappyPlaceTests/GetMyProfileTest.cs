@@ -16,13 +16,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
 
         Assert.Equal(HttpStatusCode.OK, profileResponse.StatusCode);
     }
@@ -33,13 +33,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", signUpData).EnsureSuccessStatusCode();
         SmsMessage verificationSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
         string verificationCode = SmsVerificationNotification.ExtractVerificationCode(verificationSms);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
 
         Assert.Equal(HttpStatusCode.OK, profileResponse.StatusCode);
     }
@@ -53,13 +53,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = registrationName, Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         var profileData = profileResponse.ReadContentAsJsonDocument();
 
         Assert.Equal(registrationName, profileData.RootElement.GetProperty("displayName").GetString());
@@ -72,13 +72,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = longName, Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         var profileData = profileResponse.ReadContentAsJsonDocument();
         string returnedName = profileData.RootElement.GetProperty("displayName").GetString();
 
@@ -92,13 +92,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         string returnedUsername = profileResponse.ReadContentAsJsonDocument().RootElement.GetProperty("username").GetString();
 
         using var dbContext = HappyPlaceDbContext.Create();
@@ -113,13 +113,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         string avatarColor = profileResponse.ReadContentAsJsonDocument().RootElement.GetProperty("avatarColor").GetString();
 
         Assert.Matches(@"^#[0-9A-Fa-f]{6}$", avatarColor);
@@ -132,13 +132,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         string endpointColor = profileResponse.ReadContentAsJsonDocument().RootElement.GetProperty("avatarColor").GetString();
 
         using var dbContext = HappyPlaceDbContext.Create();
@@ -154,13 +154,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         string returnedEmail = profileResponse.ReadContentAsJsonDocument().RootElement.GetProperty("emailAddress").GetString();
 
         Assert.Equal(uniqueEmail, returnedEmail);
@@ -172,13 +172,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         JsonElement phoneNumber = profileResponse.ReadContentAsJsonDocument().RootElement.GetProperty("phoneNumber");
 
         Assert.Equal(JsonValueKind.Null, phoneNumber.ValueKind);
@@ -190,13 +190,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", signUpData).EnsureSuccessStatusCode();
         SmsMessage verificationSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
         string verificationCode = SmsVerificationNotification.ExtractVerificationCode(verificationSms);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         string returnedPhone = profileResponse.ReadContentAsJsonDocument().RootElement.GetProperty("phoneNumber").GetString();
 
         Assert.Equal(uniquePhone, returnedPhone);
@@ -208,13 +208,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", signUpData).EnsureSuccessStatusCode();
         SmsMessage verificationSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
         string verificationCode = SmsVerificationNotification.ExtractVerificationCode(verificationSms);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         JsonElement emailAddress = profileResponse.ReadContentAsJsonDocument().RootElement.GetProperty("emailAddress");
 
         Assert.Equal(JsonValueKind.Null, emailAddress.ValueKind);
@@ -229,10 +229,10 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
         using var dbContext = HappyPlaceDbContext.Create();
@@ -240,7 +240,7 @@ public class GetMyProfileTest {
         user.PhoneNumber = addedPhone;
         dbContext.SaveChanges();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         var profileData = profileResponse.ReadContentAsJsonDocument();
         string returnedEmail = profileData.RootElement.GetProperty("emailAddress").GetString();
         string returnedPhone = profileData.RootElement.GetProperty("phoneNumber").GetString();
@@ -255,13 +255,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         JsonElement bio = profileResponse.ReadContentAsJsonDocument().RootElement.GetProperty("bio");
 
         Assert.Equal(JsonValueKind.Null, bio.ValueKind);
@@ -273,13 +273,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         JsonElement profilePhotoUrl = profileResponse.ReadContentAsJsonDocument().RootElement.GetProperty("profilePhotoUrl");
 
         Assert.Equal(JsonValueKind.Null, profilePhotoUrl.ValueKind);
@@ -291,13 +291,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         JsonElement backgroundPhotoUrl = profileResponse.ReadContentAsJsonDocument().RootElement.GetProperty("backgroundPhotoUrl");
 
         Assert.Equal(JsonValueKind.Null, backgroundPhotoUrl.ValueKind);
@@ -310,10 +310,10 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
         using var dbContext = HappyPlaceDbContext.Create();
@@ -321,7 +321,7 @@ public class GetMyProfileTest {
         user.Bio = expectedBio;
         dbContext.SaveChanges();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         string returnedBio = profileResponse.ReadContentAsJsonDocument().RootElement.GetProperty("bio").GetString();
 
         Assert.Equal(expectedBio, returnedBio);
@@ -334,10 +334,10 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
         using var dbContext = HappyPlaceDbContext.Create();
@@ -345,7 +345,7 @@ public class GetMyProfileTest {
         user.ProfilePhotoUrl = expectedPhotoUrl;
         dbContext.SaveChanges();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         string returnedPhotoUrl = profileResponse.ReadContentAsJsonDocument().RootElement.GetProperty("profilePhotoUrl").GetString();
 
         Assert.Equal(expectedPhotoUrl, returnedPhotoUrl);
@@ -358,10 +358,10 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
         using var dbContext = HappyPlaceDbContext.Create();
@@ -369,7 +369,7 @@ public class GetMyProfileTest {
         user.BackgroundPhotoUrl = expectedBgUrl;
         dbContext.SaveChanges();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         string returnedBgUrl = profileResponse.ReadContentAsJsonDocument().RootElement.GetProperty("backgroundPhotoUrl").GetString();
 
         Assert.Equal(expectedBgUrl, returnedBgUrl);
@@ -383,13 +383,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         var profileData = profileResponse.ReadContentAsJsonDocument();
         List<string> actualProperties = profileData.RootElement.EnumerateObject().Select(property => property.Name).OrderBy(name => name).ToList();
         List<string> expectedProperties = new List<string> { "avatarColor", "backgroundPhotoUrl", "bio", "displayName", "emailAddress", "phoneNumber", "profilePhotoUrl", "username" }.OrderBy(name => name).ToList();
@@ -403,13 +403,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         var profileData = profileResponse.ReadContentAsJsonDocument();
 
         Assert.False(profileData.RootElement.TryGetProperty("userId", out _));
@@ -422,13 +422,13 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         var profileData = profileResponse.ReadContentAsJsonDocument();
 
         Assert.False(profileData.RootElement.TryGetProperty("hashedPassword", out _));
@@ -441,7 +441,7 @@ public class GetMyProfileTest {
     public void EmptyTokenReturnsUnauthorized() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = "" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = "" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -450,7 +450,7 @@ public class GetMyProfileTest {
     public void InvalidTokenReturnsUnauthorized() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = "not-a-real-token-at-all" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = "not-a-real-token-at-all" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -461,14 +461,14 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
         string tamperedToken = authToken.Substring(0, authToken.Length - 1) + (authToken[^1] == 'A' ? 'B' : 'A');
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = tamperedToken });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = tamperedToken });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -477,7 +477,7 @@ public class GetMyProfileTest {
     public void MissingTokenFieldReturnsUnauthorized() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -488,10 +488,10 @@ public class GetMyProfileTest {
         var signUpData = new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", signUpData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
         using var dbContext = HappyPlaceDbContext.Create();
@@ -499,7 +499,7 @@ public class GetMyProfileTest {
         dbContext.UserAccounts.Remove(user);
         dbContext.SaveChanges();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -514,20 +514,20 @@ public class GetMyProfileTest {
         string name2 = "Bob Martinez";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = name1, Email = uniqueEmail1, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = name1, Email = uniqueEmail1, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage email1 = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string code1 = EmailVerificationNotification.ExtractVerificationCode(email1);
-        HttpResponseMessage verify1 = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail1, VerificationCode = code1 });
+        HttpResponseMessage verify1 = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail1, VerificationCode = code1 });
         string token1 = verify1.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = name2, Email = uniqueEmail2, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = name2, Email = uniqueEmail2, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage email2 = testingMockProvidersContainer.EmailProvider.EmailMessages.Last();
         string code2 = EmailVerificationNotification.ExtractVerificationCode(email2);
-        HttpResponseMessage verify2 = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail2, VerificationCode = code2 });
+        HttpResponseMessage verify2 = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail2, VerificationCode = code2 });
         string token2 = verify2.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage profile1 = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = token1 });
-        HttpResponseMessage profile2 = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = token2 });
+        HttpResponseMessage profile1 = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = token1 });
+        HttpResponseMessage profile2 = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = token2 });
         var data1 = profile1.ReadContentAsJsonDocument();
         var data2 = profile2.ReadContentAsJsonDocument();
 

@@ -19,10 +19,10 @@ public class VerificationCreatesUserAccountTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
 
         using var dbContext = HappyPlaceDbContext.Create();
         var userAccount = dbContext.UserAccounts.Single(field => field.EmailAddress == uniqueEmail);
@@ -51,10 +51,10 @@ public class VerificationCreatesUserAccountTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
 
         using var dbContext = HappyPlaceDbContext.Create();
         var userAccount = dbContext.UserAccounts.Single(field => field.EmailAddress == uniqueEmail);
@@ -73,14 +73,14 @@ public class VerificationCreatesUserAccountTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
 
         using var dbContextBefore = HappyPlaceDbContext.Create();
         Assert.True(dbContextBefore.PendingUserAccounts.Any(field => field.EmailAddress == uniqueEmail));
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
 
         using var dbContextAfter = HappyPlaceDbContext.Create();
         Assert.False(dbContextAfter.PendingUserAccounts.Any(field => field.EmailAddress == uniqueEmail));
@@ -96,10 +96,10 @@ public class VerificationCreatesUserAccountTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         var verifyResponseData = verifyResponse.ReadContentAsJsonDocument();
         string authTokenString = verifyResponseData.RootElement.GetProperty("authToken").GetString();
 
@@ -124,10 +124,10 @@ public class VerificationCreatesUserAccountTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
         SmsMessage verificationSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
         string verificationCode = SmsVerificationNotification.ExtractVerificationCode(verificationSms);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
 
         using var dbContext = HappyPlaceDbContext.Create();
         var userAccount = dbContext.UserAccounts.Single(field => field.PhoneNumber == uniquePhone);
@@ -156,10 +156,10 @@ public class VerificationCreatesUserAccountTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
         SmsMessage verificationSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
         string verificationCode = SmsVerificationNotification.ExtractVerificationCode(verificationSms);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
 
         using var dbContext = HappyPlaceDbContext.Create();
         var userAccount = dbContext.UserAccounts.Single(field => field.PhoneNumber == uniquePhone);
@@ -178,14 +178,14 @@ public class VerificationCreatesUserAccountTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
         SmsMessage verificationSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
         string verificationCode = SmsVerificationNotification.ExtractVerificationCode(verificationSms);
 
         using var dbContextBefore = HappyPlaceDbContext.Create();
         Assert.True(dbContextBefore.PendingUserAccounts.Any(field => field.PhoneNumber == uniquePhone));
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
 
         using var dbContextAfter = HappyPlaceDbContext.Create();
         Assert.False(dbContextAfter.PendingUserAccounts.Any(field => field.PhoneNumber == uniquePhone));
@@ -201,10 +201,10 @@ public class VerificationCreatesUserAccountTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", jsonData).EnsureSuccessStatusCode();
         SmsMessage verificationSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
         string verificationCode = SmsVerificationNotification.ExtractVerificationCode(verificationSms);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = verificationCode });
         var verifyResponseData = verifyResponse.ReadContentAsJsonDocument();
         string authTokenString = verifyResponseData.RootElement.GetProperty("authToken").GetString();
 
@@ -229,8 +229,8 @@ public class VerificationCreatesUserAccountTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = "000000" });
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = "000000" });
 
         using var dbContext = HappyPlaceDbContext.Create();
         Assert.False(dbContext.UserAccounts.Any(field => field.EmailAddress == uniqueEmail));
@@ -247,7 +247,7 @@ public class VerificationCreatesUserAccountTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
 
@@ -256,7 +256,7 @@ public class VerificationCreatesUserAccountTest {
         pendingAccount.CreatedAtUtc = DateTime.UtcNow.AddMinutes(-11);
         dbContextExpire.SaveChanges();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
 
         using var dbContext = HappyPlaceDbContext.Create();
         Assert.False(dbContext.UserAccounts.Any(field => field.EmailAddress == uniqueEmail));
@@ -271,15 +271,15 @@ public class VerificationCreatesUserAccountTest {
         string email2 = $"multi2{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "User One", Email = email1, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "User One", Email = email1, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage email1Msg = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string code1 = EmailVerificationNotification.ExtractVerificationCode(email1Msg);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = email1, VerificationCode = code1 }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = email1, VerificationCode = code1 }).EnsureSuccessStatusCode();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "User Two", Email = email2, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "User Two", Email = email2, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage email2Msg = testingMockProvidersContainer.EmailProvider.EmailMessages.Last();
         string code2 = EmailVerificationNotification.ExtractVerificationCode(email2Msg);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = email2, VerificationCode = code2 }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = email2, VerificationCode = code2 }).EnsureSuccessStatusCode();
 
         using var dbContext = HappyPlaceDbContext.Create();
         var user1 = dbContext.UserAccounts.Single(field => field.EmailAddress == email1);
@@ -304,10 +304,10 @@ public class VerificationCreatesUserAccountTest {
         using var dbContextBefore = HappyPlaceDbContext.Create();
         int countBefore = dbContextBefore.UserAccounts.Count();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
 
         using var dbContextAfter = HappyPlaceDbContext.Create();
         int countAfter = dbContextAfter.UserAccounts.Count();

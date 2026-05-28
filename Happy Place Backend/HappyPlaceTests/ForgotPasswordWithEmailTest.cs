@@ -13,13 +13,13 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fpemail{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage signUpEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string signUpCode = EmailVerificationNotification.ExtractVerificationCode(signUpEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
         int emailCountBeforeForgotPassword = testingMockProvidersContainer.EmailProvider.EmailMessages.Count();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(emailCountBeforeForgotPassword + 1, testingMockProvidersContainer.EmailProvider.EmailMessages.Count());
@@ -30,12 +30,12 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fpcode{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage signUpEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string signUpCode = EmailVerificationNotification.ExtractVerificationCode(signUpEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
 
         MailMessage resetEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Last();
         string resetCode = EmailVerificationNotification.ExtractVerificationCode(resetEmail);
@@ -47,12 +47,12 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fpstored{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage signUpEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string signUpCode = EmailVerificationNotification.ExtractVerificationCode(signUpEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
 
         using var dbContext = HappyPlaceDbContext.Create();
         var resetRequest = dbContext.PasswordResetRequests.Single(field => field.EmailAddress == uniqueEmail);
@@ -68,12 +68,12 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fpexpiry{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage signUpEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string signUpCode = EmailVerificationNotification.ExtractVerificationCode(signUpEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
 
         using var dbContext = HappyPlaceDbContext.Create();
         var resetRequest = dbContext.PasswordResetRequests.Single(field => field.EmailAddress == uniqueEmail);
@@ -88,7 +88,7 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fpnoexist{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -98,7 +98,7 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fpnomail{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
 
         Assert.Empty(testingMockProvidersContainer.EmailProvider.EmailMessages);
     }
@@ -108,7 +108,7 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fpnodb{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
 
         using var dbContext = HappyPlaceDbContext.Create();
         var resetRequest = dbContext.PasswordResetRequests.SingleOrDefault(field => field.EmailAddress == uniqueEmail);
@@ -120,9 +120,9 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fppending{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -132,10 +132,10 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fppendnomail{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         int emailCountAfterSignUp = testingMockProvidersContainer.EmailProvider.EmailMessages.Count();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
 
         Assert.Equal(emailCountAfterSignUp, testingMockProvidersContainer.EmailProvider.EmailMessages.Count());
     }
@@ -145,9 +145,9 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fppendnodb{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
 
         using var dbContext = HappyPlaceDbContext.Create();
         var resetRequest = dbContext.PasswordResetRequests.SingleOrDefault(field => field.EmailAddress == uniqueEmail);
@@ -160,7 +160,7 @@ public class ForgotPasswordWithEmailTest {
     public void EmptyEmailReturnsBadRequest() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = "" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = "" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -169,7 +169,7 @@ public class ForgotPasswordWithEmailTest {
     public void WhitespaceOnlyEmailReturnsBadRequest() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = "   " });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = "   " });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -178,7 +178,7 @@ public class ForgotPasswordWithEmailTest {
     public void InvalidEmailFormatReturnsBadRequest() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = "notanemail" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = "notanemail" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -187,7 +187,7 @@ public class ForgotPasswordWithEmailTest {
     public void EmailExceedingMaxLengthReturnsBadRequest() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = new string('a', 246) + "@gmail.com" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = new string('a', 246) + "@gmail.com" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -199,13 +199,13 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fptrim{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage signUpEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string signUpCode = EmailVerificationNotification.ExtractVerificationCode(signUpEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
         int emailCountBeforeForgotPassword = testingMockProvidersContainer.EmailProvider.EmailMessages.Count();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = $"  {uniqueEmail}  " });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = $"  {uniqueEmail}  " });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(emailCountBeforeForgotPassword + 1, testingMockProvidersContainer.EmailProvider.EmailMessages.Count());
@@ -216,13 +216,13 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fpcase{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage signUpEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string signUpCode = EmailVerificationNotification.ExtractVerificationCode(signUpEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
         int emailCountBeforeForgotPassword = testingMockProvidersContainer.EmailProvider.EmailMessages.Count();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail.ToUpper() });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail.ToUpper() });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(emailCountBeforeForgotPassword + 1, testingMockProvidersContainer.EmailProvider.EmailMessages.Count());
@@ -235,18 +235,18 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fpinvalold{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage signUpEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string signUpCode = EmailVerificationNotification.ExtractVerificationCode(signUpEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
         MailMessage firstResetEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Last();
         string oldResetCode = EmailVerificationNotification.ExtractVerificationCode(firstResetEmail);
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
 
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordEmail", new { Email = uniqueEmail, VerificationCode = oldResetCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordEmail", new { Email = uniqueEmail, VerificationCode = oldResetCode });
 
         Assert.Equal(HttpStatusCode.BadRequest, verifyResponse.StatusCode);
     }
@@ -256,18 +256,18 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fpnewcode{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage signUpEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string signUpCode = EmailVerificationNotification.ExtractVerificationCode(signUpEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
 
         MailMessage latestResetEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Last();
         string newResetCode = EmailVerificationNotification.ExtractVerificationCode(latestResetEmail);
 
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordEmail", new { Email = uniqueEmail, VerificationCode = newResetCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordEmail", new { Email = uniqueEmail, VerificationCode = newResetCode });
 
         var verifyResponseData = verifyResponse.ReadContentAsJsonDocument();
         Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
@@ -279,16 +279,16 @@ public class ForgotPasswordWithEmailTest {
         string uniqueEmail = $"fpdiffcode{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Youssef Najjarine", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage signUpEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string signUpCode = EmailVerificationNotification.ExtractVerificationCode(signUpEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
         MailMessage firstResetEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Last();
         string firstCode = EmailVerificationNotification.ExtractVerificationCode(firstResetEmail);
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
         MailMessage secondResetEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Last();
         string secondCode = EmailVerificationNotification.ExtractVerificationCode(secondResetEmail);
 

@@ -1,4 +1,7 @@
 using HappyWorld.HappyPlace.Data;
+using HappyWorld.HappyPlace.Email;
+using HappyWorld.HappyPlace.Sms;
+using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.PixelFormats;
@@ -14,6 +17,10 @@ public class UserProfileManager {
     private static readonly int MaxUsernameLength = 20;
     private static readonly int MaxDisplayNameLength = 200;
     private static readonly int MinPasswordLength = 8;
+    private static readonly int MaxEmailLength = 255;
+    private static readonly int VerificationCodeExpirationMinutes = 10;
+    private static readonly int MaxVerificationAttempts = 5;
+    private static readonly int MaxContactChangeRequestsPerHour = 5;
     private static readonly byte ProfilePhotoType = 1;
     private static readonly byte BackgroundPhotoType = 2;
     private static readonly int ProfilePhotoOutputWidth = 400;
@@ -162,6 +169,242 @@ public class UserProfileManager {
         dbContext.SaveChanges();
     }
 
+    // Methods - Phone Change
+
+    public static void RequestPhoneChange(string authToken, string currentPassword, string phoneNumber) {
+        var authenticatedUser = GetAuthenticatedUserAccount(authToken)
+            ?? throw new ValidationErrorsException(["Unable to update phone number."]);
+
+        if (string.IsNullOrWhiteSpace(currentPassword))
+            throw new ValidationErrorsException(["Current password is required."]);
+        if (!PasswordHasher.VerifyPassword(currentPassword, authenticatedUser.HashedPassword))
+            throw new ValidationErrorsException(["Current password is incorrect."]);
+
+        string trimmedPhone = (phoneNumber ?? "").Trim();
+        ValidatePhoneFormat(trimmedPhone);
+
+        if (trimmedPhone == authenticatedUser.PhoneNumber)
+            throw new ValidationErrorsException(["This is already your phone number."]);
+
+        using var dbContext = HappyPlaceDbContext.Create();
+
+        DateTime oneHourAgo = DateTime.UtcNow.AddHours(-1);
+        int recentRequestCount = dbContext.ContactChangeAudits.Count(field =>
+            field.UserAccountId == authenticatedUser.Id &&
+            field.EventType == ContactChangeEventType.PhoneChangeRequested &&
+            field.EventAtUtc > oneHourAgo);
+        if (recentRequestCount >= MaxContactChangeRequestsPerHour)
+            throw new ValidationErrorsException(["Too many phone change requests. Please try again later."]);
+
+        var existingChange = dbContext.PendingPhoneChanges.SingleOrDefault(field => field.UserAccountId == authenticatedUser.Id);
+
+        Random random = new();
+        String verificationCode = random.Next(100000, 1000000).ToString();
+
+        if (existingChange != null) {
+            existingChange.NewPhoneNumber = trimmedPhone;
+            existingChange.VerificationCode = verificationCode;
+            existingChange.CreatedAtUtc = DateTime.UtcNow;
+            existingChange.AttemptCount = 0;
+        }
+        else {
+            dbContext.PendingPhoneChanges.Add(new() { UserAccountId = authenticatedUser.Id, NewPhoneNumber = trimmedPhone, VerificationCode = verificationCode, CreatedAtUtc = DateTime.UtcNow, AttemptCount = 0 });
+        }
+
+        dbContext.ContactChangeAudits.Add(new() {
+            UserAccountId = authenticatedUser.Id,
+            EventType = ContactChangeEventType.PhoneChangeRequested,
+            OldValue = authenticatedUser.PhoneNumber,
+            NewValue = trimmedPhone,
+            EventAtUtc = DateTime.UtcNow
+        });
+
+        try {
+            dbContext.SaveChanges();
+            SmsPhoneChangeVerificationNotification.Send(trimmedPhone, authenticatedUser.DisplayName, verificationCode);
+        }
+        catch (DbUpdateException) {
+            throw new ValidationErrorsException(["Unable to update phone number. Please try again."]);
+        }
+    }
+
+    public static MyProfileResult VerifyPhoneChange(string authToken, string phoneNumber, string verificationCode) {
+        var authenticatedUser = GetAuthenticatedUserAccount(authToken);
+        if (authenticatedUser == null)
+            return null;
+
+        string trimmedPhone = (phoneNumber ?? "").Trim();
+
+        using var dbContext = HappyPlaceDbContext.Create();
+        var pendingChange = dbContext.PendingPhoneChanges.SingleOrDefault(field => field.UserAccountId == authenticatedUser.Id);
+        if (pendingChange == null)
+            return null;
+
+        if (pendingChange.AttemptCount >= MaxVerificationAttempts)
+            return null;
+
+        if (pendingChange.VerificationCode != verificationCode) {
+            pendingChange.AttemptCount++;
+            try { dbContext.SaveChanges(); }
+            catch (DbUpdateException) { }
+            return null;
+        }
+
+        if (pendingChange.NewPhoneNumber != trimmedPhone)
+            return null;
+
+        if (DateTime.UtcNow - pendingChange.CreatedAtUtc > TimeSpan.FromMinutes(VerificationCodeExpirationMinutes))
+            return null;
+
+        bool phoneTakenByAnother = dbContext.UserAccounts.Any(field => field.PhoneNumber == pendingChange.NewPhoneNumber && field.Id != authenticatedUser.Id);
+        if (phoneTakenByAnother)
+            return null;
+
+        var user = dbContext.UserAccounts.Single(field => field.Id == authenticatedUser.Id);
+        string oldPhoneNumber = user.PhoneNumber;
+        user.PhoneNumber = pendingChange.NewPhoneNumber;
+        dbContext.PendingPhoneChanges.Remove(pendingChange);
+        dbContext.ContactChangeAudits.Add(new() {
+            UserAccountId = authenticatedUser.Id,
+            EventType = ContactChangeEventType.PhoneChanged,
+            OldValue = oldPhoneNumber,
+            NewValue = user.PhoneNumber,
+            EventAtUtc = DateTime.UtcNow
+        });
+
+        try {
+            dbContext.SaveChanges();
+        }
+        catch (DbUpdateException) {
+            return null;
+        }
+
+        if (!string.IsNullOrEmpty(oldPhoneNumber)) {
+            try { SmsPhoneChangedNotification.Send(oldPhoneNumber, user.DisplayName); }
+            catch { }
+        }
+
+        return MyProfileResult.FromUserAccount(user);
+    }
+
+    // Methods - Email Change
+
+    public static void RequestEmailChange(string authToken, string currentPassword, string emailAddress) {
+        var authenticatedUser = GetAuthenticatedUserAccount(authToken)
+            ?? throw new ValidationErrorsException(["Unable to update email address."]);
+
+        if (string.IsNullOrWhiteSpace(currentPassword))
+            throw new ValidationErrorsException(["Current password is required."]);
+        if (!PasswordHasher.VerifyPassword(currentPassword, authenticatedUser.HashedPassword))
+            throw new ValidationErrorsException(["Current password is incorrect."]);
+
+        string trimmedEmail = (emailAddress ?? "").Trim();
+        ValidateEmailFormat(trimmedEmail);
+
+        if (string.Equals(trimmedEmail, authenticatedUser.EmailAddress, StringComparison.OrdinalIgnoreCase))
+            throw new ValidationErrorsException(["This is already your email address."]);
+
+        using var dbContext = HappyPlaceDbContext.Create();
+
+        DateTime oneHourAgo = DateTime.UtcNow.AddHours(-1);
+        int recentRequestCount = dbContext.ContactChangeAudits.Count(field =>
+            field.UserAccountId == authenticatedUser.Id &&
+            field.EventType == ContactChangeEventType.EmailChangeRequested &&
+            field.EventAtUtc > oneHourAgo);
+        if (recentRequestCount >= MaxContactChangeRequestsPerHour)
+            throw new ValidationErrorsException(["Too many email change requests. Please try again later."]);
+
+        var existingChange = dbContext.PendingEmailChanges.SingleOrDefault(field => field.UserAccountId == authenticatedUser.Id);
+
+        Random random = new();
+        String verificationCode = random.Next(100000, 1000000).ToString();
+
+        if (existingChange != null) {
+            existingChange.NewEmailAddress = trimmedEmail;
+            existingChange.VerificationCode = verificationCode;
+            existingChange.CreatedAtUtc = DateTime.UtcNow;
+            existingChange.AttemptCount = 0;
+        }
+        else {
+            dbContext.PendingEmailChanges.Add(new() { UserAccountId = authenticatedUser.Id, NewEmailAddress = trimmedEmail, VerificationCode = verificationCode, CreatedAtUtc = DateTime.UtcNow, AttemptCount = 0 });
+        }
+
+        dbContext.ContactChangeAudits.Add(new() {
+            UserAccountId = authenticatedUser.Id,
+            EventType = ContactChangeEventType.EmailChangeRequested,
+            OldValue = authenticatedUser.EmailAddress,
+            NewValue = trimmedEmail,
+            EventAtUtc = DateTime.UtcNow
+        });
+
+        try {
+            dbContext.SaveChanges();
+            EmailEmailChangeVerificationNotification.Send(trimmedEmail, authenticatedUser.DisplayName, verificationCode);
+        }
+        catch (DbUpdateException) {
+            throw new ValidationErrorsException(["Unable to update email address. Please try again."]);
+        }
+    }
+
+    public static MyProfileResult VerifyEmailChange(string authToken, string emailAddress, string verificationCode) {
+        var authenticatedUser = GetAuthenticatedUserAccount(authToken);
+        if (authenticatedUser == null)
+            return null;
+
+        string trimmedEmail = (emailAddress ?? "").Trim();
+
+        using var dbContext = HappyPlaceDbContext.Create();
+        var pendingChange = dbContext.PendingEmailChanges.SingleOrDefault(field => field.UserAccountId == authenticatedUser.Id);
+        if (pendingChange == null)
+            return null;
+
+        if (pendingChange.AttemptCount >= MaxVerificationAttempts)
+            return null;
+
+        if (pendingChange.VerificationCode != verificationCode) {
+            pendingChange.AttemptCount++;
+            try { dbContext.SaveChanges(); }
+            catch (DbUpdateException) { }
+            return null;
+        }
+
+        if (!string.Equals(pendingChange.NewEmailAddress, trimmedEmail, StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        if (DateTime.UtcNow - pendingChange.CreatedAtUtc > TimeSpan.FromMinutes(VerificationCodeExpirationMinutes))
+            return null;
+
+        bool emailTakenByAnother = dbContext.UserAccounts.Any(field => field.EmailAddress == pendingChange.NewEmailAddress && field.Id != authenticatedUser.Id);
+        if (emailTakenByAnother)
+            return null;
+
+        var user = dbContext.UserAccounts.Single(field => field.Id == authenticatedUser.Id);
+        string oldEmailAddress = user.EmailAddress;
+        user.EmailAddress = pendingChange.NewEmailAddress;
+        dbContext.PendingEmailChanges.Remove(pendingChange);
+        dbContext.ContactChangeAudits.Add(new() {
+            UserAccountId = authenticatedUser.Id,
+            EventType = ContactChangeEventType.EmailChanged,
+            OldValue = oldEmailAddress,
+            NewValue = user.EmailAddress,
+            EventAtUtc = DateTime.UtcNow
+        });
+
+        try {
+            dbContext.SaveChanges();
+        }
+        catch (DbUpdateException) {
+            return null;
+        }
+
+        if (!string.IsNullOrEmpty(oldEmailAddress)) {
+            try { EmailEmailChangedNotification.Send(oldEmailAddress, user.DisplayName); }
+            catch { }
+        }
+
+        return MyProfileResult.FromUserAccount(user);
+    }
+
     // Methods - Photo Upload
 
     public static MyProfileResult UploadProfilePhoto(string authToken, byte[] photoBytes) {
@@ -233,6 +476,22 @@ public class UserProfileManager {
             throw new ValidationErrorsException(["Password must contain at least one uppercase letter."]);
         if (!Regex.IsMatch(password, @"[^a-zA-Z0-9\s]"))
             throw new ValidationErrorsException(["Password must contain at least one special character."]);
+    }
+
+    private static void ValidatePhoneFormat(string phoneNumber) {
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+            throw new ValidationErrorsException(["Phone number is required."]);
+        if (!Regex.IsMatch(phoneNumber, @"^\d{7,20}$"))
+            throw new ValidationErrorsException(["Please enter a valid phone number."]);
+    }
+
+    private static void ValidateEmailFormat(string email) {
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ValidationErrorsException(["Email address is required."]);
+        if (email.Length > MaxEmailLength)
+            throw new ValidationErrorsException([$"Email must be {MaxEmailLength} characters or less."]);
+        if (!Regex.IsMatch(email, @"^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$"))
+            throw new ValidationErrorsException(["Please enter a valid email address."]);
     }
 
     private static MyProfileResult UploadPhoto(string authToken, byte[] photoBytes, byte photoType, int outputWidth, int outputHeight) {

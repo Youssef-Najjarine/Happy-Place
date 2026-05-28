@@ -13,13 +13,13 @@ public class DeleteAccountTest {
         string uniqueEmail = $"del{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/deleteAccount", new { AuthToken = authToken, Password = "Seven74!" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/deleteAccount", new { AuthToken = authToken, Password = "Seven74!" });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -29,15 +29,15 @@ public class DeleteAccountTest {
         string uniqueEmail = $"del{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/profile/deleteAccount", new { AuthToken = authToken, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userProfile/deleteAccount", new { AuthToken = authToken, Password = "Seven74!" }).EnsureSuccessStatusCode();
 
-        HttpResponseMessage signInResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signInWithEmail", new { Email = uniqueEmail, Password = "Seven74!" });
+        HttpResponseMessage signInResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signInWithEmail", new { Email = uniqueEmail, Password = "Seven74!" });
 
         Assert.Equal(HttpStatusCode.BadRequest, signInResponse.StatusCode);
     }
@@ -47,15 +47,15 @@ public class DeleteAccountTest {
         string uniqueEmail = $"del{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/profile/deleteAccount", new { AuthToken = authToken, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userProfile/deleteAccount", new { AuthToken = authToken, Password = "Seven74!" }).EnsureSuccessStatusCode();
 
-        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/profile/getMyProfile", new { AuthToken = authToken });
+        HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
 
         Assert.Equal(HttpStatusCode.Unauthorized, profileResponse.StatusCode);
     }
@@ -65,13 +65,13 @@ public class DeleteAccountTest {
         string uniqueEmail = $"del{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/profile/deleteAccount", new { AuthToken = authToken, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userProfile/deleteAccount", new { AuthToken = authToken, Password = "Seven74!" }).EnsureSuccessStatusCode();
 
         using var dbContext = HappyPlaceDbContext.Create();
         var deletedUser = dbContext.UserAccounts.SingleOrDefault(field => field.EmailAddress == uniqueEmail);
@@ -84,20 +84,20 @@ public class DeleteAccountTest {
         string uniqueEmail = $"del{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithEmail", new { Email = uniqueEmail }).EnsureSuccessStatusCode();
 
         using (var dbContextBefore = HappyPlaceDbContext.Create()) {
             int resetRequestsBefore = dbContextBefore.PasswordResetRequests.Count(field => field.EmailAddress == uniqueEmail);
             Assert.True(resetRequestsBefore > 0);
         }
 
-        testingMockProvidersContainer.WebClient.PostJson("api/profile/deleteAccount", new { AuthToken = authToken, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userProfile/deleteAccount", new { AuthToken = authToken, Password = "Seven74!" }).EnsureSuccessStatusCode();
 
         using var dbContextAfter = HappyPlaceDbContext.Create();
         int resetRequestsAfter = dbContextAfter.PasswordResetRequests.Count(field => field.EmailAddress == uniqueEmail);
@@ -110,15 +110,15 @@ public class DeleteAccountTest {
         string uniqueEmail = $"del{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/profile/deleteAccount", new { AuthToken = authToken, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userProfile/deleteAccount", new { AuthToken = authToken, Password = "Seven74!" }).EnsureSuccessStatusCode();
 
-        HttpResponseMessage reRegisterResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "New User", Email = uniqueEmail, Password = "Seven74!" });
+        HttpResponseMessage reRegisterResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "New User", Email = uniqueEmail, Password = "Seven74!" });
 
         Assert.Equal(HttpStatusCode.OK, reRegisterResponse.StatusCode);
     }
@@ -130,13 +130,13 @@ public class DeleteAccountTest {
         string uniqueEmail = $"del{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/deleteAccount", new { AuthToken = authToken, Password = "WrongPassword1!" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/deleteAccount", new { AuthToken = authToken, Password = "WrongPassword1!" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
@@ -150,13 +150,13 @@ public class DeleteAccountTest {
         string uniqueEmail = $"del{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/deleteAccount", new { AuthToken = authToken, Password = "" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/deleteAccount", new { AuthToken = authToken, Password = "" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -166,13 +166,13 @@ public class DeleteAccountTest {
         string uniqueEmail = $"del{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/deleteAccount", new { AuthToken = authToken });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/deleteAccount", new { AuthToken = authToken });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -183,7 +183,7 @@ public class DeleteAccountTest {
     public void EmptyTokenReturnsUnauthorized() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/deleteAccount", new { AuthToken = "", Password = "Seven74!" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/deleteAccount", new { AuthToken = "", Password = "Seven74!" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -192,7 +192,7 @@ public class DeleteAccountTest {
     public void InvalidTokenReturnsUnauthorized() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/profile/deleteAccount", new { AuthToken = "not-a-real-token", Password = "Seven74!" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/deleteAccount", new { AuthToken = "not-a-real-token", Password = "Seven74!" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }

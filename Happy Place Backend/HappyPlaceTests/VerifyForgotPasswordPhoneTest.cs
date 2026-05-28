@@ -14,15 +14,15 @@ public class VerifyForgotPasswordPhoneTest {
         string uniquePhone = $"949{Random.Shared.Next(1000000, 10000000)}";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
         SmsMessage signUpSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
         string signUpCode = SmsVerificationNotification.ExtractVerificationCode(signUpSms);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithPhone", new { PhoneNumber = uniquePhone }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithPhone", new { PhoneNumber = uniquePhone }).EnsureSuccessStatusCode();
         SmsMessage resetSms = testingMockProvidersContainer.SmsProvider.SentMessages.Last();
         string resetCode = SmsVerificationNotification.ExtractVerificationCode(resetSms);
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = resetCode });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = resetCode });
 
         var responseData = response.ReadContentAsJsonDocument();
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -35,15 +35,15 @@ public class VerifyForgotPasswordPhoneTest {
         string uniquePhone = $"949{Random.Shared.Next(1000000, 10000000)}";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
         SmsMessage signUpSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
         string signUpCode = SmsVerificationNotification.ExtractVerificationCode(signUpSms);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithPhone", new { PhoneNumber = uniquePhone }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithPhone", new { PhoneNumber = uniquePhone }).EnsureSuccessStatusCode();
         SmsMessage resetSms = testingMockProvidersContainer.SmsProvider.SentMessages.Last();
         string resetCode = SmsVerificationNotification.ExtractVerificationCode(resetSms);
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = resetCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = resetCode }).EnsureSuccessStatusCode();
 
         using var dbContext = HappyPlaceDbContext.Create();
         var resetRequest = dbContext.PasswordResetRequests.Single(field => field.PhoneNumber == uniquePhone);
@@ -59,13 +59,13 @@ public class VerifyForgotPasswordPhoneTest {
         string uniquePhone = $"949{Random.Shared.Next(1000000, 10000000)}";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
         SmsMessage signUpSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
         string signUpCode = SmsVerificationNotification.ExtractVerificationCode(signUpSms);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithPhone", new { PhoneNumber = uniquePhone }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithPhone", new { PhoneNumber = uniquePhone }).EnsureSuccessStatusCode();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = "000000" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = "000000" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -75,13 +75,13 @@ public class VerifyForgotPasswordPhoneTest {
         string uniquePhone = $"949{Random.Shared.Next(1000000, 10000000)}";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
         SmsMessage signUpSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
         string signUpCode = SmsVerificationNotification.ExtractVerificationCode(signUpSms);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithPhone", new { PhoneNumber = uniquePhone }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithPhone", new { PhoneNumber = uniquePhone }).EnsureSuccessStatusCode();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = "000000" });
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = "000000" });
 
         using var dbContext = HappyPlaceDbContext.Create();
         var resetRequest = dbContext.PasswordResetRequests.Single(field => field.PhoneNumber == uniquePhone);
@@ -96,11 +96,11 @@ public class VerifyForgotPasswordPhoneTest {
         string uniquePhone = $"949{Random.Shared.Next(1000000, 10000000)}";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
         SmsMessage signUpSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
         string signUpCode = SmsVerificationNotification.ExtractVerificationCode(signUpSms);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithPhone", new { PhoneNumber = uniquePhone }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithPhone", new { PhoneNumber = uniquePhone }).EnsureSuccessStatusCode();
         SmsMessage resetSms = testingMockProvidersContainer.SmsProvider.SentMessages.Last();
         string resetCode = SmsVerificationNotification.ExtractVerificationCode(resetSms);
 
@@ -110,7 +110,7 @@ public class VerifyForgotPasswordPhoneTest {
             dbContext.SaveChanges();
         }
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = resetCode });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = resetCode });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -121,7 +121,7 @@ public class VerifyForgotPasswordPhoneTest {
     public void EmptyPhoneReturnsBadRequest() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordPhone", new { PhoneNumber = "", VerificationCode = "123456" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordPhone", new { PhoneNumber = "", VerificationCode = "123456" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -131,7 +131,7 @@ public class VerifyForgotPasswordPhoneTest {
         string uniquePhone = $"949{Random.Shared.Next(1000000, 10000000)}";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = "" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = "" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -141,7 +141,7 @@ public class VerifyForgotPasswordPhoneTest {
         string uniquePhone = $"949{Random.Shared.Next(1000000, 10000000)}";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = "12345" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = "12345" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -151,7 +151,7 @@ public class VerifyForgotPasswordPhoneTest {
         string uniquePhone = $"949{Random.Shared.Next(1000000, 10000000)}";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = "abcdef" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = "abcdef" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -163,7 +163,7 @@ public class VerifyForgotPasswordPhoneTest {
         string uniquePhone = $"949{Random.Shared.Next(1000000, 10000000)}";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = "123456" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = "123456" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -173,9 +173,9 @@ public class VerifyForgotPasswordPhoneTest {
         string uniquePhone = $"949{Random.Shared.Next(1000000, 10000000)}";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = "123456" });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = "123456" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -187,16 +187,16 @@ public class VerifyForgotPasswordPhoneTest {
         string uniquePhone = $"949{Random.Shared.Next(1000000, 10000000)}";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", new { Name = "Youssef Najjarine", PhoneNumber = uniquePhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
         SmsMessage signUpSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
         string signUpCode = SmsVerificationNotification.ExtractVerificationCode(signUpSms);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithPhone", new { PhoneNumber = uniquePhone }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = uniquePhone, VerificationCode = signUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithPhone", new { PhoneNumber = uniquePhone }).EnsureSuccessStatusCode();
         SmsMessage resetSms = testingMockProvidersContainer.SmsProvider.SentMessages.Last();
         string resetCode = SmsVerificationNotification.ExtractVerificationCode(resetSms);
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = resetCode }).EnsureSuccessStatusCode();
-        HttpResponseMessage secondVerify = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = resetCode });
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = resetCode }).EnsureSuccessStatusCode();
+        HttpResponseMessage secondVerify = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordPhone", new { PhoneNumber = uniquePhone, VerificationCode = resetCode });
 
         Assert.Equal(HttpStatusCode.BadRequest, secondVerify.StatusCode);
     }
@@ -209,21 +209,21 @@ public class VerifyForgotPasswordPhoneTest {
         string secondPhone = $"949{Random.Shared.Next(1000000, 10000000)}";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "First User", PhoneNumber = firstPhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", new { Name = "First User", PhoneNumber = firstPhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
         SmsMessage firstSignUpSms = testingMockProvidersContainer.SmsProvider.SentMessages.Single();
         string firstSignUpCode = SmsVerificationNotification.ExtractVerificationCode(firstSignUpSms);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = firstPhone, VerificationCode = firstSignUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = firstPhone, VerificationCode = firstSignUpCode }).EnsureSuccessStatusCode();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithPhone", new { Name = "Second User", PhoneNumber = secondPhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithPhone", new { Name = "Second User", PhoneNumber = secondPhone, Password = "Seven74!" }).EnsureSuccessStatusCode();
         SmsMessage secondSignUpSms = testingMockProvidersContainer.SmsProvider.SentMessages.Last();
         string secondSignUpCode = SmsVerificationNotification.ExtractVerificationCode(secondSignUpSms);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyPhone", new { PhoneNumber = secondPhone, VerificationCode = secondSignUpCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyPhone", new { PhoneNumber = secondPhone, VerificationCode = secondSignUpCode }).EnsureSuccessStatusCode();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/forgotPasswordWithPhone", new { PhoneNumber = firstPhone }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/forgotPasswordWithPhone", new { PhoneNumber = firstPhone }).EnsureSuccessStatusCode();
         SmsMessage firstResetSms = testingMockProvidersContainer.SmsProvider.SentMessages.Last();
         string firstResetCode = SmsVerificationNotification.ExtractVerificationCode(firstResetSms);
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyForgotPasswordPhone", new { PhoneNumber = secondPhone, VerificationCode = firstResetCode });
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyForgotPasswordPhone", new { PhoneNumber = secondPhone, VerificationCode = firstResetCode });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }

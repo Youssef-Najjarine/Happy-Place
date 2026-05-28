@@ -161,7 +161,7 @@ public class GetProfilePhotoTest {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string authToken = SignUpAndGetToken(testingMockProvidersContainer, uniqueEmail);
         byte[] jpegBytes = TestImageGenerator.CreateJpeg(1500, 600);
-        HttpResponseMessage uploadResponse = testingMockProvidersContainer.WebClient.UploadMultipart("api/profile/uploadBackgroundPhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", jpegBytes, "bg.jpg", "image/jpeg"));
+        HttpResponseMessage uploadResponse = testingMockProvidersContainer.WebClient.UploadMultipart("api/userProfile/uploadBackgroundPhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", jpegBytes, "bg.jpg", "image/jpeg"));
         string backgroundPhotoUrl = uploadResponse.ReadContentAsJsonDocument().RootElement.GetProperty("backgroundPhotoUrl").GetString();
 
         HttpResponseMessage response = testingMockProvidersContainer.WebClient.Get(backgroundPhotoUrl);
@@ -182,7 +182,7 @@ public class GetProfilePhotoTest {
         string authToken = SignUpAndGetToken(testingMockProvidersContainer, uniqueEmail);
         string photoUrl = UploadProfilePhotoAndGetUrl(testingMockProvidersContainer, authToken);
 
-        testingMockProvidersContainer.WebClient.PostJson("api/profile/removeProfilePhoto", new { AuthToken = authToken }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userProfile/removeProfilePhoto", new { AuthToken = authToken }).EnsureSuccessStatusCode();
 
         HttpResponseMessage response = testingMockProvidersContainer.WebClient.Get(photoUrl);
 
@@ -196,7 +196,7 @@ public class GetProfilePhotoTest {
         string authToken = SignUpAndGetToken(testingMockProvidersContainer, uniqueEmail);
         string photoUrl = UploadProfilePhotoAndGetUrl(testingMockProvidersContainer, authToken);
 
-        testingMockProvidersContainer.WebClient.PostJson("api/profile/deleteAccount", new { AuthToken = authToken, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userProfile/deleteAccount", new { AuthToken = authToken, Password = "Seven74!" }).EnsureSuccessStatusCode();
 
         HttpResponseMessage response = testingMockProvidersContainer.WebClient.Get(photoUrl);
 
@@ -206,16 +206,16 @@ public class GetProfilePhotoTest {
     // Methods - Helpers
 
     private static string SignUpAndGetToken(TestingMockProvidersContainer container, string uniqueEmail) {
-        container.WebClient.PostJson("api/authentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
+        container.WebClient.PostJson("api/userAuthentication/signUpWithEmail", new { Name = "Test User", Email = uniqueEmail, Password = "Seven74!" }).EnsureSuccessStatusCode();
         MailMessage verificationEmail = container.EmailProvider.EmailMessages.Last();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = container.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = container.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         return verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
     }
 
     private static string UploadProfilePhotoAndGetUrl(TestingMockProvidersContainer container, string authToken) {
         byte[] jpegBytes = TestImageGenerator.CreateJpeg(800, 800);
-        HttpResponseMessage uploadResponse = container.WebClient.UploadMultipart("api/profile/uploadProfilePhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", jpegBytes, "photo.jpg", "image/jpeg"));
+        HttpResponseMessage uploadResponse = container.WebClient.UploadMultipart("api/userProfile/uploadProfilePhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", jpegBytes, "photo.jpg", "image/jpeg"));
         uploadResponse.EnsureSuccessStatusCode();
         return uploadResponse.ReadContentAsJsonDocument().RootElement.GetProperty("profilePhotoUrl").GetString();
     }

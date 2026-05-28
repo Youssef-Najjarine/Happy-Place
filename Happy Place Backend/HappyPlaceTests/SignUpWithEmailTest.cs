@@ -18,11 +18,11 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
 
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
 
         var verifyResponseData = verifyResponse.ReadContentAsJsonDocument();
         Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
@@ -41,7 +41,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -56,7 +56,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -71,7 +71,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -86,7 +86,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -102,7 +102,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -116,7 +116,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -130,7 +130,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -144,7 +144,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -158,7 +158,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -172,7 +172,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -186,7 +186,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -200,7 +200,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -214,7 +214,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -231,7 +231,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -245,7 +245,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -262,8 +262,8 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
-        HttpResponseMessage secondAttempt = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        HttpResponseMessage secondAttempt = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.OK, secondAttempt.StatusCode);
     }
@@ -278,13 +278,13 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
         MailMessage firstEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string oldVerificationCode = EmailVerificationNotification.ExtractVerificationCode(firstEmail);
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
 
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = oldVerificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = oldVerificationCode });
 
         Assert.Equal(HttpStatusCode.BadRequest, verifyResponse.StatusCode);
     }
@@ -299,12 +299,12 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
 
         MailMessage secondEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Last();
         string newVerificationCode = EmailVerificationNotification.ExtractVerificationCode(secondEmail);
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = newVerificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = newVerificationCode });
 
         var verifyResponseData = verifyResponse.ReadContentAsJsonDocument();
         Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
@@ -321,12 +321,12 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
 
-        HttpResponseMessage secondSignUp = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage secondSignUp = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, secondSignUp.StatusCode);
     }
@@ -343,7 +343,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -358,7 +358,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -373,7 +373,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -388,7 +388,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -403,7 +403,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -418,7 +418,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -433,7 +433,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -448,7 +448,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData);
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -465,8 +465,8 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = "000000" });
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = "000000" });
 
         Assert.Equal(HttpStatusCode.BadRequest, verifyResponse.StatusCode);
     }
@@ -481,8 +481,8 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = "" });
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = "" });
 
         Assert.Equal(HttpStatusCode.BadRequest, verifyResponse.StatusCode);
     }
@@ -497,8 +497,8 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = "12345" });
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = "12345" });
 
         Assert.Equal(HttpStatusCode.BadRequest, verifyResponse.StatusCode);
     }
@@ -513,8 +513,8 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = "abcdef" });
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = "abcdef" });
 
         Assert.Equal(HttpStatusCode.BadRequest, verifyResponse.StatusCode);
     }
@@ -524,7 +524,7 @@ public class SignUpWithEmailTest {
         string uniqueEmail = $"noexist{Guid.NewGuid():N}@gmail.com";
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = "123456" });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = "123456" });
 
         Assert.Equal(HttpStatusCode.BadRequest, verifyResponse.StatusCode);
     }
@@ -541,13 +541,13 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
 
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
-        HttpResponseMessage secondVerify = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode }).EnsureSuccessStatusCode();
+        HttpResponseMessage secondVerify = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
 
         Assert.Equal(HttpStatusCode.BadRequest, secondVerify.StatusCode);
     }
@@ -564,7 +564,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
 
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
@@ -574,7 +574,7 @@ public class SignUpWithEmailTest {
         pendingAccount.CreatedAtUtc = DateTime.UtcNow.AddMinutes(-11);
         dbContext.SaveChanges();
 
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
 
         Assert.Equal(HttpStatusCode.BadRequest, verifyResponse.StatusCode);
     }
@@ -589,7 +589,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
 
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
@@ -599,7 +599,7 @@ public class SignUpWithEmailTest {
         pendingAccount.CreatedAtUtc = DateTime.UtcNow.AddMinutes(-9).AddSeconds(-59);
         dbContext.SaveChanges();
 
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
 
         Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
     }
@@ -614,7 +614,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
 
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
@@ -624,7 +624,7 @@ public class SignUpWithEmailTest {
         pendingAccount.CreatedAtUtc = DateTime.UtcNow.AddMinutes(-10).AddSeconds(-1);
         dbContext.SaveChanges();
 
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
 
         Assert.Equal(HttpStatusCode.BadRequest, verifyResponse.StatusCode);
     }
@@ -639,7 +639,7 @@ public class SignUpWithEmailTest {
         };
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
 
-        testingMockProvidersContainer.WebClient.PostJson("api/authentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/signUpWithEmail", jsonData).EnsureSuccessStatusCode();
 
         MailMessage verificationEmail = testingMockProvidersContainer.EmailProvider.EmailMessages.Single();
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
@@ -649,7 +649,7 @@ public class SignUpWithEmailTest {
         pendingAccount.CreatedAtUtc = default;
         dbContext.SaveChanges();
 
-        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/authentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
+        HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
 
         Assert.Equal(HttpStatusCode.BadRequest, verifyResponse.StatusCode);
     }

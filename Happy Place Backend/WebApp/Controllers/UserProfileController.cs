@@ -67,6 +67,38 @@ public class UserProfileController : ControllerBase {
     }
 
     [HttpPost]
+    public IActionResult RequestPhoneChange(ProfileRequestPhoneChangeModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        var response = model.RequestChange();
+        if (response.IsSuccessful) return this.Ok();
+        return this.BadRequest(response.ErrorMessages);
+    }
+
+    [HttpPost]
+    public IActionResult VerifyPhoneChange(ProfileVerifyPhoneChangeModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        var result = model.Verify();
+        if (result == null) return this.BadRequest();
+        return this.Ok(result);
+    }
+
+    [HttpPost]
+    public IActionResult RequestEmailChange(ProfileRequestEmailChangeModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        var response = model.RequestChange();
+        if (response.IsSuccessful) return this.Ok();
+        return this.BadRequest(response.ErrorMessages);
+    }
+
+    [HttpPost]
+    public IActionResult VerifyEmailChange(ProfileVerifyEmailChangeModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        var result = model.Verify();
+        if (result == null) return this.BadRequest();
+        return this.Ok(result);
+    }
+
+    [HttpPost]
     [RequestSizeLimit(MaxPhotoRequestBodyBytes)]
     public IActionResult UploadProfilePhoto([FromForm] ProfileUploadProfilePhotoModel model) {
         if (!model.IsAuthenticated()) return this.Unauthorized();

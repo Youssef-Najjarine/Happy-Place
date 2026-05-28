@@ -63,6 +63,9 @@
     <Build Include="UserAccount.sql" />
     <Build Include="PasswordResetRequest.sql" />
     <Build Include="UserProfilePhoto.sql" />
+    <Build Include="PendingPhoneChange.sql" />
+    <Build Include="PendingEmailChange.sql" />
+    <Build Include="ContactChangeAudit.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Local.SqlServer.HappyPlace.publish.xml" />
