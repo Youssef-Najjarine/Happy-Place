@@ -1031,7 +1031,7 @@ export default function Profile() {
                   {profile.phoneNumber && (
                     <View>
                       <TouchableOpacity
-                        onPress={() => navigation.navigate('EditEmailOrPhone', { source: 'phone' })}
+                        onPress={() => navigation.navigate('EditEmailOrPhone', { source: 'phone', currentValue: profile.phoneNumber })}
                       >
                         <EditRedIcon {...styles.iconsMatchingSize} />
                       </TouchableOpacity>
@@ -1068,7 +1068,7 @@ export default function Profile() {
                   {profile.emailAddress && (
                     <View>
                       <TouchableOpacity
-                        onPress={() => navigation.navigate('EditEmailOrPhone', { source: 'email' })}
+                        onPress={() => navigation.navigate('EditEmailOrPhone', { source: 'email', currentValue: profile.emailAddress })}
                       >
                         <EditRedIcon {...styles.iconsMatchingSize} />
                       </TouchableOpacity>

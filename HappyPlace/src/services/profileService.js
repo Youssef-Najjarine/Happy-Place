@@ -39,5 +39,17 @@ export default profileService = {
     },
     removeBackgroundPhoto: function(authToken) {
         return baseService.postJson("userProfile/removeBackgroundPhoto", { AuthToken: authToken });
+    },
+    requestPhoneChange: function(authToken, currentPassword, phoneNumber) {
+        return baseService.postJson("userProfile/requestPhoneChange", { AuthToken: authToken, CurrentPassword: currentPassword, PhoneNumber: phoneNumber });
+    },
+    verifyPhoneChange: function(authToken, phoneNumber, verificationCode) {
+        return baseService.postJson("userProfile/verifyPhoneChange", { AuthToken: authToken, PhoneNumber: phoneNumber, VerificationCode: verificationCode });
+    },
+    requestEmailChange: function(authToken, currentPassword, emailAddress) {
+        return baseService.postJson("userProfile/requestEmailChange", { AuthToken: authToken, CurrentPassword: currentPassword, EmailAddress: emailAddress });
+    },
+    verifyEmailChange: function(authToken, emailAddress, verificationCode) {
+        return baseService.postJson("userProfile/verifyEmailChange", { AuthToken: authToken, EmailAddress: emailAddress, VerificationCode: verificationCode });
     }
 };

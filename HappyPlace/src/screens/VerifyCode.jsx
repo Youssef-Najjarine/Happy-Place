@@ -23,6 +23,8 @@ import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
 import authenticationService from 'services/authenticationService';
+import profileService from 'services/profileService';
+import tokenStorage from 'services/tokenStorage';
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -310,7 +312,12 @@ export default function VerifyCode() {
   const route = useRoute();
 
   const contact = route.params?.contact || '';
-  const source  = route.params?.source  || 'createAccount';
+  const source = route.params?.source || 'createAccount';
+  const currentPassword = route.params?.currentPassword || '';
+
+  const isPhoneChange = source === 'addPhone' || source === 'changePhone';
+  const isEmailChange = source === 'addEmail' || source === 'changeEmail';
+  const isContactChange = isPhoneChange || isEmailChange;
 
   const CODE_LENGTH = 6;
   const [code, setCode] = useState(Array(CODE_LENGTH).fill(''));
@@ -322,7 +329,7 @@ export default function VerifyCode() {
   const [secondsLeft, setSecondsLeft] = useState(INITIAL_SECONDS);
   const [isCounting, setIsCounting] = useState(true);
 
-  const isEmailContact = contact.includes('@');
+  const isEmailContact = isContactChange ? isEmailChange : contact.includes('@');
   const maskEmail = (email) => {
     const [localPart, domain] = email.split('@');
     if (!domain) return email;
@@ -428,6 +435,33 @@ export default function VerifyCode() {
           } else {
             await authenticationService.forgotPasswordWithPhone(contact);
           }
+        } else if (isContactChange) {
+          if (!currentPassword) {
+            showToast('Please go back and re-enter your password.', 'error');
+            return;
+          }
+          const token = await tokenStorage.getToken();
+          if (!token) {
+            showToast('Session expired. Please log in again.', 'error');
+            return;
+          }
+          let response;
+          if (isPhoneChange) {
+            response = await profileService.requestPhoneChange(token, currentPassword, contact);
+          } else {
+            response = await profileService.requestEmailChange(token, currentPassword, contact);
+          }
+          if (!response.ok) {
+            try {
+              const data = await response.json();
+              if (data?.errorMessages?.length > 0) {
+                showToast(data.errorMessages[0], 'error');
+                return;
+              }
+            } catch {}
+            showToast('Unable to resend code. Please try again.', 'error');
+            return;
+          }
         } else {
           if (isEmailContact) {
             await authenticationService.resendEmailCode(contact);
@@ -437,7 +471,7 @@ export default function VerifyCode() {
         }
         setSecondsLeft(INITIAL_SECONDS);
         setIsCounting(true);
-      } catch (err) {
+      } catch {
         showToast('Unable to resend code. Please try again.', 'error');
       } finally {
         dispatch(hideLoading());
@@ -458,6 +492,17 @@ export default function VerifyCode() {
           } else {
             response = await authenticationService.verifyForgotPasswordPhone(contact, codeValue);
           }
+        } else if (isContactChange) {
+          const token = await tokenStorage.getToken();
+          if (!token) {
+            showToast('Session expired. Please log in again.', 'error');
+            return;
+          }
+          if (isPhoneChange) {
+            response = await profileService.verifyPhoneChange(token, contact, codeValue);
+          } else {
+            response = await profileService.verifyEmailChange(token, contact, codeValue);
+          }
         } else {
           if (isEmailContact) {
             response = await authenticationService.verifyEmail(contact, codeValue);
@@ -469,13 +514,22 @@ export default function VerifyCode() {
           showToast('The code entered is incorrect or has expired. Please try again.', 'error');
           return;
         }
-        const responseData = await response.json();
         if (source === 'forgotPassword') {
+          const responseData = await response.json();
           navigation.replace('SetupPassword', { contact, resetToken: responseData.resetToken });
+        } else if (isContactChange) {
+          const successMessage =
+            source === 'addPhone' ? 'Mobile number added.' :
+            source === 'changePhone' ? 'Mobile number updated.' :
+            source === 'addEmail' ? 'Email address added.' :
+            'Email address updated.';
+          showToast(successMessage, 'success');
+          navigation.pop(2);
         } else {
+          const responseData = await response.json();
           navigation.replace('AccountVerified', { contact, source, authToken: responseData.authToken });
         }
-      } catch (err) {
+      } catch {
         showToast('Something went wrong. Please try again.', 'error');
       } finally {
         dispatch(hideLoading());
