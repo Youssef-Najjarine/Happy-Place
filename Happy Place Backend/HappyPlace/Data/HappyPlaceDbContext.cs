@@ -18,6 +18,10 @@ public class HappyPlaceDbContext : DbContext {
     public DbSet<PendingPhoneChange> PendingPhoneChanges { get; set; }
     public DbSet<PendingEmailChange> PendingEmailChanges { get; set; }
     public DbSet<ContactChangeAudit> ContactChangeAudits { get; set; }
+    public DbSet<ChatGroup> ChatGroups { get; set; }
+    public DbSet<ChatGroupMember> ChatGroupMembers { get; set; }
+    public DbSet<HelpAvailability> HelpAvailabilities { get; set; }
+    public DbSet<HelpOffer> HelpOffers { get; set; }
 
     // Methods
     public static void SetConnectionString(string connectionString) => _connectionStringOverride = connectionString;

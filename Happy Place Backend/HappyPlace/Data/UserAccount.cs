@@ -14,5 +14,6 @@ public class UserAccount {
     public String Bio { get; set; }
     public String ProfilePhotoUrl { get; set; }
     public String BackgroundPhotoUrl { get; set; }
+    public Boolean IsAnonymous { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 }

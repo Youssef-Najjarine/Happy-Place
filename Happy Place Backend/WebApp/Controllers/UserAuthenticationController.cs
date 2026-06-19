@@ -115,4 +115,10 @@ public class UserAuthenticationController : ControllerBase {
             return this.Ok();
         return this.BadRequest(response.ErrorMessages);
     }
+
+    [HttpPost]
+    public IActionResult CreateGuest(AuthenticationCreateGuestModel model) {
+        SignInResult signInResult = model.CreateGuest();
+        return this.Ok(signInResult);
+    }
 }

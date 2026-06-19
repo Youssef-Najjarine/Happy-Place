@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations.Schema;
-
 namespace HappyWorld.HappyPlace.Data;
 
 [Table(nameof(PendingUserAccount))]
@@ -12,5 +11,6 @@ public class PendingUserAccount {
     public String Username { get; set; }
     public String HashedPassword { get; set; }
     public String VerificationCode { get; set; }
+    public Guid? UpgradesUserAccountId { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 }

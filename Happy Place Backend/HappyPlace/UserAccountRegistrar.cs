@@ -24,13 +24,14 @@ public class UserAccountRegistrar {
         return AvatarColorPalette[index];
     }
 
-    public static void RegisterWithEmailAddress(String email, String name, String password) {
+    public static void RegisterWithEmailAddress(String authToken, String email, String name, String password) {
         using var dbContext = HappyPlaceDbContext.Create();
         InputValidator.ValidateEmailRegistration(name, email, password, dbContext);
         RemoveExistingPendingEmail(email, dbContext);
         String username = GenerateUsername(email, name, dbContext);
+        Guid? upgradesUserAccountId = ResolveGuestUserAccountId(authToken, dbContext);
         try {
-            String verificationCode = CreateEmailUserRecordAndGetVerificationCode(email, name, password, username, dbContext);
+            String verificationCode = CreateEmailUserRecordAndGetVerificationCode(email, name, password, username, upgradesUserAccountId, dbContext);
             EmailVerificationNotification.Send(email, name, verificationCode);
         }
         catch (DbUpdateException) {
@@ -38,18 +39,37 @@ public class UserAccountRegistrar {
         }
     }
 
-    public static void RegisterWithPhoneNumber(String phoneNumber, String name, String password) {
+    public static void RegisterWithPhoneNumber(String authToken, String phoneNumber, String name, String password) {
         using var dbContext = HappyPlaceDbContext.Create();
         InputValidator.ValidatePhoneRegistration(name, phoneNumber, password, dbContext);
         RemoveExistingPendingPhone(phoneNumber, dbContext);
         String username = GenerateUsername(phoneNumber, name, dbContext);
+        Guid? upgradesUserAccountId = ResolveGuestUserAccountId(authToken, dbContext);
         try {
-            String verificationCode = CreatePhoneUserRecordAndGetVerificationCode(phoneNumber, name, password, username, dbContext);
+            String verificationCode = CreatePhoneUserRecordAndGetVerificationCode(phoneNumber, name, password, username, upgradesUserAccountId, dbContext);
             SmsVerificationNotification.Send(phoneNumber, name, verificationCode);
         }
         catch (DbUpdateException) {
             throw new ValidationErrorsException(["Unable to create account. Please try again."]);
         }
+    }
+
+    public static SignInResult CreateGuestAccount() {
+        using var dbContext = HappyPlaceDbContext.Create();
+        var userAccount = new UserAccount {
+            DisplayName = GenerateGuestDisplayName(),
+            IsAnonymous = true,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+        dbContext.UserAccounts.Add(userAccount);
+        try {
+            dbContext.SaveChanges();
+        }
+        catch (DbUpdateException) {
+            throw new ValidationErrorsException(["Unable to create guest session. Please try again."]);
+        }
+        UserAuthenticationToken authToken = UserAuthenticationToken.GenerateForUser(userAccount.Id.ToString());
+        return SignInResult.AsGuest(authToken.ToAuthTokenString());
     }
 
     public static SignInResult SignInWithEmailAddress(String email, String password) {
@@ -306,25 +326,41 @@ public class UserAccountRegistrar {
         return uniqueUsername;
     }
 
-    public static String CreateEmailUserRecordAndGetVerificationCode(String email, String name, String password, String username, HappyPlaceDbContext dbContext) {
+    public static String CreateEmailUserRecordAndGetVerificationCode(String email, String name, String password, String username, Guid? upgradesUserAccountId, HappyPlaceDbContext dbContext) {
         String hashedPassword = PasswordHasher.HashPassword(password);
         Random random = new();
         String verificationCode = random.Next(100000, 1000000).ToString();
-        dbContext.PendingUserAccounts.Add(new() { EmailAddress = email, DisplayName = name, Username = username, HashedPassword = hashedPassword, VerificationCode = verificationCode, CreatedAtUtc = DateTime.UtcNow });
+        dbContext.PendingUserAccounts.Add(new() { EmailAddress = email, DisplayName = name, Username = username, HashedPassword = hashedPassword, VerificationCode = verificationCode, CreatedAtUtc = DateTime.UtcNow, UpgradesUserAccountId = upgradesUserAccountId });
         dbContext.SaveChanges();
         return verificationCode;
     }
 
-    public static String CreatePhoneUserRecordAndGetVerificationCode(String phoneNumber, String name, String password, String username, HappyPlaceDbContext dbContext) {
+    public static String CreatePhoneUserRecordAndGetVerificationCode(String phoneNumber, String name, String password, String username, Guid? upgradesUserAccountId, HappyPlaceDbContext dbContext) {
         String hashedPassword = PasswordHasher.HashPassword(password);
         Random random = new();
         String verificationCode = random.Next(100000, 1000000).ToString();
-        dbContext.PendingUserAccounts.Add(new() { PhoneNumber = phoneNumber, DisplayName = name, Username = username, HashedPassword = hashedPassword, VerificationCode = verificationCode, CreatedAtUtc = DateTime.UtcNow });
+        dbContext.PendingUserAccounts.Add(new() { PhoneNumber = phoneNumber, DisplayName = name, Username = username, HashedPassword = hashedPassword, VerificationCode = verificationCode, CreatedAtUtc = DateTime.UtcNow, UpgradesUserAccountId = upgradesUserAccountId });
         dbContext.SaveChanges();
         return verificationCode;
     }
 
     private static UserAccount CreateUserAccountFromPending(PendingUserAccount pendingUserAccount, HappyPlaceDbContext dbContext) {
+        UserAccount existingGuestAccount = null;
+        if (pendingUserAccount.UpgradesUserAccountId != null)
+            existingGuestAccount = dbContext.UserAccounts.SingleOrDefault(field => field.Id == pendingUserAccount.UpgradesUserAccountId.Value && field.IsAnonymous);
+
+        if (existingGuestAccount != null) {
+            existingGuestAccount.Username = pendingUserAccount.Username;
+            existingGuestAccount.HashedPassword = pendingUserAccount.HashedPassword;
+            existingGuestAccount.DisplayName = pendingUserAccount.DisplayName;
+            existingGuestAccount.EmailAddress = pendingUserAccount.EmailAddress;
+            existingGuestAccount.PhoneNumber = pendingUserAccount.PhoneNumber;
+            existingGuestAccount.IsAnonymous = false;
+            dbContext.PendingUserAccounts.Remove(pendingUserAccount);
+            dbContext.SaveChanges();
+            return existingGuestAccount;
+        }
+
         var userAccount = new UserAccount {
             Username = pendingUserAccount.Username,
             HashedPassword = pendingUserAccount.HashedPassword,
@@ -337,6 +373,20 @@ public class UserAccountRegistrar {
         dbContext.PendingUserAccounts.Remove(pendingUserAccount);
         dbContext.SaveChanges();
         return userAccount;
+    }
+
+    private static Guid? ResolveGuestUserAccountId(String authToken, HappyPlaceDbContext dbContext) {
+        if (string.IsNullOrWhiteSpace(authToken))
+            return null;
+        UserAuthenticationToken token;
+        try { token = UserAuthenticationToken.ValidateToken(authToken); }
+        catch { return null; }
+        if (token == null)
+            return null;
+        if (!Guid.TryParse(token.Identifier, out Guid userId))
+            return null;
+        var anonymousAccount = dbContext.UserAccounts.SingleOrDefault(field => field.Id == userId && field.IsAnonymous);
+        return anonymousAccount?.Id;
     }
 
     private static void RemoveExistingPendingEmail(String email, HappyPlaceDbContext dbContext) {
@@ -432,5 +482,10 @@ public class UserAccountRegistrar {
             newBaseUsername += randomLetter;
         }
         return newBaseUsername;
+    }
+
+    private static string GenerateGuestDisplayName() {
+        Random random = new();
+        return $"Guest{random.Next(1000, 10000)}";
     }
 }

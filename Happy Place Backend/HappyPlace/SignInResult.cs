@@ -15,4 +15,8 @@ public class SignInResult {
     internal static SignInResult AsPending(string contact, string contactType) {
         return new() { Status = "pending", Contact = contact, ContactType = contactType };
     }
+
+    internal static SignInResult AsGuest(string authToken) {
+        return new() { Status = "guest", AuthToken = authToken };
+    }
 }
