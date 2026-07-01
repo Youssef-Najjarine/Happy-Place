@@ -23,11 +23,6 @@ CREATE UNIQUE NONCLUSTERED INDEX [UQ-HelpOffer-ChatGroupId-HelperUserAccountId]
 	ON [dbo].[HelpOffer]([ChatGroupId], [HelperUserAccountId]);
 GO
 
-CREATE UNIQUE NONCLUSTERED INDEX [UQ-HelpOffer-HelperUserAccountId-Connected]
-	ON [dbo].[HelpOffer]([HelperUserAccountId])
-	WHERE [Status] = 2;
-GO
-
 CREATE NONCLUSTERED INDEX [IX-HelpOffer-ChatGroupId-Status-CreatedAtUtc]
 	ON [dbo].[HelpOffer]([ChatGroupId], [Status], [CreatedAtUtc])
 	INCLUDE ([HelperUserAccountId]);

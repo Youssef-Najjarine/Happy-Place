@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using HappyWorld.HappyPlace.Data;
 
 namespace HappyWorld.HappyPlace;
 
@@ -72,6 +73,33 @@ public class PollHelpRequestTest {
         Assert.Equal(1, readyHelperCount);
     }
 
+    [Fact]
+    public void PollReadyCountIncludesStaleOffers() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        var (seekerAuthToken, chatGroupId) = CreateSeekerWithRequest(testingMockProvidersContainer, "I need help");
+        string staleHelperAuthToken = OfferOnRequest(testingMockProvidersContainer, chatGroupId, "Stale Helper " + Guid.NewGuid());
+        Guid staleHelperUserAccountId = Guid.Parse(UserAuthenticationToken.ValidateToken(staleHelperAuthToken).Identifier);
+        OfferOnRequest(testingMockProvidersContainer, chatGroupId, "Fresh Helper " + Guid.NewGuid());
+        SetOfferLastSeenAtUtc(chatGroupId, staleHelperUserAccountId, DateTime.UtcNow.AddMinutes(-30));
+
+        int readyHelperCount = testingMockProvidersContainer.WebClient.PostJson("api/helpRequest/pollRequest", new { AuthToken = seekerAuthToken, ChatGroupId = chatGroupId }).ReadContentAsJsonDocument().RootElement.GetProperty("readyHelperCount").GetInt32();
+
+        Assert.Equal(2, readyHelperCount);
+    }
+
+    [Fact]
+    public void PollWhileWaitingRefreshesLastSeenAtUtc() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        var (seekerAuthToken, chatGroupId) = CreateSeekerWithRequest(testingMockProvidersContainer, "I need help");
+        SetGroupLastSeenAtUtc(chatGroupId, DateTime.UtcNow.AddMinutes(-30));
+
+        testingMockProvidersContainer.WebClient.PostJson("api/helpRequest/pollRequest", new { AuthToken = seekerAuthToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
+
+        using var dbContext = HappyPlaceDbContext.Create();
+        ChatGroup chatGroup = dbContext.ChatGroups.Single(field => field.Id == Guid.Parse(chatGroupId));
+        Assert.True(chatGroup.LastSeenAtUtc > DateTime.UtcNow.AddMinutes(-1));
+    }
+
     // Tests - Connected State
 
     [Fact]
@@ -132,13 +160,28 @@ public class PollHelpRequestTest {
         return (seekerAuthToken, chatGroupId);
     }
 
-    private static void OfferOnRequest(TestingMockProvidersContainer testingMockProvidersContainer, string chatGroupId, string helperName) {
+    private static string OfferOnRequest(TestingMockProvidersContainer testingMockProvidersContainer, string chatGroupId, string helperName) {
         string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, helperName);
         testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/createOffer", new { AuthToken = helperAuthToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
+        return helperAuthToken;
     }
 
     private static void DeclineOnRequest(TestingMockProvidersContainer testingMockProvidersContainer, string chatGroupId, string helperName) {
         string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, helperName);
         testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/declineOffer", new { AuthToken = helperAuthToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
+    }
+
+    private static void SetOfferLastSeenAtUtc(string chatGroupId, Guid helperUserAccountId, DateTime lastSeenAtUtc) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        HelpOffer offer = dbContext.HelpOffers.Single(field => field.ChatGroupId == Guid.Parse(chatGroupId) && field.HelperUserAccountId == helperUserAccountId);
+        offer.LastSeenAtUtc = lastSeenAtUtc;
+        dbContext.SaveChanges();
+    }
+
+    private static void SetGroupLastSeenAtUtc(string chatGroupId, DateTime lastSeenAtUtc) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        ChatGroup chatGroup = dbContext.ChatGroups.Single(field => field.Id == Guid.Parse(chatGroupId));
+        chatGroup.LastSeenAtUtc = lastSeenAtUtc;
+        dbContext.SaveChanges();
     }
 }

@@ -209,66 +209,12 @@ public class CreateHelpRequestTest {
         Assert.Equal(1, dbContext.ChatGroups.Count());
     }
 
-    // Tests - Guest Group Limit
-
-    [Fact]
-    public void GuestAtGroupLimitGetsRegistrationRequired() {
-        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
-        string guestAuthToken = TestUserFactory.CreateGuestUser(testingMockProvidersContainer);
-        Guid guestUserAccountId = Guid.Parse(UserAuthenticationToken.ValidateToken(guestAuthToken).Identifier);
-        SeedActiveGroupMemberships(guestUserAccountId, 2);
-
-        string status = testingMockProvidersContainer.WebClient.PostJson("api/helpRequest/createRequest", new { AuthToken = guestAuthToken, Topic = "Help" }).ReadContentAsJsonDocument().RootElement.GetProperty("status").GetString();
-
-        Assert.Equal("registrationRequired", status);
-
-        using var dbContext = HappyPlaceDbContext.Create();
-        Assert.Equal(2, dbContext.ChatGroups.Count());
-    }
-
-    [Fact]
-    public void GuestUnderGroupLimitCanCreateRequest() {
-        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
-        string guestAuthToken = TestUserFactory.CreateGuestUser(testingMockProvidersContainer);
-        Guid guestUserAccountId = Guid.Parse(UserAuthenticationToken.ValidateToken(guestAuthToken).Identifier);
-        SeedActiveGroupMemberships(guestUserAccountId, 1);
-
-        string status = testingMockProvidersContainer.WebClient.PostJson("api/helpRequest/createRequest", new { AuthToken = guestAuthToken, Topic = "Help" }).ReadContentAsJsonDocument().RootElement.GetProperty("status").GetString();
-
-        Assert.Equal("waiting", status);
-    }
-
-    [Fact]
-    public void VerifiedUserIsNeverCapped() {
-        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
-        string seekerAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Seeker " + Guid.NewGuid());
-        Guid seekerUserAccountId = Guid.Parse(UserAuthenticationToken.ValidateToken(seekerAuthToken).Identifier);
-        SeedActiveGroupMemberships(seekerUserAccountId, 2);
-
-        string status = testingMockProvidersContainer.WebClient.PostJson("api/helpRequest/createRequest", new { AuthToken = seekerAuthToken, Topic = "Help" }).ReadContentAsJsonDocument().RootElement.GetProperty("status").GetString();
-
-        Assert.Equal("waiting", status);
-
-        using var dbContext = HappyPlaceDbContext.Create();
-        Assert.Equal(3, dbContext.ChatGroups.Count());
-    }
-
     // Helpers
 
     private static void SetGroupStatus(string chatGroupId, ChatGroupStatus status) {
         using var dbContext = HappyPlaceDbContext.Create();
         ChatGroup chatGroup = dbContext.ChatGroups.Single(field => field.Id == Guid.Parse(chatGroupId));
         chatGroup.Status = status;
-        dbContext.SaveChanges();
-    }
-
-    private static void SeedActiveGroupMemberships(Guid userAccountId, int count) {
-        using var dbContext = HappyPlaceDbContext.Create();
-        for (int index = 0; index < count; index++) {
-            Guid groupId = Guid.NewGuid();
-            dbContext.ChatGroups.Add(new() { Id = groupId, Name = "Seed " + index, OwnerUserAccountId = userAccountId, IsPublic = true, Status = ChatGroupStatus.Active, CreatedAtUtc = DateTime.UtcNow });
-            dbContext.ChatGroupMembers.Add(new() { Id = Guid.NewGuid(), ChatGroupId = groupId, UserAccountId = userAccountId, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = DateTime.UtcNow });
-        }
         dbContext.SaveChanges();
     }
 }

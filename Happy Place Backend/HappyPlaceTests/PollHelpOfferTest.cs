@@ -34,36 +34,34 @@ public class PollHelpOfferTest {
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    // Tests - No Pending Offer
+    // Tests - Nothing To Join Yet
 
     [Fact]
-    public void PollWithNoOffersReturnsNone() {
+    public void PollWithNoOffersReturnsEmpty() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper " + Guid.NewGuid());
 
-        string status = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/pollOffer", new { AuthToken = helperAuthToken }).ReadContentAsJsonDocument().RootElement.GetProperty("status").GetString();
+        var rootElement = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/pollOffer", new { AuthToken = helperAuthToken }).ReadContentAsJsonDocument().RootElement;
 
-        Assert.Equal("none", status);
+        Assert.Equal(0, rootElement.GetArrayLength());
     }
 
-    // Tests - Waiting After Offering
-
     [Fact]
-    public void PollAfterOfferingReturnsOffered() {
+    public void PollWithOfferedButNotStartedReturnsEmpty() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         var (_, chatGroupId) = CreateSeekerWithRequest(testingMockProvidersContainer, "I need help");
         string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper " + Guid.NewGuid());
         testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/createOffer", new { AuthToken = helperAuthToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
 
-        string status = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/pollOffer", new { AuthToken = helperAuthToken }).ReadContentAsJsonDocument().RootElement.GetProperty("status").GetString();
+        var rootElement = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/pollOffer", new { AuthToken = helperAuthToken }).ReadContentAsJsonDocument().RootElement;
 
-        Assert.Equal("offered", status);
+        Assert.Equal(0, rootElement.GetArrayLength());
     }
 
-    // Tests - Connected State
+    // Tests - A Started Group Surfaces To Its Invited Helper
 
     [Fact]
-    public void PollAfterBeingConnectedReturnsConnectedWithChatGroup() {
+    public void PollAfterGroupStartedContainsTheGroup() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         var (seekerAuthToken, chatGroupId) = CreateSeekerWithRequest(testingMockProvidersContainer, "I need help");
         string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper " + Guid.NewGuid());
@@ -72,31 +70,49 @@ public class PollHelpOfferTest {
 
         var rootElement = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/pollOffer", new { AuthToken = helperAuthToken }).ReadContentAsJsonDocument().RootElement;
 
-        Assert.Equal("connected", rootElement.GetProperty("status").GetString());
-        Assert.Equal(chatGroupId, rootElement.GetProperty("chatGroupId").GetString());
+        Assert.Equal(1, rootElement.GetArrayLength());
+        Assert.Equal(chatGroupId, rootElement[0].GetProperty("chatGroupId").GetString());
     }
 
-    // Tests - Released After Not Being Chosen
+    [Fact]
+    public void PollReturnsAllStartedGroupsNotYetJoined() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        var (firstSeekerAuthToken, firstChatGroupId) = CreateSeekerWithRequest(testingMockProvidersContainer, "First request");
+        var (secondSeekerAuthToken, secondChatGroupId) = CreateSeekerWithRequest(testingMockProvidersContainer, "Second request");
+        string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper " + Guid.NewGuid());
+        testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/createOffer", new { AuthToken = helperAuthToken, ChatGroupId = firstChatGroupId }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/createOffer", new { AuthToken = helperAuthToken, ChatGroupId = secondChatGroupId }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/helpRequest/connect", new { AuthToken = firstSeekerAuthToken, ChatGroupId = firstChatGroupId }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/helpRequest/connect", new { AuthToken = secondSeekerAuthToken, ChatGroupId = secondChatGroupId }).EnsureSuccessStatusCode();
+
+        var rootElement = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/pollOffer", new { AuthToken = helperAuthToken }).ReadContentAsJsonDocument().RootElement;
+        List<string> chatGroupIds = [.. rootElement.EnumerateArray().Select(element => element.GetProperty("chatGroupId").GetString())];
+
+        Assert.Equal(2, rootElement.GetArrayLength());
+        Assert.Contains(firstChatGroupId, chatGroupIds);
+        Assert.Contains(secondChatGroupId, chatGroupIds);
+    }
+
+    // Tests - Joining Drops The Group From The Poll
 
     [Fact]
-    public void PollAfterBeingReleasedReturnsNone() {
+    public void PollAfterJoiningDropsTheGroup() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         var (seekerAuthToken, chatGroupId) = CreateSeekerWithRequest(testingMockProvidersContainer, "I need help");
-        string chosenHelperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Chosen Helper " + Guid.NewGuid());
-        testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/createOffer", new { AuthToken = chosenHelperAuthToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
-        string releasedHelperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Released Helper " + Guid.NewGuid());
-        testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/createOffer", new { AuthToken = releasedHelperAuthToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
+        string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper " + Guid.NewGuid());
+        testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/createOffer", new { AuthToken = helperAuthToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
         testingMockProvidersContainer.WebClient.PostJson("api/helpRequest/connect", new { AuthToken = seekerAuthToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/join", new { AuthToken = helperAuthToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
 
-        string status = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/pollOffer", new { AuthToken = releasedHelperAuthToken }).ReadContentAsJsonDocument().RootElement.GetProperty("status").GetString();
+        var rootElement = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/pollOffer", new { AuthToken = helperAuthToken }).ReadContentAsJsonDocument().RootElement;
 
-        Assert.Equal("none", status);
+        Assert.Equal(0, rootElement.GetArrayLength());
     }
 
     // Tests - Response Shape
 
     [Fact]
-    public void PollOfferConnectedResponseContainsExactlyExpectedProperties() {
+    public void PollOfferItemContainsExactlyExpectedProperties() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         var (seekerAuthToken, chatGroupId) = CreateSeekerWithRequest(testingMockProvidersContainer, "I need help");
         string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper " + Guid.NewGuid());
@@ -104,8 +120,8 @@ public class PollHelpOfferTest {
         testingMockProvidersContainer.WebClient.PostJson("api/helpRequest/connect", new { AuthToken = seekerAuthToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
 
         var rootElement = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/pollOffer", new { AuthToken = helperAuthToken }).ReadContentAsJsonDocument().RootElement;
-        List<string> actualProperties = [.. rootElement.EnumerateObject().Select(property => property.Name).OrderBy(name => name)];
-        List<string> expectedProperties = ["chatGroupId", "chatGroupName", "status"];
+        List<string> actualProperties = [.. rootElement[0].EnumerateObject().Select(property => property.Name).OrderBy(name => name)];
+        List<string> expectedProperties = ["chatGroupId", "chatGroupName"];
 
         Assert.Equal(expectedProperties, actualProperties);
     }

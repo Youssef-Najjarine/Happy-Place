@@ -41,10 +41,8 @@ public class GuestUpgradeTest {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string guestAuthToken = TestUserFactory.CreateGuestUser(testingMockProvidersContainer);
         Guid guestUserAccountId = GetGuestUserAccountId();
-        string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper Person");
 
-        testingMockProvidersContainer.WebClient.PostJson("api/helpMatch/startSearch", new { AuthToken = guestAuthToken, Role = "Seeker", Topic = "I need help" }).EnsureSuccessStatusCode();
-        testingMockProvidersContainer.WebClient.PostJson("api/helpMatch/startSearch", new { AuthToken = helperAuthToken, Role = "Helper" }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/helpRequest/createRequest", new { AuthToken = guestAuthToken, Topic = "I need help" }).EnsureSuccessStatusCode();
 
         string email = $"upgraded{Guid.NewGuid():N}@gmail.com";
         RegisterGuestWithEmail(testingMockProvidersContainer, guestAuthToken, "Real Name", email, "Seven74!").EnsureSuccessStatusCode();

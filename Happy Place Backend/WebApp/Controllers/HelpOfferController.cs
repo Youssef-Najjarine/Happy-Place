@@ -21,6 +21,12 @@ public class HelpOfferController : ControllerBase {
     }
 
     [HttpPost]
+    public IActionResult WithdrawOffer(WithdrawOfferModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        return this.Ok(model.Withdraw());
+    }
+
+    [HttpPost]
     public IActionResult OpenRequests(OpenRequestsModel model) {
         if (!model.IsAuthenticated()) return this.Unauthorized();
         return this.Ok(model.Load());
@@ -30,5 +36,17 @@ public class HelpOfferController : ControllerBase {
     public IActionResult PollOffer(HelpPollOfferModel model) {
         if (!model.IsAuthenticated()) return this.Unauthorized();
         return this.Ok(model.Poll());
+    }
+
+    [HttpPost]
+    public IActionResult Join(HelpJoinModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        return this.Ok(model.Join());
+    }
+
+    [HttpPost]
+    public IActionResult DeclineInvite(DeclineInviteModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        return this.Ok(model.DeclineInvite());
     }
 }

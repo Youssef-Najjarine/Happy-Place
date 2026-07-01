@@ -1,4 +1,5 @@
 using HappyWorld.HappyPlace.Data;
+using HappyWorld.HappyPlace.PushNotifications;
 using Microsoft.EntityFrameworkCore;
 
 namespace HappyWorld.HappyPlace;
@@ -7,7 +8,6 @@ public static class HelpRequestManager {
     // Fields
 
     private static readonly int MaxTopicLength = 100;
-    private static readonly int OfferFreshnessSeconds = 90;
     private static readonly string GeneratedChatGroupName = "Support Chat";
 
     // Methods
@@ -20,8 +20,6 @@ public static class HelpRequestManager {
         HelpRequestResult existingRequest = FindExistingProvisionalRequest(userAccountId.Value);
         if (existingRequest != null)
             return existingRequest;
-        if (HelpParticipant.IsGuestAtGroupLimit(userAccountId.Value))
-            return HelpRequestResult.RegistrationRequired();
         return CreateProvisionalGroup(userAccountId.Value, normalizedTopic);
     }
 
@@ -35,7 +33,7 @@ public static class HelpRequestManager {
             return HelpConnectResult.None();
         if (chatGroup.Status == ChatGroupStatus.Active)
             return HelpConnectResult.Connected(chatGroup.Id, chatGroup.Name);
-        return ConnectLongestWaitingOffer(chatGroup.Id, chatGroup.Name);
+        return StartGroupForSeeker(chatGroup.Id, chatGroup.Name);
     }
 
     public static HelpRequestStatusResult GetRequestStatus(string authToken, Guid chatGroupId) {
@@ -50,8 +48,7 @@ public static class HelpRequestManager {
             return HelpRequestStatusResult.Connected(chatGroup.Id, chatGroup.Name);
         chatGroup.LastSeenAtUtc = DateTime.UtcNow;
         dbContext.SaveChanges();
-        DateTime freshnessCutoff = DateTime.UtcNow.AddSeconds(-OfferFreshnessSeconds);
-        int readyHelperCount = dbContext.HelpOffers.Count(field => field.ChatGroupId == chatGroupId && field.Status == HelpOfferStatus.Offered && field.LastSeenAtUtc >= freshnessCutoff);
+        int readyHelperCount = dbContext.HelpOffers.Count(field => field.ChatGroupId == chatGroupId && field.Status == HelpOfferStatus.Offered);
         return HelpRequestStatusResult.Waiting(chatGroup.Id, chatGroup.Name, readyHelperCount);
     }
 
@@ -65,26 +62,34 @@ public static class HelpRequestManager {
             return HelpCancelResult.None();
         if (chatGroup.Status != ChatGroupStatus.Provisional)
             return HelpCancelResult.None();
+        NotificationDispatchManager.RemoveOffersChannel(chatGroupId);
         dbContext.ChatGroups.Where(field => field.Id == chatGroupId).ExecuteDelete();
+        NotificationDispatchManager.MarkWaitingDirtyForAllHelpers();
         return HelpCancelResult.Cancelled();
     }
 
-    private static HelpConnectResult ConnectLongestWaitingOffer(Guid chatGroupId, string chatGroupName) {
-        using var dbContext = HappyPlaceDbContext.Create();
-        DateTime freshnessCutoff = DateTime.UtcNow.AddSeconds(-OfferFreshnessSeconds);
-        List<HelpOffer> offeredOffers = [.. dbContext.HelpOffers
-            .Where(field => field.ChatGroupId == chatGroupId && field.Status == HelpOfferStatus.Offered && field.LastSeenAtUtc >= freshnessCutoff)
-            .OrderBy(field => field.CreatedAtUtc)];
-        foreach (HelpOffer offer in offeredOffers) {
-            if (TryClaimAndActivate(chatGroupId, offer.Id, offer.HelperUserAccountId))
-                return HelpConnectResult.Connected(chatGroupId, chatGroupName);
-        }
-        if (IsGroupActive(chatGroupId))
-            return HelpConnectResult.Connected(chatGroupId, chatGroupName);
-        return HelpConnectResult.NoOffers(chatGroupId, chatGroupName);
+    public static HelpRequestResult GetMyOpenRequest(string authToken) {
+        Guid? seekerUserAccountId = HelpParticipant.ResolveUserAccountId(authToken);
+        if (seekerUserAccountId == null)
+            return HelpRequestResult.None();
+        HelpRequestResult existingRequest = FindExistingProvisionalRequest(seekerUserAccountId.Value);
+        if (existingRequest != null)
+            return existingRequest;
+        return HelpRequestResult.None();
     }
 
-    private static bool TryClaimAndActivate(Guid chatGroupId, Guid offerId, Guid helperUserAccountId) {
+    private static HelpConnectResult StartGroupForSeeker(Guid chatGroupId, string chatGroupName) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        bool hasOffer = dbContext.HelpOffers.Any(field => field.ChatGroupId == chatGroupId && field.Status == HelpOfferStatus.Offered);
+        if (!hasOffer) {
+            if (IsGroupActive(chatGroupId))
+                return HelpConnectResult.Connected(chatGroupId, chatGroupName);
+            return HelpConnectResult.NoOffers(chatGroupId, chatGroupName);
+        }
+        return TryActivateAndInvite(chatGroupId, chatGroupName);
+    }
+
+    private static HelpConnectResult TryActivateAndInvite(Guid chatGroupId, string chatGroupName) {
         using var dbContext = HappyPlaceDbContext.Create();
         DateTime now = DateTime.UtcNow;
         try {
@@ -95,34 +100,54 @@ public static class HelpRequestManager {
                     .SetProperty(field => field.Status, ChatGroupStatus.Active));
             if (groupActivatedCount != 1) {
                 transaction.Rollback();
-                return false;
+                if (IsGroupActive(chatGroupId))
+                    return HelpConnectResult.Connected(chatGroupId, chatGroupName);
+                return HelpConnectResult.NoOffers(chatGroupId, chatGroupName);
             }
-            int claimedCount = dbContext.HelpOffers
-                .Where(field => field.Id == offerId && field.Status == HelpOfferStatus.Offered)
-                .ExecuteUpdate(setters => setters
-                    .SetProperty(field => field.Status, HelpOfferStatus.Connected)
-                    .SetProperty(field => field.LastSeenAtUtc, now));
-            if (claimedCount != 1) {
-                transaction.Rollback();
-                return false;
-            }
+            List<Guid> invitedHelperUserAccountIds = [.. dbContext.HelpOffers
+                .Where(field => field.ChatGroupId == chatGroupId && field.Status == HelpOfferStatus.Offered)
+                .Select(field => field.HelperUserAccountId)];
             dbContext.HelpOffers
                 .Where(field => field.ChatGroupId == chatGroupId && field.Status == HelpOfferStatus.Offered)
                 .ExecuteUpdate(setters => setters
-                    .SetProperty(field => field.Status, HelpOfferStatus.Released)
+                    .SetProperty(field => field.Status, HelpOfferStatus.Connected)
                     .SetProperty(field => field.LastSeenAtUtc, now));
-            dbContext.HelpOffers
-                .Where(field => field.HelperUserAccountId == helperUserAccountId && field.ChatGroupId != chatGroupId && field.Status == HelpOfferStatus.Offered)
-                .ExecuteUpdate(setters => setters
-                    .SetProperty(field => field.Status, HelpOfferStatus.Released)
-                    .SetProperty(field => field.LastSeenAtUtc, now));
-            dbContext.ChatGroupMembers.Add(new() { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, UserAccountId = helperUserAccountId, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = now });
-            dbContext.SaveChanges();
             transaction.Commit();
-            return true;
+            SendInvitePushes(invitedHelperUserAccountIds, chatGroupId, chatGroupName);
+            NotificationDispatchManager.MarkWaitingDirtyForAllHelpers();
+            NotificationDispatchManager.RemoveOffersChannel(chatGroupId);
+            return HelpConnectResult.Connected(chatGroupId, chatGroupName);
         }
         catch (Exception) {
-            return false;
+            if (IsGroupActive(chatGroupId))
+                return HelpConnectResult.Connected(chatGroupId, chatGroupName);
+            return HelpConnectResult.NoOffers(chatGroupId, chatGroupName);
+        }
+    }
+
+    private static void SendInvitePushes(List<Guid> helperUserAccountIds, Guid chatGroupId, string chatGroupName) {
+        if (helperUserAccountIds.Count == 0)
+            return;
+        using var dbContext = HappyPlaceDbContext.Create();
+        List<DeviceToken> deviceTokens = [.. dbContext.DeviceTokens.Where(field => helperUserAccountIds.Contains(field.UserAccountId))];
+        foreach (DeviceToken deviceToken in deviceTokens) {
+            try {
+                PushSender.Create().Send(new PushMessage {
+                    Token = deviceToken.Token,
+                    Title = "Someone needs your help",
+                    Body = $"Tap to join {chatGroupName}.",
+                    Data = new() {
+                        ["type"] = "invite",
+                        ["chatGroupId"] = chatGroupId.ToString(),
+                        ["chatGroupName"] = chatGroupName
+                    }
+                });
+            }
+            catch (PushTokenInvalidException) {
+                dbContext.DeviceTokens.Where(field => field.Id == deviceToken.Id).ExecuteDelete();
+            }
+            catch (Exception) {
+            }
         }
     }
 
@@ -154,6 +179,7 @@ public static class HelpRequestManager {
         dbContext.ChatGroupMembers.Add(new() { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, UserAccountId = seekerUserAccountId, MemberRole = ChatGroupMemberRole.Owner, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = now });
         try {
             dbContext.SaveChanges();
+            NotificationDispatchManager.MarkWaitingDirtyForAllHelpers();
             return HelpRequestResult.Waiting(chatGroupId, chatGroupName);
         }
         catch (DbUpdateException) {

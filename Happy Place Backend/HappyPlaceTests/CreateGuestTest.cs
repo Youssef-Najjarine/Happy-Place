@@ -35,19 +35,19 @@ public class CreateGuestTest {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string guestAuthToken = TestUserFactory.CreateGuestUser(testingMockProvidersContainer);
 
-        HttpResponseMessage pollResponse = testingMockProvidersContainer.WebClient.PostJson("api/helpMatch/pollSearch", new { AuthToken = guestAuthToken });
+        HttpResponseMessage pollResponse = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/pollOffer", new { AuthToken = guestAuthToken });
 
         Assert.Equal(HttpStatusCode.OK, pollResponse.StatusCode);
     }
 
     [Fact]
-    public void GuestCanStartSearch() {
+    public void GuestCanCreateRequest() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string guestAuthToken = TestUserFactory.CreateGuestUser(testingMockProvidersContainer);
 
-        HttpResponseMessage startResponse = testingMockProvidersContainer.WebClient.PostJson("api/helpMatch/startSearch", new { AuthToken = guestAuthToken, Role = "Seeker", Topic = "I need help" });
+        HttpResponseMessage createResponse = testingMockProvidersContainer.WebClient.PostJson("api/helpRequest/createRequest", new { AuthToken = guestAuthToken, Topic = "I need help" });
 
-        Assert.Equal(HttpStatusCode.OK, startResponse.StatusCode);
-        Assert.Equal("searching", startResponse.ReadContentAsJsonDocument().RootElement.GetProperty("status").GetString());
+        Assert.Equal(HttpStatusCode.OK, createResponse.StatusCode);
+        Assert.Equal("waiting", createResponse.ReadContentAsJsonDocument().RootElement.GetProperty("status").GetString());
     }
 }

@@ -1,3 +1,5 @@
+using HappyWorld.HappyPlace.Web.Services;
+
 namespace HappyWorld.HappyPlace.WebApp {
     public class Program {
         public static void Main(string[] args) {
@@ -22,6 +24,7 @@ namespace HappyWorld.HappyPlace.WebApp {
             //app.UseHttpsRedirection();
             app.UseAuthorization();
             app.MapControllers();
+            NotificationSweeper.Start();
             app.Run();
         }
     }
