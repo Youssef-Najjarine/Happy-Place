@@ -31,4 +31,10 @@ public class HelpRequestController : ControllerBase {
         if (!model.IsAuthenticated()) return this.Unauthorized();
         return this.Ok(model.Cancel());
     }
+
+    [HttpPost]
+    public IActionResult MyOpenRequest(HelpMyOpenRequestModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        return this.Ok(model.Load());
+    }
 }

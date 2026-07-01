@@ -20,9 +20,8 @@ public static class HelpOfferManager {
             return HelpOfferResult.RequestClosed();
         if (chatGroup.OwnerUserAccountId == helperUserAccountId.Value)
             return HelpOfferResult.RequestClosed();
-        if (HelpParticipant.IsGuestAtGroupLimit(helperUserAccountId.Value))
-            return HelpOfferResult.RegistrationRequired();
         UpsertOffer(chatGroupId, helperUserAccountId.Value, HelpOfferStatus.Offered);
+        NotificationDispatchManager.MarkOffersDirty(chatGroupId);
         return HelpOfferResult.Offered();
     }
 
@@ -37,6 +36,66 @@ public static class HelpOfferManager {
         if (chatGroup.OwnerUserAccountId == helperUserAccountId.Value)
             return HelpOfferResult.RequestClosed();
         UpsertOffer(chatGroupId, helperUserAccountId.Value, HelpOfferStatus.Declined);
+        NotificationDispatchManager.MarkOffersDirty(chatGroupId);
+        return HelpOfferResult.Declined();
+    }
+
+    public static HelpOfferResult WithdrawOffer(string authToken, Guid chatGroupId) {
+        Guid? helperUserAccountId = HelpParticipant.ResolveUserAccountId(authToken);
+        if (helperUserAccountId == null)
+            return HelpOfferResult.None();
+        using var dbContext = HappyPlaceDbContext.Create();
+        dbContext.HelpOffers
+            .Where(field => field.ChatGroupId == chatGroupId && field.HelperUserAccountId == helperUserAccountId.Value && field.Status == HelpOfferStatus.Offered)
+            .ExecuteDelete();
+        NotificationDispatchManager.MarkOffersDirty(chatGroupId);
+        return HelpOfferResult.Withdrawn();
+    }
+
+    public static HelpJoinResult JoinGroup(string authToken, Guid chatGroupId) {
+        Guid? userAccountId = HelpParticipant.ResolveUserAccountId(authToken);
+        if (userAccountId == null)
+            return HelpJoinResult.None();
+        using var dbContext = HappyPlaceDbContext.Create();
+        DateTime now = DateTime.UtcNow;
+        ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId);
+        if (chatGroup == null || chatGroup.Status != ChatGroupStatus.Active)
+            return HelpJoinResult.Unavailable();
+        if (!chatGroup.IsPublic) {
+            bool invited = dbContext.HelpOffers.Any(field => field.ChatGroupId == chatGroupId && field.HelperUserAccountId == userAccountId.Value && field.Status == HelpOfferStatus.Connected);
+            if (!invited)
+                return HelpJoinResult.Unavailable();
+        }
+        bool alreadyMember = dbContext.ChatGroupMembers.Any(field => field.ChatGroupId == chatGroupId && field.UserAccountId == userAccountId.Value);
+        if (alreadyMember)
+            return HelpJoinResult.Joined(chatGroup.Id, chatGroup.Name);
+        dbContext.ChatGroupMembers.Add(new() { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, UserAccountId = userAccountId.Value, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = now });
+        TrySaveChanges(dbContext);
+        return HelpJoinResult.Joined(chatGroup.Id, chatGroup.Name);
+    }
+
+    public static HelpOfferResult DeclineInvite(string authToken, Guid chatGroupId) {
+        Guid? helperUserAccountId = HelpParticipant.ResolveUserAccountId(authToken);
+        if (helperUserAccountId == null)
+            return HelpOfferResult.None();
+        using var dbContext = HappyPlaceDbContext.Create();
+        ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId);
+        if (chatGroup == null || chatGroup.Status != ChatGroupStatus.Active)
+            return HelpOfferResult.RequestClosed();
+        if (chatGroup.OwnerUserAccountId == helperUserAccountId.Value)
+            return HelpOfferResult.RequestClosed();
+        bool alreadyMember = dbContext.ChatGroupMembers.Any(field => field.ChatGroupId == chatGroupId && field.UserAccountId == helperUserAccountId.Value);
+        if (alreadyMember)
+            return HelpOfferResult.RequestClosed();
+        HelpOffer offer = dbContext.HelpOffers.SingleOrDefault(field => field.ChatGroupId == chatGroupId && field.HelperUserAccountId == helperUserAccountId.Value);
+        if (offer == null)
+            return HelpOfferResult.RequestClosed();
+        if (offer.Status == HelpOfferStatus.Declined)
+            return HelpOfferResult.Declined();
+        if (offer.Status != HelpOfferStatus.Connected)
+            return HelpOfferResult.RequestClosed();
+        offer.Status = HelpOfferStatus.Declined;
+        TrySaveChanges(dbContext);
         return HelpOfferResult.Declined();
     }
 
@@ -46,42 +105,49 @@ public static class HelpOfferManager {
             return [];
         SweepStaleProvisionalGroups();
         using var dbContext = HappyPlaceDbContext.Create();
-        List<Guid> respondedChatGroupIds = [.. dbContext.HelpOffers
-            .Where(field => field.HelperUserAccountId == helperUserAccountId.Value)
+        List<Guid> declinedChatGroupIds = [.. dbContext.HelpOffers
+            .Where(field => field.HelperUserAccountId == helperUserAccountId.Value && field.Status == HelpOfferStatus.Declined)
+            .Select(field => field.ChatGroupId)];
+        List<Guid> offeredChatGroupIds = [.. dbContext.HelpOffers
+            .Where(field => field.HelperUserAccountId == helperUserAccountId.Value && field.Status == HelpOfferStatus.Offered)
             .Select(field => field.ChatGroupId)];
         List<ChatGroup> openGroups = [.. dbContext.ChatGroups
-            .Where(field => field.Status == ChatGroupStatus.Provisional && field.OwnerUserAccountId != helperUserAccountId.Value && !respondedChatGroupIds.Contains(field.Id))
+            .Where(field => field.Status == ChatGroupStatus.Provisional && field.OwnerUserAccountId != helperUserAccountId.Value && !declinedChatGroupIds.Contains(field.Id))
             .OrderBy(field => field.CreatedAtUtc)];
-        return [.. openGroups.Select(field => new OpenHelpRequest(field.Id.ToString(), field.Name, field.CreatedAtUtc))];
+        return [.. openGroups.Select(field => new OpenHelpRequest(field.Id.ToString(), field.Name, field.CreatedAtUtc, offeredChatGroupIds.Contains(field.Id) ? "offered" : "none"))];
     }
 
-    public static HelpOfferStatusResult GetConnectionStatus(string authToken) {
+    public static List<StartedGroup> GetStartedGroupsForHelper(string authToken) {
         Guid? helperUserAccountId = HelpParticipant.ResolveUserAccountId(authToken);
         if (helperUserAccountId == null)
-            return HelpOfferStatusResult.None();
+            return [];
         using var dbContext = HappyPlaceDbContext.Create();
-        DateTime now = DateTime.UtcNow;
-        dbContext.HelpOffers
-            .Where(field => field.HelperUserAccountId == helperUserAccountId.Value && field.Status == HelpOfferStatus.Offered)
-            .ExecuteUpdate(setters => setters.SetProperty(field => field.LastSeenAtUtc, now));
-        HelpOffer connectedOffer = dbContext.HelpOffers.SingleOrDefault(field => field.HelperUserAccountId == helperUserAccountId.Value && field.Status == HelpOfferStatus.Connected);
-        if (connectedOffer != null) {
-            ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == connectedOffer.ChatGroupId);
-            if (chatGroup != null)
-                return HelpOfferStatusResult.Connected(chatGroup.Id, chatGroup.Name);
-        }
-        bool hasOpenOffer = dbContext.HelpOffers.Any(field => field.HelperUserAccountId == helperUserAccountId.Value && field.Status == HelpOfferStatus.Offered);
-        if (hasOpenOffer)
-            return HelpOfferStatusResult.Offered();
-        return HelpOfferStatusResult.None();
+        List<Guid> connectedChatGroupIds = [.. dbContext.HelpOffers
+            .Where(field => field.HelperUserAccountId == helperUserAccountId.Value && field.Status == HelpOfferStatus.Connected)
+            .Select(field => field.ChatGroupId)];
+        if (connectedChatGroupIds.Count == 0)
+            return [];
+        List<Guid> memberChatGroupIds = [.. dbContext.ChatGroupMembers
+            .Where(field => field.UserAccountId == helperUserAccountId.Value)
+            .Select(field => field.ChatGroupId)];
+        List<ChatGroup> startedGroups = [.. dbContext.ChatGroups
+            .Where(field => field.Status == ChatGroupStatus.Active && connectedChatGroupIds.Contains(field.Id) && !memberChatGroupIds.Contains(field.Id))
+            .OrderBy(field => field.CreatedAtUtc)];
+        return [.. startedGroups.Select(field => new StartedGroup(field.Id.ToString(), field.Name))];
     }
 
     private static void SweepStaleProvisionalGroups() {
         using var dbContext = HappyPlaceDbContext.Create();
         DateTime freshnessCutoff = DateTime.UtcNow.AddSeconds(-RequestFreshnessSeconds);
-        dbContext.ChatGroups
+        List<Guid> staleChatGroupIds = [.. dbContext.ChatGroups
             .Where(field => field.Status == ChatGroupStatus.Provisional && field.LastSeenAtUtc < freshnessCutoff)
-            .ExecuteDelete();
+            .Select(field => field.Id)];
+        if (staleChatGroupIds.Count == 0)
+            return;
+        foreach (Guid staleChatGroupId in staleChatGroupIds)
+            NotificationDispatchManager.RemoveOffersChannel(staleChatGroupId);
+        dbContext.ChatGroups.Where(field => staleChatGroupIds.Contains(field.Id)).ExecuteDelete();
+        NotificationDispatchManager.MarkWaitingDirtyForAllHelpers();
     }
 
     private static void UpsertOffer(Guid chatGroupId, Guid helperUserAccountId, HelpOfferStatus status) {

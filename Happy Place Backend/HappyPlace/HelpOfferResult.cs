@@ -15,6 +15,10 @@ public record HelpOfferResult(string Status) {
         return new HelpOfferResult("declined");
     }
 
+    public static HelpOfferResult Withdrawn() {
+        return new HelpOfferResult("withdrawn");
+    }
+
     public static HelpOfferResult RequestClosed() {
         return new HelpOfferResult("requestClosed");
     }

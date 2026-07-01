@@ -16,11 +16,16 @@ public static class HelpAvailabilityManager {
         if (availability == null) {
             dbContext.HelpAvailabilities.Add(new() { Id = Guid.NewGuid(), HelperUserAccountId = helperUserAccountId.Value, IsAvailable = isAvailable, LastSeenAtUtc = now });
             TrySaveChanges(dbContext);
-            return true;
         }
-        availability.IsAvailable = isAvailable;
-        availability.LastSeenAtUtc = now;
-        TrySaveChanges(dbContext);
+        else {
+            availability.IsAvailable = isAvailable;
+            availability.LastSeenAtUtc = now;
+            TrySaveChanges(dbContext);
+        }
+        if (isAvailable)
+            NotificationDispatchManager.ActivateWaitingChannel(helperUserAccountId.Value);
+        else
+            NotificationDispatchManager.DeactivateWaitingChannel(helperUserAccountId.Value);
         return true;
     }
 

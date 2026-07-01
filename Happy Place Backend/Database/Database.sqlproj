@@ -66,11 +66,12 @@
     <Build Include="PendingPhoneChange.sql" />
     <Build Include="PendingEmailChange.sql" />
     <Build Include="ContactChangeAudit.sql" />
-    <Build Include="HelpSearch.sql" />
     <Build Include="ChatGroup.sql" />
     <Build Include="ChatGroupMember.sql" />
     <Build Include="HelpAvailability.sql" />
     <Build Include="HelpOffer.sql" />
+    <Build Include="DeviceToken.sql" />
+    <Build Include="NotificationChannel.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Local.SqlServer.HappyPlace.publish.xml" />

@@ -299,7 +299,7 @@ public class HelpOfferTest {
     }
 
     [Fact]
-    public void AlreadyOfferedRequestExcludedFromOpenRequests() {
+    public void AlreadyOfferedRequestAppearsTaggedOffered() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string chatGroupId = CreateProvisionalRequest(testingMockProvidersContainer, "I need help");
         string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper " + Guid.NewGuid());
@@ -307,7 +307,21 @@ public class HelpOfferTest {
         testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/createOffer", new { AuthToken = helperAuthToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
         var rootElement = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/openRequests", new { AuthToken = helperAuthToken }).ReadContentAsJsonDocument().RootElement;
 
-        Assert.Equal(0, rootElement.GetArrayLength());
+        Assert.Equal(1, rootElement.GetArrayLength());
+        Assert.Equal(chatGroupId, rootElement[0].GetProperty("chatGroupId").GetString());
+        Assert.Equal("offered", rootElement[0].GetProperty("offerStatus").GetString());
+    }
+
+    [Fact]
+    public void AvailableRequestIsTaggedNone() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        CreateProvisionalRequest(testingMockProvidersContainer, "I need help");
+        string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper " + Guid.NewGuid());
+
+        var rootElement = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/openRequests", new { AuthToken = helperAuthToken }).ReadContentAsJsonDocument().RootElement;
+
+        Assert.Equal(1, rootElement.GetArrayLength());
+        Assert.Equal("none", rootElement[0].GetProperty("offerStatus").GetString());
     }
 
     [Fact]
@@ -373,26 +387,9 @@ public class HelpOfferTest {
 
         var rootElement = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/openRequests", new { AuthToken = helperAuthToken }).ReadContentAsJsonDocument().RootElement;
         List<string> actualProperties = [.. rootElement[0].EnumerateObject().Select(property => property.Name).OrderBy(name => name)];
-        List<string> expectedProperties = ["chatGroupId", "chatGroupName", "createdAtUtc"];
+        List<string> expectedProperties = ["chatGroupId", "chatGroupName", "createdAtUtc", "offerStatus"];
 
         Assert.Equal(expectedProperties, actualProperties);
-    }
-
-    // Tests - Guest Group Limit
-
-    [Fact]
-    public void GuestHelperAtGroupLimitGetsRegistrationRequired() {
-        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
-        string chatGroupId = CreateProvisionalRequest(testingMockProvidersContainer, "I need help");
-        string guestHelperAuthToken = TestUserFactory.CreateGuestUser(testingMockProvidersContainer);
-        Guid guestHelperUserAccountId = Guid.Parse(UserAuthenticationToken.ValidateToken(guestHelperAuthToken).Identifier);
-        SeedGroupMemberships(guestHelperUserAccountId, 2);
-
-        string status = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/createOffer", new { AuthToken = guestHelperAuthToken, ChatGroupId = chatGroupId }).ReadContentAsJsonDocument().RootElement.GetProperty("status").GetString();
-
-        Assert.Equal("registrationRequired", status);
-        using var dbContext = HappyPlaceDbContext.Create();
-        Assert.Equal(0, dbContext.HelpOffers.Count());
     }
 
     // Helpers
@@ -413,16 +410,6 @@ public class HelpOfferTest {
         using var dbContext = HappyPlaceDbContext.Create();
         ChatGroup chatGroup = dbContext.ChatGroups.Single(field => field.Id == Guid.Parse(chatGroupId));
         chatGroup.CreatedAtUtc = createdAtUtc;
-        dbContext.SaveChanges();
-    }
-
-    private static void SeedGroupMemberships(Guid userAccountId, int count) {
-        using var dbContext = HappyPlaceDbContext.Create();
-        for (int index = 0; index < count; index++) {
-            Guid groupId = Guid.NewGuid();
-            dbContext.ChatGroups.Add(new() { Id = groupId, Name = "Seed " + index, OwnerUserAccountId = userAccountId, IsPublic = true, Status = ChatGroupStatus.Active, CreatedAtUtc = DateTime.UtcNow });
-            dbContext.ChatGroupMembers.Add(new() { Id = Guid.NewGuid(), ChatGroupId = groupId, UserAccountId = userAccountId, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = DateTime.UtcNow });
-        }
         dbContext.SaveChanges();
     }
 }
