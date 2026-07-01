@@ -7,6 +7,9 @@ export default authenticationService = {
     signUpWithPhone: function(name, phoneNumber, password) {
         return baseService.postJson("userAuthentication/signUpWithPhone", { Name: name, PhoneNumber: phoneNumber, Password: password });
     },
+    createGuest: function() {
+        return baseService.postJson("userAuthentication/createGuest", {});
+    },
     verifyEmail: function(email, verificationCode) {
         return baseService.postJson("userAuthentication/verifyEmail", { Email: email, VerificationCode: verificationCode });
     },

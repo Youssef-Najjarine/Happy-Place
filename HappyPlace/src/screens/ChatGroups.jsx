@@ -3,7 +3,8 @@ import { View, TouchableOpacity, StyleSheet, Image, FlatList, useWindowDimension
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import { useSelector } from 'react-redux';
+import HelpHub from 'src/components/HelpHub';
+import AccountBar from 'src/components/AccountBar';
 import { 
   HappyColor, 
   White, 
@@ -26,8 +27,6 @@ import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import { tabletBreakpoint } from 'src/constants/breakpoints';
 import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
-import RemoteImage from 'src/components/RemoteImage';
-import SadEmoji from 'assets/images/global/sad-emoji.svg';
 import HappyEmoji from 'assets/images/global/happy-emoji.svg';
 import SearchIcon from 'assets/images/global/search-icon.svg';
 import SortIcon from 'assets/images/chatGroups/sort-icon.svg';
@@ -39,26 +38,6 @@ import MembersIcon from 'assets/images/global/members-icon.svg';
 import PendingMembersCircle from 'assets/images/global/pending-members-circle.svg';
 import PrivateIcon from 'assets/images/global/private-chat-icon.svg';
 import TrashIcon from 'assets/images/global/trash-outline-icon.svg';
-import Image1 from 'assets/images/placeholderProfiles/profile-1.png';
-import Image2 from 'assets/images/placeholderProfiles/profile-2.png';
-import Image3 from 'assets/images/placeholderProfiles/profile-3.png';
-import Image4 from 'assets/images/placeholderProfiles/profile-4.png';
-import Image5 from 'assets/images/placeholderProfiles/profile-5.png';
-import Image6 from 'assets/images/placeholderProfiles/profile-6.png';
-import Image7 from 'assets/images/placeholderProfiles/profile-7.jpg';
-import Image8 from 'assets/images/placeholderProfiles/profile-8.jpg';
-import Image9 from 'assets/images/placeholderProfiles/profile-9.jpg';
-import Image10 from 'assets/images/placeholderProfiles/profile-10.jpg';
-import Image11 from 'assets/images/placeholderProfiles/profile-11.jpg';
-import Image12 from 'assets/images/placeholderProfiles/profile-12.jpg';
-import Image13 from 'assets/images/placeholderProfiles/profile-13.jpg';
-import Image14 from 'assets/images/placeholderProfiles/profile-14.jpg';
-import Image15 from 'assets/images/placeholderProfiles/profile-15.jpg';
-import Image16 from 'assets/images/placeholderProfiles/profile-16.jpg';
-import Image17 from 'assets/images/placeholderProfiles/profile-17.jpg';
-import Image18 from 'assets/images/placeholderProfiles/profile-18.jpg';
-import Image19 from 'assets/images/placeholderProfiles/profile-19.jpg';
-import Image20 from 'assets/images/placeholderProfiles/profile-20.jpg';
 
 const ActiveIndexContext = React.createContext(-1);
 const stylesActive = StyleSheet.create({
@@ -123,83 +102,6 @@ const HelperStack = React.memo(
     prev.maxVisible === next.maxVisible
 );
 
-const HELPERS_DATA = [
-  { image: Image1, name: 'Jaydon' },
-  { image: Image2, name: 'Julia' },
-  { image: Image3, name: 'Mike' },
-  { image: Image4, name: 'Mia' },
-  { image: Image5, name: 'Demi' },
-  { image: Image6, name: 'Brian' },
-  { image: Image7, name: 'Jeffry Michael' },
-  { image: Image1, name: 'Jaydon' },
-  { image: Image2, name: 'Julia' },
-  { image: Image3, name: 'Mike' },
-  { image: Image4, name: 'Mia' },
-  { image: Image5, name: 'Demi' },
-  { image: Image6, name: 'Brian' },
-  { image: Image7, name: 'Jeffry Michael' },
-  { image: Image1, name: 'Jaydon' },
-  { image: Image2, name: 'Julia' },
-  { image: Image3, name: 'Mike' },
-  { image: Image4, name: 'Mia' },
-  { image: Image5, name: 'Demi' },
-  { image: Image6, name: 'Brian' },
-  { image: Image7, name: 'Jeffry Michael' }
-];
-
-const CHAT_GROUPS_DATA = [
-  {
-    id: 'grp-1',
-    helpers: [{ image: Image7 }, { image: Image8 }, { image: Image9 }, { image: Image10 }, { image: Image11 }, { image: Image12 }, { image: Image13 }],
-    joined: true,
-    owner: true,
-    public: true,
-    joinRequest: false,
-    pendingMembers: true,
-    title: 'Happy in Paddleboarding 🔥'
-  },
-  {
-    id: 'grp-2',
-    helpers: [{ image: Image12 }, { image: Image13 }, { image: Image14 }, { image: Image15 }],
-    joined: false,
-    owner: false,
-    public: false,
-    joinRequest: true,
-    pendingMembers: false,
-    title: "I'm depressed!"
-  },
-  {
-    id: 'grp-3',
-    helpers: [{ image: Image16 }, { image: Image17 }, { image: Image18 }, { image: Image19 }, { image: Image20 }, { image: Image1 }, { image: Image2 }, { image: Image2 }, { image: Image3 }, { image: Image4 }, { image: Image5 }, { image: Image6 }],
-    joined: false,
-    owner: true,
-    public: true,
-    joinRequest: false,
-    pendingMembers: false,
-    title: 'I failed my Final Exams.'
-  },
-  {
-    id: 'grp-4',
-    helpers: [{ image: Image16 }],
-    joined: true,
-    owner: false,
-    public: false,
-    joinRequest: false,
-    pendingMembers: false,
-    title: 'I just got cheated on.'
-  },
-  {
-    id: 'grp-5',
-    helpers: [{ image: Image17 }, { image: Image1 }, { image: Image19 }],
-    joined: false,
-    owner: false,
-    public: false,
-    joinRequest: false,
-    pendingMembers: false,
-    title: "I can't pass my my driving test."
-  }  
-];
-
 const phoneStyles = StyleSheet.create({
   root: { 
     backgroundColor: WarmIvory, 
@@ -217,158 +119,10 @@ const phoneStyles = StyleSheet.create({
     backgroundColor: White,
     justifyContent: 'space-between'
   },
-  profileAndLogin: {
-    height: scaleHeight(44),
-    paddingHorizontal: scaleWidth(20),
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  welcomeBackTxt: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
-    fontWeight: 600,
-    color: Black
-  },
-  profileImage: { 
-    width: scaleWidth(44), 
-    height: scaleHeight(44), 
-    borderRadius: scaleWidth(99),
-    resizeMode: 'contain' 
-  },
-  avatarCircle: {
-    width: scaleWidth(44),
-    height: scaleHeight(44),
-    borderRadius: scaleWidth(99),
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  avatarInitial: {
-    fontSize: scaleFont(20),
-    fontWeight: 700,
-    color: White
-  },
-  loginBg: { 
-    backgroundColor: VeryLightGray 
-  },
-  unlockAllFeaturesTxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
-    fontWeight: 600,
-    color: Black
-  },
-  loginView: { 
-    width: scaleWidth(62), 
-    height: scaleHeight(32) 
-  },
-  loginBtn: {
-    borderRadius: scaleWidth(99),
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: HappyColor
-  },
-  loginBtnTxt: {
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
-    fontSize: scaleFont(16),
-    fontWeight: 600,
-    color: White
-  },
-  searchingView: {
-    height: scaleHeight(42),
-    paddingHorizontal: scaleWidth(20),
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  searching: {
-    width: scaleWidth(87),
-    height: scaleHeight(29),
-    borderRadius: scaleWidth(99),
-    backgroundColor: SoftRosePink,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  searchingTxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
-    minWidth: scaleWidth(71),
-    fontWeight: 600,
-    color: Black
-  },
-  cancelView: { 
-    width: scaleWidth(81), 
-    height: scaleHeight(42), 
-    borderRadius: scaleWidth(99), 
-    backgroundColor: VeryLightGray 
-  },
-  cancelBtn: { 
-    width: '100%', 
-    height: '100%', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
-  cancelTxt: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
-    color: Black,
-    fontWeight: 600
-  },
-  helpView: {
-    height: scaleHeight(41),
-    paddingHorizontal: scaleWidth(20),
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
   topNavIcons: { 
     width: scaleWidth(20), 
     height: scaleHeight(20), 
     resizeMode: 'contain' 
-  },
-  helpMeBtn: {
-    width: scaleWidth(160),
-    height: scaleHeight(41),
-    borderWidth: scaleWidth(1.5),
-    borderRadius: scaleWidth(99),
-    gap: scaleWidth(6),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderColor: Black,
-    backgroundColor: White
-  },
-  helpMeTxt: {
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
-    color: Black,
-    fontWeight: 600
-  },
-  iCanHelpBtn: {
-    width: scaleWidth(167),
-    height: scaleHeight(41),
-    borderRadius: scaleWidth(99),
-    gap: scaleWidth(6),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 0,
-    backgroundColor: HappyColor
-  },
-  iCanHelpTxt: { 
-    fontSize: scaleFont(14), 
-    lineHeight: scaleLineHeight(21), 
-    letterSpacing: scaleLetterSpacing(-0.14), 
-    color: White, 
-    fontWeight: 600 
   },
   searchAndSortRow: {
     paddingHorizontal: scaleWidth(20),
@@ -515,7 +269,47 @@ const phoneStyles = StyleSheet.create({
   chatGroupsListContent: { 
     gap: scaleHeight(12),
     paddingBottom: scaleHeight(100),
-    width: '100%'
+    width: '100%',
+    flexGrow: 1
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: scaleWidth(40),
+    paddingBottom: scaleHeight(80),
+    gap: scaleHeight(16)
+  },
+  emptyStateIconCircle: {
+    width: scaleWidth(96),
+    height: scaleWidth(96),
+    borderRadius: scaleWidth(99),
+    backgroundColor: SoftRosePink,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: scaleHeight(4)
+  },
+  emptyStateIcon: {
+    width: scaleWidth(44),
+    height: scaleHeight(44),
+    resizeMode: 'contain'
+  },
+  emptyStateTitle: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    fontWeight: 700,
+    color: Black,
+    textAlign: 'center'
+  },
+  emptyStateSubtitle: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    fontWeight: 500,
+    color: Black,
+    textAlign: 'center',
+    opacity: 0.6
   },
   chatGroupCard: {
     height: scaleHeight(163),
@@ -802,158 +596,10 @@ const tabletStyles = StyleSheet.create({
     backgroundColor: White,
     justifyContent: 'space-between'
   },
-  profileAndLogin: {
-    height: 84,
-    paddingHorizontal: scaleWidth(24),
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  welcomeBackTxt: {
-    fontSize: scaleFont(20),
-    lineHeight: scaleLineHeight(30),
-    letterSpacing: scaleLetterSpacing(-0.2),
-    fontWeight: 600,
-    color: Black
-  },
-  profileImage: { 
-    width: 83.23, 
-    height: 83.23, 
-    borderRadius: scaleWidth(132.792),
-    resizeMode: 'contain' 
-  },
-  avatarCircle: {
-    width: 83.23,
-    height: 83.23,
-    borderRadius: scaleWidth(132.792),
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  avatarInitial: {
-    fontSize: scaleFont(32),
-    fontWeight: 700,
-    color: White
-  },
-  loginBg: { 
-    backgroundColor: VeryLightGray 
-  },
-  unlockAllFeaturesTxt: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
-    fontWeight: 600,
-    color: Black
-  },
-  loginView: { 
-    width: scaleWidth(79.192), 
-    height: scaleHeight(40.73067) 
-  },
-  loginBtn: {
-    borderRadius: scaleWidth(132.792),
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: HappyColor
-  },
-  loginBtnTxt: {
-    fontSize: scaleFont(20),
-    lineHeight: scaleLineHeight(30),
-    letterSpacing: scaleLetterSpacing(-0.2),
-    fontWeight: 600,
-    color: White
-  },
-  searchingView: {
-    height: scaleHeight(46),
-    paddingHorizontal: scaleWidth(24),
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  searching: {
-    width: scaleWidth(102.461),
-    height: scaleHeight(34.73067),
-    borderRadius: scaleWidth(132.792),
-    backgroundColor: SoftRosePink,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  searchingTxt: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
-    minWidth: scaleWidth(81),
-    fontWeight: 600,
-    color: Black
-  },
-  cancelView: { 
-    width: scaleWidth(109), 
-    height: scaleHeight(46), 
-    borderRadius: scaleWidth(132.792), 
-    backgroundColor: VeryLightGray 
-  },
-  cancelBtn: { 
-    width: '100%', 
-    height: '100%', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
-  cancelTxt: {
-    fontSize: scaleFont(20),
-    lineHeight: scaleLineHeight(30),
-    letterSpacing: scaleLetterSpacing(-0.2),
-    color: Black,
-    fontWeight: 600
-  },
-  helpView: {
-    height: scaleHeight(50.82),
-    paddingHorizontal: scaleWidth(24),
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
   topNavIcons: { 
     width: scaleWidth(24), 
     height: scaleHeight(24), 
     resizeMode: 'contain' 
-  },
-  helpMeBtn: {
-    width: scaleWidth(344),
-    height: scaleHeight(50.82),
-    borderWidth: scaleWidth(1),
-    borderRadius: scaleWidth(99),
-    gap: scaleWidth(8),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderColor: Black,
-    backgroundColor: White
-  },
-  helpMeTxt: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
-    color: Black,
-    fontWeight: 600
-  },
-  iCanHelpBtn: {
-    width: scaleWidth(344),
-    height: scaleHeight(50.82),
-    borderRadius: scaleWidth(99),
-    gap: scaleWidth(8),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 0,
-    backgroundColor: HappyColor
-  },
-  iCanHelpTxt: { 
-    fontSize: scaleFont(16), 
-    lineHeight: scaleLineHeight(24), 
-    letterSpacing: scaleLetterSpacing(-0.16), 
-    color: White, 
-    fontWeight: 600 
   },
   searchAndSortRow: {
     paddingHorizontal: scaleWidth(24),
@@ -1100,7 +746,47 @@ const tabletStyles = StyleSheet.create({
   chatGroupsListContent: { 
     gap: scaleHeight(16.1),
     paddingBottom: scaleHeight(140),
-    width: '100%'
+    width: '100%',
+    flexGrow: 1
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: scaleWidth(80),
+    paddingBottom: scaleHeight(100),
+    gap: scaleHeight(20)
+  },
+  emptyStateIconCircle: {
+    width: scaleWidth(140),
+    height: scaleWidth(140),
+    borderRadius: scaleWidth(132.792),
+    backgroundColor: SoftRosePink,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: scaleHeight(6)
+  },
+  emptyStateIcon: {
+    width: scaleWidth(64),
+    height: scaleHeight(64),
+    resizeMode: 'contain'
+  },
+  emptyStateTitle: {
+    fontSize: scaleFont(26),
+    lineHeight: scaleLineHeight(39),
+    letterSpacing: scaleLetterSpacing(-0.26),
+    fontWeight: 700,
+    color: Black,
+    textAlign: 'center'
+  },
+  emptyStateSubtitle: {
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    fontWeight: 500,
+    color: Black,
+    textAlign: 'center',
+    opacity: 0.6
   },
   chatGroupCard: {
     height: scaleHeight(212.11467),
@@ -1370,19 +1056,14 @@ const tabletStyles = StyleSheet.create({
 });
 
 export default function ChatGroups() {
-  const helpersTop = useMemo(
-    () => HELPERS_DATA.map((h, i) => ({ ...h, id: `${h.name}-${i}` })),
-    []
-  );
+  const helpersTop = [];
   const route = useRoute();
-  const user = useSelector(state => state.user);
   const sortOptions = ['Popular', 'Latest', 'A - Z', 'Z - A'];
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [sortBy, setSortBy] = useState('Popular');
-  const [showSearching, setShowSearching] = useState(false);
   const [activeDropdownIndex, setActiveDropdownIndex] = useState(null);
   const [search, setSearch] = useState('');
-  const [chatGroups, setChatGroups] = useState(CHAT_GROUPS_DATA);
+  const [chatGroups, setChatGroups] = useState([]);
   const [selectedChatGroupId, setSelectedChatGroupId] = useState(null);
   const [showEditChatNameModal, setShowEditChatNameModal] = useState(false);
   const [showDeleteChatGroupModal, setShowDeleteChatGroupModal] = useState(false);
@@ -1403,28 +1084,6 @@ export default function ChatGroups() {
     () => ({ keyboardShouldPersistTaps: 'always', onScrollBeginDrag: closeAllMenus }),
     [closeAllMenus]
   );
-  const SearchingView = React.memo(() => {
-    const [dotCount, setDotCount] = useState(0);
-    useEffect(() => {
-      const interval = setInterval(() => setDotCount((p) => (p + 1) % 4), 500);
-      return () => clearInterval(interval);
-    }, []);
-    return (
-      <View style={styles.searchingView}>
-        <View style={styles.searching}>
-          <CustomText style={styles.searchingTxt}>{`Searching${'.'.repeat(dotCount)}`}</CustomText>
-        </View>
-        <View style={styles.cancelView}>
-          <TouchableOpacity
-            style={styles.cancelBtn}
-            onPressIn={() => { closeAllMenus(); setShowSearching(false); }}
-          >
-            <CustomText style={styles.cancelTxt}>Cancel</CustomText>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  });
   const sortedChatGroups = useMemo(() => {
     const arr = [...chatGroups];
     switch (sortBy) {
@@ -1503,18 +1162,6 @@ export default function ChatGroups() {
   const handleSearchFocusOrTouch = useCallback(() => {
     closeAllMenus();
   }, [closeAllMenus]);
-  const handleHelpMePressIn = useCallback(() => {
-    closeAllMenus();
-    setShowSearching(true);
-  }, [closeAllMenus]);
-  const handleICanHelpPressIn = useCallback(() => {
-    closeAllMenus();
-    setShowSearching(true);
-  }, [closeAllMenus]);
-  const handleLoginPressIn = useCallback(() => {
-    closeAllMenus();
-    navigation.navigate('LoginOptions');
-  }, [closeAllMenus, navigation]);
   const handleEditNamePressIn = useCallback((id) => {
     swallowNextCloseRef.current = true;
     setSelectedChatGroupId(id);
@@ -1764,14 +1411,22 @@ export default function ChatGroups() {
       );
     }, [activeDropdownIndex, isTablet, styles]
   );
+  const renderEmptyChatGroups = useCallback(() => (
+    <View style={styles.emptyState}>
+      <View style={styles.emptyStateIconCircle}>
+        <HappyEmoji {...styles.emptyStateIcon} />
+      </View>
+      <CustomText style={styles.emptyStateTitle}>No chats yet</CustomText>
+      <CustomText style={styles.emptyStateSubtitle}>
+        Tap HELP ME to talk to someone, or I CAN HELP to support someone.
+      </CustomText>
+    </View>
+  ), [styles]);
   useEffect(() => {
-    ellipsisRefs.current = Array(CHAT_GROUPS_DATA.length)
+    ellipsisRefs.current = Array(chatGroups.length)
       .fill(null)
       .map((_, i) => ellipsisRefs.current[i] ?? React.createRef());
-  }, []);
-  useEffect(() => {
-    if (route.params?.startSearching) setShowSearching(true);
-  }, [route.params]);
+  }, [chatGroups.length]);
   useEffect(() => {
     if (isSortOpen) {
       requestAnimationFrame(() => {
@@ -1818,59 +1473,9 @@ export default function ChatGroups() {
     <>
       <View style={styles.root} onTouchEndCapture={handleRootTouchEndCapture}>
         <View style={topNavStyle}>
-          {user.isLoggedIn ? (
-            <View style={styles.profileAndLogin}>
-              <CustomText style={styles.welcomeBackTxt}>Welcome Back!</CustomText>
-              <View>
-                <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-                  {user.profilePhotoUrl ? (
-                    <RemoteImage uri={user.profilePhotoUrl} style={styles.profileImage} fadeDuration={0} />
-                  ) : (
-                    <View style={[styles.avatarCircle, { backgroundColor: user.avatarColor }]}>
-                      <CustomText style={styles.avatarInitial}>
-                        {user.displayName ? user.displayName[0].toUpperCase() : '?'}
-                      </CustomText>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            <View style={[styles.profileAndLogin, styles.loginBg]}>
-              <View>
-                <CustomText style={styles.unlockAllFeaturesTxt}>Login to unlock all features!</CustomText>
-              </View>
-              <View style={styles.loginView}>
-                <TouchableOpacity
-                  style={styles.loginBtn}
-                  onPressIn={handleLoginPressIn}
-                >
-                  <CustomText style={styles.loginBtnTxt}>Login</CustomText>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
+          <AccountBar closeMenus={closeAllMenus} />
 
-          {showSearching ? (
-            <SearchingView />
-          ) : (
-            <View style={styles.helpView}>
-              <TouchableOpacity
-                style={styles.helpMeBtn}
-                onPressIn={handleHelpMePressIn}
-              >
-                <SadEmoji {...styles.topNavIcons} />
-                <CustomText style={styles.helpMeTxt}>HELP ME</CustomText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.iCanHelpBtn}
-                onPressIn={handleICanHelpPressIn}
-              >
-                <HappyEmoji {...styles.topNavIcons} />
-                <CustomText style={styles.iCanHelpTxt}>I CAN HELP</CustomText>
-              </TouchableOpacity>
-            </View>
-          )}
+          <HelpHub />
           <View style={styles.searchAndSortRow}>
             <View style={styles.search}>
               <CustomTextInput
@@ -1932,6 +1537,7 @@ export default function ChatGroups() {
                 removeClippedSubviews={false}
                 extraData={{ activeDropdownIndex, chatGroups }}
                 renderItem={renderChatGroup}
+                ListEmptyComponent={renderEmptyChatGroups}
                 CellRendererComponent={ActiveListCell}
               />
             </ActiveIndexContext.Provider>
@@ -1990,7 +1596,7 @@ export default function ChatGroups() {
         visible={showLeaveChatGroupModal}
         onConfirm={handleConfirmLeaveChatGroup}
         onCancel={() => { setShowLeaveChatGroupModal(false); setSelectedChatGroupId(null); }}
-      />                 
+      />
     </>
   );
 }

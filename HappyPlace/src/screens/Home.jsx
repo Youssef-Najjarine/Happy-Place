@@ -8,11 +8,10 @@ import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import { useNavigation } from '@react-navigation/native';
 import useAutoSignIn from 'src/hooks/useAutoSignIn';
 import CustomText from 'src/components/FontFamilyText';
+import AccountLoading from 'src/components/AccountLoading';
 import Logo from 'assets/images/global/logo.png';
 import HappyEmoji from 'assets/images/global/happy-emoji.svg';
 import SadEmoji from 'assets/images/global/sad-emoji.svg';
-import { useDispatch } from 'react-redux';
-import { showLoading, hideLoading } from 'store/loadingSlice'; 
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -347,48 +346,29 @@ const tabletStyles = StyleSheet.create({
 });
 
 export default function Home() {
-  const dispatch = useDispatch();
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
   const isCheckingToken = useAutoSignIn(navigation);
 
   if (isCheckingToken) {
-    return (
-      <View style={{ flex: 1, backgroundColor: HappyColor }} />
-    );
+    return <AccountLoading />;
   }
 
   const handleHelpMe = () => {
-    dispatch(showLoading());
-    setTimeout(() => {
-      dispatch(hideLoading());
-      navigation.navigate('ChatGroups', { startSearching: true });
-    }, 1000);
+    navigation.navigate('ChatGroups', { startSearching: true, searchRole: 'Seeker' });
   };
 
   const handleICanHelp = () => {
-    dispatch(showLoading());
-    setTimeout(() => {
-      dispatch(hideLoading());
-      navigation.navigate('ChatGroups', { startSearching: true });
-    }, 1000);
+    navigation.navigate('ChatGroups', { startHelping: true });
   };
 
   const handleSignUp = () => {
-    dispatch(showLoading());
-    setTimeout(() => {
-      dispatch(hideLoading());
-      navigation.navigate('CreateAccount');
-    }, 1000);
+    navigation.navigate('CreateAccount');
   };
 
   const handleLogin = () => {
-    dispatch(showLoading());
-    setTimeout(() => {
-      dispatch(hideLoading());
-      navigation.navigate('LoginOptions');
-    }, 1000);
+    navigation.navigate('LoginOptions');
   };
 
   const rootStyle = {

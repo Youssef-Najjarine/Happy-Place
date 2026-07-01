@@ -519,7 +519,7 @@ const phoneStyles = StyleSheet.create({
         borderTopRightRadius: scaleWidth(16),
         width: '100%',
         height: '100%',
-        resizeMode: 'repeat'
+        resizeMode: 'cover'
     },
     chatMessageImageTimeStamp: {
         bottom: scaleHeight(8),
@@ -1059,7 +1059,7 @@ const tabletStyles = StyleSheet.create({
         borderTopRightRadius: scaleWidth(21.461),
         width: '100%',
         height: '100%',
-        resizeMode: 'repeat'
+        resizeMode: 'cover'
     },
     chatMessageImageTimeStamp: {
         bottom: scaleHeight(10.73),
@@ -1144,9 +1144,9 @@ const tabletStyles = StyleSheet.create({
 });
 
 function parseTime(timeStr) {
-  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+  const match = typeof timeStr === 'string' ? timeStr.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i) : null;
   if (!match) {
-    throw new Error('Invalid time format: ' + timeStr);
+    return 0;
   }
   let hour = Number(match[1]);
   const min = Number(match[2]);
@@ -1415,18 +1415,23 @@ export default function ChatGroup() {
     });
   }, [chatMessages]);
 
-  useEffect(() => {
-    if (chatMessages.length > 0 && groupedMessages.length > 0) {
-      setTimeout(() => {
+useEffect(() => {
+    if (chatMessages.length === 0 || groupedMessages.length === 0) return;
+    const timer = setTimeout(() => {
+    const lastSection = groupedMessages[groupedMessages.length - 1];
+    const lastItemIndex = lastSection.data.length > 0 ? lastSection.data.length - 1 : 0;
+    try {
         sectionListRef.current?.scrollToLocation({
-          animated: true,
-          sectionIndex: groupedMessages.length - 1,
-          itemIndex: groupedMessages[groupedMessages.length - 1].data.length,
-          viewPosition: 1,
+        animated: false,
+        sectionIndex: groupedMessages.length - 1,
+        itemIndex: lastItemIndex,
+        viewPosition: 1,
         });
-      }, 100);
+    } catch (error) {
     }
-  }, [chatMessages.length, groupedMessages]);
+    }, 300);
+    return () => clearTimeout(timer);
+}, [chatMessages.length, groupedMessages]);
 
   const renderSectionHeader = useCallback(({ section: { title } }) => (
     <View style={styles.dayHeader}>
@@ -1820,14 +1825,15 @@ export default function ChatGroup() {
                 </View>
                 <View style={styles.chatGroup}>
                     <SectionList
-                    ref={sectionListRef}
-                    sections={groupedMessages}
-                    keyExtractor={item => item.id}
-                    renderItem={renderChatItem}
-                    renderSectionHeader={renderSectionHeader}
-                    ItemSeparatorComponent={ChatMessageSeparator}
-                    showsVerticalScrollIndicator={false}
-                    stickySectionHeadersEnabled={false}
+                        ref={sectionListRef}
+                        sections={groupedMessages}
+                        keyExtractor={item => item.id}
+                        renderItem={renderChatItem}
+                        renderSectionHeader={renderSectionHeader}
+                        ItemSeparatorComponent={ChatMessageSeparator}
+                        showsVerticalScrollIndicator={false}
+                        stickySectionHeadersEnabled={false}
+                        onScrollToIndexFailed={() => {}}
                     />
                     <View style={styles.peopleTyping}>
                         <CustomText style={styles.peopleTypingTxt} numberOfLines={1} ellipsizeMode="tail">
