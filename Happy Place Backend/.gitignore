@@ -428,3 +428,6 @@ FodyWeavers.xsd
 
 # Firebase
 firebase-service-account.json
+
+# Local app settings (may hold secrets)
+appsettings.Development.json

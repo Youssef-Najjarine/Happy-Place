@@ -82,3 +82,7 @@ Gemfile.lock
 ios/build/
 android/app/build/
 android/.gradle/
+
+# Firebase client config
+ios/GoogleService-Info.plist
+android/app/google-services.json
