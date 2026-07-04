@@ -7,10 +7,10 @@
         <AssemblyName>HappyWorld.HappyPlace</AssemblyName>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="DotNetEnv" Version="3.1.1" />
-        <PackageReference Include="MailKit" Version="4.16.0" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.6" />
+        <PackageReference Include="DotNetEnv" Version="3.2.0" />
+        <PackageReference Include="MailKit" Version="4.17.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.9" />
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-        <PackageReference Include="Twilio" Version="7.14.7" />
+        <PackageReference Include="Twilio" Version="7.14.9" />
     </ItemGroup>
 </Project>

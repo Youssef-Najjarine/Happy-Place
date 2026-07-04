@@ -52,7 +52,7 @@ public class HelpAvailabilityUpsertTest {
     public void ConcurrentSetAvailabilityCallsLeaveExactlyOneRowWithoutError() {
         using var container = new TestingMockProvidersContainer();
         string helperAuthToken = CreateUser(container, "Helper");
-        ConcurrentBag<Exception> errors = new();
+        ConcurrentBag<Exception> errors = [];
         List<Thread> threads = [];
         for (int index = 0; index < 8; index++) {
             bool value = index % 2 == 0;

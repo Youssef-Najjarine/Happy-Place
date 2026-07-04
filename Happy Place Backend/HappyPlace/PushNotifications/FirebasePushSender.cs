@@ -198,7 +198,7 @@ internal class FirebasePushSender : PushSender {
 
     private static bool IsInvalidTokenResponse(HttpStatusCode statusCode, string responseBody) {
         string errorCode = ExtractFcmErrorCode(responseBody);
-        if (errorCode == "UNREGISTERED" || errorCode == "INVALID_ARGUMENT" || errorCode == "SENDER_ID_MISMATCH")
+        if (errorCode == "UNREGISTERED" || errorCode == "SENDER_ID_MISMATCH")
             return true;
         if (errorCode != null)
             return false;

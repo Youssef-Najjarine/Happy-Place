@@ -8,11 +8,10 @@ namespace HappyWorld.HappyPlace;
 public static class NotificationDispatchManager {
     // Fields
 
-    private static readonly int QuietWindowMs = 800;
-    private static readonly int MaxWaitMs = 4000;
-    private static readonly int MinIntervalMs = 3000;
+    private static readonly int QuietWindowMs = 500;
+    private static readonly int MaxWaitMs = 2000;
+    private static readonly int MinIntervalMs = 1000;
     private static readonly int ClaimTtlSeconds = 30;
-    private static readonly int ProvisionalFreshnessSeconds = 120;
 
     // Properties
 
@@ -114,7 +113,8 @@ public static class NotificationDispatchManager {
             }
         }
         else if (count != channel.LastSentCount || !wasLive) {
-            SendCountUpdate(channel, count, !wasLive);
+            bool alerting = count > channel.LastSentCount;
+            SendCountUpdate(channel, count, alerting);
             sent = true;
         }
         FinalizeChannel(channel, count, sent);
@@ -155,13 +155,11 @@ public static class NotificationDispatchManager {
     }
 
     private static int CountWaitingForHelper(HappyPlaceDbContext dbContext, Guid helperUserAccountId) {
-        DateTime freshnessCutoff = DateTime.UtcNow.AddSeconds(-ProvisionalFreshnessSeconds);
         List<Guid> declinedChatGroupIds = [.. dbContext.HelpOffers
             .Where(field => field.HelperUserAccountId == helperUserAccountId && field.Status == HelpOfferStatus.Declined)
             .Select(field => field.ChatGroupId)];
         return dbContext.ChatGroups.Count(field => field.Status == ChatGroupStatus.Provisional
             && field.OwnerUserAccountId != helperUserAccountId
-            && field.LastSeenAtUtc >= freshnessCutoff
             && !declinedChatGroupIds.Contains(field.Id));
     }
 
@@ -176,11 +174,14 @@ public static class NotificationDispatchManager {
     private static void SendCountUpdate(NotificationChannel channel, int count, bool alerting) {
         string collapseId = BuildCollapseId(channel);
         NotificationContent content = BuildCountContent(channel, count);
+        Dictionary<string, string> data = new(content.Data) {
+            ["alerting"] = alerting ? "true" : "false"
+        };
         SendToRecipientDevices(channel.RecipientUserAccountId, deviceToken => new PushMessage {
             Token = deviceToken,
             Title = content.Title,
             Body = content.Body,
-            Data = new Dictionary<string, string>(content.Data),
+            Data = new Dictionary<string, string>(data),
             CollapseId = collapseId,
             Alerting = alerting
         });

@@ -6,7 +6,7 @@ namespace HappyWorld.HappyPlace;
 public static class HelpOfferManager {
     // Fields
 
-    private static readonly int RequestFreshnessSeconds = 120;
+    private static readonly int OfferedRequestTtlDays = 7;
 
     // Methods
 
@@ -103,7 +103,7 @@ public static class HelpOfferManager {
         Guid? helperUserAccountId = HelpParticipant.ResolveUserAccountId(authToken);
         if (helperUserAccountId == null)
             return [];
-        SweepStaleProvisionalGroups();
+        SweepExpiredProvisionalGroups();
         using var dbContext = HappyPlaceDbContext.Create();
         List<Guid> declinedChatGroupIds = [.. dbContext.HelpOffers
             .Where(field => field.HelperUserAccountId == helperUserAccountId.Value && field.Status == HelpOfferStatus.Declined)
@@ -136,17 +136,23 @@ public static class HelpOfferManager {
         return [.. startedGroups.Select(field => new StartedGroup(field.Id.ToString(), field.Name))];
     }
 
-    private static void SweepStaleProvisionalGroups() {
+    private static void SweepExpiredProvisionalGroups() {
         using var dbContext = HappyPlaceDbContext.Create();
-        DateTime freshnessCutoff = DateTime.UtcNow.AddSeconds(-RequestFreshnessSeconds);
-        List<Guid> staleChatGroupIds = [.. dbContext.ChatGroups
-            .Where(field => field.Status == ChatGroupStatus.Provisional && field.LastSeenAtUtc < freshnessCutoff)
-            .Select(field => field.Id)];
-        if (staleChatGroupIds.Count == 0)
+        DateTime offerExpiryCutoff = DateTime.UtcNow.AddDays(-OfferedRequestTtlDays);
+        List<Guid> offeredChatGroupIds = [.. dbContext.HelpOffers
+            .Where(field => field.Status == HelpOfferStatus.Offered && field.CreatedAtUtc < offerExpiryCutoff)
+            .Select(field => field.ChatGroupId)
+            .Distinct()];
+        if (offeredChatGroupIds.Count == 0)
             return;
-        foreach (Guid staleChatGroupId in staleChatGroupIds)
-            NotificationDispatchManager.RemoveOffersChannel(staleChatGroupId);
-        dbContext.ChatGroups.Where(field => staleChatGroupIds.Contains(field.Id)).ExecuteDelete();
+        List<Guid> expiredChatGroupIds = [.. dbContext.ChatGroups
+            .Where(field => field.Status == ChatGroupStatus.Provisional && offeredChatGroupIds.Contains(field.Id))
+            .Select(field => field.Id)];
+        if (expiredChatGroupIds.Count == 0)
+            return;
+        foreach (Guid expiredChatGroupId in expiredChatGroupIds)
+            NotificationDispatchManager.RemoveOffersChannel(expiredChatGroupId);
+        dbContext.ChatGroups.Where(field => expiredChatGroupIds.Contains(field.Id)).ExecuteDelete();
         NotificationDispatchManager.MarkWaitingDirtyForAllHelpers();
     }
 

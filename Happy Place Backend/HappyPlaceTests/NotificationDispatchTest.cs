@@ -134,19 +134,23 @@ public class NotificationDispatchTest {
     // Tests - Alert Once
 
     [Fact]
-    public void FirstOfferAlertsAndSubsequentOffersAreSilent() {
+    public void EachAdditionalOfferAlertsAndADecreaseIsSilent() {
         using var container = new TestingMockProvidersContainer();
         var seeker = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
-        CreateOffer(container, CreateUser(container, "First"), seeker.ChatGroupId);
+        string withdrawingHelper = CreateUser(container, "First");
+        CreateOffer(container, withdrawingHelper, seeker.ChatGroupId);
         Flush();
         CreateOffer(container, CreateUser(container, "Second"), seeker.ChatGroupId);
+        Flush();
+        WithdrawOffer(container, withdrawingHelper, seeker.ChatGroupId);
 
         Flush();
 
         List<PushMessage> messages = CountUpdatesTo(container, seeker.DeviceToken);
-        Assert.Equal(2, messages.Count);
+        Assert.Equal(3, messages.Count);
         Assert.True(messages[0].Alerting);
-        Assert.False(messages[1].Alerting);
+        Assert.True(messages[1].Alerting);
+        Assert.False(messages[2].Alerting);
     }
 
     [Fact]

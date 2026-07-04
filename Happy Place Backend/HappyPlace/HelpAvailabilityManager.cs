@@ -22,11 +22,29 @@ public static class HelpAvailabilityManager {
             availability.LastSeenAtUtc = now;
             TrySaveChanges(dbContext);
         }
-        if (isAvailable)
+        if (isAvailable) {
             NotificationDispatchManager.ActivateWaitingChannel(helperUserAccountId.Value);
-        else
+        }
+        else {
+            WithdrawOutstandingOffers(helperUserAccountId.Value);
             NotificationDispatchManager.DeactivateWaitingChannel(helperUserAccountId.Value);
+        }
         return true;
+    }
+
+    private static void WithdrawOutstandingOffers(Guid helperUserAccountId) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        List<Guid> affectedChatGroupIds = [.. dbContext.HelpOffers
+            .Where(field => field.HelperUserAccountId == helperUserAccountId && field.Status == HelpOfferStatus.Offered)
+            .Select(field => field.ChatGroupId)
+            .Distinct()];
+        if (affectedChatGroupIds.Count == 0)
+            return;
+        dbContext.HelpOffers
+            .Where(field => field.HelperUserAccountId == helperUserAccountId && field.Status == HelpOfferStatus.Offered)
+            .ExecuteDelete();
+        foreach (Guid chatGroupId in affectedChatGroupIds)
+            NotificationDispatchManager.MarkOffersDirty(chatGroupId);
     }
 
     private static void TrySaveChanges(HappyPlaceDbContext dbContext) {

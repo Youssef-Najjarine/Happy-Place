@@ -27,8 +27,8 @@ public class HelpRequestLifecycleTest {
     public void ConcurrentCreateRequestsForOneSeekerLeaveExactlyOneProvisionalGroup() {
         using var container = new TestingMockProvidersContainer();
         string seekerAuthToken = CreateUser(container, "Seeker");
-        ConcurrentBag<Exception> errors = new();
-        ConcurrentBag<string> groupIds = new();
+        ConcurrentBag<Exception> errors = [];
+        ConcurrentBag<string> groupIds = [];
         List<Thread> threads = [];
         for (int index = 0; index < 8; index++) {
             int captured = index;
@@ -184,7 +184,7 @@ public class HelpRequestLifecycleTest {
         using var container = new TestingMockProvidersContainer();
         var seeker = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
         CreateOffer(container, CreateUser(container, "Helper"), seeker.ChatGroupId);
-        ConcurrentBag<Exception> errors = new();
+        ConcurrentBag<Exception> errors = [];
 
         Thread connectThread = new(() => {
             try { Connect(container, seeker.AuthToken, seeker.ChatGroupId); }
