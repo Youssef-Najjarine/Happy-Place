@@ -31,6 +31,7 @@ import KeyIcon from 'assets/images/global/key-icon.svg';
 import EyeIcon from 'assets/images/global/eye-icon.svg';
 import EyeSlashIcon from 'assets/images/global/eye-slash-icon.svg';
 import authenticationService from 'services/authenticationService';
+import tokenStorage from 'services/tokenStorage';
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -474,10 +475,11 @@ export default function CreateAccount() {
     dispatch(showLoading());
     try {
       let response;
+      const guestToken = await tokenStorage.getToken();
       if (selectedCreateAccountType === 'email') {
-        response = await authenticationService.signUpWithEmail(name.trim(), email.trim(), password);
+        response = await authenticationService.signUpWithEmail(name.trim(), email.trim(), password, guestToken);
       } else {
-        response = await authenticationService.signUpWithPhone(name.trim(), phone.replace(/\D/g, ''), password);
+        response = await authenticationService.signUpWithPhone(name.trim(), phone.replace(/\D/g, ''), password, guestToken);
       }
       if (!response.ok) {
         throw new Error();

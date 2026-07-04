@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import { clearUser } from 'store/userSlice';
 import tokenStorage from 'services/tokenStorage';
 import pushNotificationService from 'services/pushNotificationService';
+import helpSessionStorage from 'services/helpSessionStorage';
 
 export default function useLogout() {
     const navigation = useNavigation();
@@ -10,9 +11,10 @@ export default function useLogout() {
 
     const logout = async () => {
         const token = await tokenStorage.getToken();
-        await pushNotificationService.unregisterDevice(token);
-        dispatch(clearUser());
         await tokenStorage.clearToken();
+        await pushNotificationService.unregisterDevice(token);
+        await helpSessionStorage.clear();
+        dispatch(clearUser());
         navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
     };
 

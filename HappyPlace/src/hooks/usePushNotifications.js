@@ -4,10 +4,13 @@ import tokenStorage from 'src/services/tokenStorage';
 import pushNotificationService from 'src/services/pushNotificationService';
 import navigationRef from 'src/services/navigationService';
 import pendingInvite from 'src/services/pendingInvite';
+import pendingNotificationRoute from 'src/services/pendingNotificationRoute';
 import handledGroups from 'src/services/handledGroups';
 import { useJoinMutation } from 'src/store/helpApi';
-import { showToast } from 'src/components/Toast';
+import { showToast, hideToast, updateToastIfVisible } from 'src/components/Toast';
 import localNotifications from 'src/services/localNotifications';
+
+const RegistrationHeartbeatMs = 30000;
 
 export default function usePushNotifications() {
     const [join] = useJoinMutation();
@@ -51,6 +54,18 @@ export default function usePushNotifications() {
             runWhenSettled(() => {
                 if (active && navigationRef.isReady()) {
                     navigationRef.reset({ index: 1, routes: [{ name: 'ChatGroups' }, { name: 'ChatGroup', params: { chatGroupId } }] });
+                }
+            });
+        };
+
+        const resetToNotificationRoute = (routeName) => {
+            runWhenSettled(() => {
+                if (active && navigationRef.isReady()) {
+                    if (routeName === 'ChatGroups') {
+                        navigationRef.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
+                    } else {
+                        navigationRef.reset({ index: 1, routes: [{ name: 'ChatGroups' }, { name: routeName }] });
+                    }
                 }
             });
         };
@@ -121,19 +136,38 @@ export default function usePushNotifications() {
             if (!data) return;
             if (data.type === 'dismiss' && data.collapseId) {
                 await localNotifications.cancelByCollapseId(data.collapseId);
+                hideToast(data.collapseId);
+                return;
+            }
+            if (data.type === 'invite') {
+                if (!data.chatGroupId) return;
+                const inviteChatGroupId = data.chatGroupId;
+                const inviteName = data.chatGroupName;
+                const inviteBody = inviteName && inviteName.trim() ? `${inviteName} just started` : 'A group you offered to help with just started';
+                showToast(inviteBody, 'info', {
+                    label: 'Join',
+                    onPress: async () => {
+                        try {
+                            await openInvite(inviteChatGroupId);
+                        } catch (error) {
+                            showToast('Could not join right now', 'info');
+                        }
+                    }
+                }, `invite-${inviteChatGroupId}`);
                 return;
             }
             if (data.type === 'helpWaiting' || data.type === 'helpOffers') {
-                const currentRoute = navigationRef.isReady() ? navigationRef.getCurrentRoute() : null;
-                const currentName = currentRoute && currentRoute.name ? currentRoute.name : null;
-                if (currentName === 'ChatGroups' || currentName === 'OfferHelp') {
-                    return;
-                }
                 const notification = remoteMessage.notification;
                 const body = notification && notification.body ? notification.body : null;
-                if (body) {
-                    const target = data.type === 'helpWaiting' ? 'OfferHelp' : 'ChatGroups';
-                    showToast(body, 'info', { label: 'View', onPress: () => navigateToRoute(target) });
+                if (!body) return;
+                const target = data.type === 'helpWaiting' ? 'OfferHelp' : 'ChatGroups';
+                const toastKey = data.type === 'helpWaiting' ? 'help-waiting' : `help-offers-${data.chatGroupId || ''}`;
+                const toastAction = { label: 'View', onPress: () => navigateToRoute(target) };
+                const isAlerting = data.alerting === 'true';
+                if (isAlerting) {
+                    showToast(body, 'info', toastAction, toastKey);
+                } else {
+                    updateToastIfVisible(body, 'info', toastAction, toastKey);
                 }
             }
         };
@@ -149,9 +183,12 @@ export default function usePushNotifications() {
                 pendingInvite.set(initialData.chatGroupId);
             }
             if (active && initialData && (initialData.type === 'helpWaiting' || initialData.type === 'helpOffers')) {
+                const notificationRouteName = initialData.type === 'helpWaiting' ? 'OfferHelp' : 'ChatGroups';
+                pendingNotificationRoute.set(notificationRouteName);
                 await waitForNavigationReady();
                 if (active) {
-                    navigateToRoute(initialData.type === 'helpWaiting' ? 'OfferHelp' : 'ChatGroups');
+                    resetToNotificationRoute(notificationRouteName);
+                    pendingNotificationRoute.markHandled();
                 }
                 return;
             }
@@ -195,12 +232,17 @@ export default function usePushNotifications() {
             }
         });
 
+        const registrationHeartbeat = setInterval(() => {
+            registerCurrentDevice();
+        }, RegistrationHeartbeatMs);
+
         return () => {
             active = false;
             unsubscribeTokenRefresh();
             unsubscribeForegroundMessage();
             unsubscribeNotificationOpened();
             appStateSubscription.remove();
+            clearInterval(registrationHeartbeat);
         };
     }, [join]);
 }

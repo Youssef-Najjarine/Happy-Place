@@ -8,6 +8,7 @@ import CustomText from 'src/components/FontFamilyText';
 import SadEmoji from 'assets/images/global/sad-emoji.svg';
 import HappyEmoji from 'assets/images/global/happy-emoji.svg';
 import HelpTopicModal from 'src/components/HelpTopicModal';
+import StopHelpingModal from 'src/components/StopHelpingModal';
 import useSeekerSearch from 'src/hooks/useSeekerSearch';
 import useHelperListen from 'src/hooks/useHelperListen';
 import { HappyColor, White, Black, VeryLightGray, SoftRosePink } from 'src/constants/colors';
@@ -309,8 +310,9 @@ export default function HelpHub() {
   const route = useRoute();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const { phase, readyHelperCount, beginSearch, connect, cancelSearch } = useSeekerSearch();
-  const { listening, pendingCount, readyCount, startListening, stopListening, openPicker } = useHelperListen();
+  const { listening, pendingCount, readyCount, offeredCount, startListening, stopListening, openPicker } = useHelperListen();
   const [showHelpTopic, setShowHelpTopic] = useState(false);
+  const [showStopHelping, setShowStopHelping] = useState(false);
   const [dotCount, setDotCount] = useState(0);
 
   const showDots = ((phase === 'waiting' || showHelpTopic) && readyHelperCount === 0) || (listening && pendingCount === 0 && readyCount === 0);
@@ -352,6 +354,23 @@ export default function HelpHub() {
     setShowHelpTopic(false);
     cancelSearch();
   }, [cancelSearch]);
+
+  const handleHelperCancel = useCallback(() => {
+    if (offeredCount > 0) {
+      setShowStopHelping(true);
+    } else {
+      stopListening();
+    }
+  }, [offeredCount, stopListening]);
+
+  const handleConfirmStopHelping = useCallback(() => {
+    setShowStopHelping(false);
+    stopListening();
+  }, [stopListening]);
+
+  const handleCancelStopHelping = useCallback(() => {
+    setShowStopHelping(false);
+  }, []);
 
   return (
     <>
@@ -404,7 +423,7 @@ export default function HelpHub() {
               </View>
             ) : null}
             <View style={styles.cancelView}>
-              <TouchableOpacity style={styles.cancelBtn} onPressIn={stopListening}>
+              <TouchableOpacity style={styles.cancelBtn} onPressIn={handleHelperCancel}>
                 <CustomText style={styles.cancelTxt}>Cancel</CustomText>
               </TouchableOpacity>
             </View>
@@ -427,6 +446,12 @@ export default function HelpHub() {
         maxLen={100}
         onConfirm={handleConfirmTopic}
         onCancel={handleCancelTopic}
+      />
+      <StopHelpingModal
+        visible={showStopHelping}
+        offeredCount={offeredCount}
+        onConfirm={handleConfirmStopHelping}
+        onCancel={handleCancelStopHelping}
       />
     </>
   );

@@ -12,10 +12,23 @@ const DefaultDurationMs = 2500;
 const StickyDurationMs = 10000;
 
 let showToastFn = null;
+let hideToastFn = null;
 
-export function showToast(message, type = 'success', action = null) {
+export function showToast(message, type = 'success', action = null, key = null) {
     if (showToastFn) {
-        showToastFn(message, type, action);
+        showToastFn(message, type, action, key, false);
+    }
+}
+
+export function updateToastIfVisible(message, type = 'info', action = null, key = null) {
+    if (showToastFn) {
+        showToastFn(message, type, action, key, true);
+    }
+}
+
+export function hideToast(key) {
+    if (hideToastFn) {
+        hideToastFn(key);
     }
 }
 
@@ -143,12 +156,19 @@ export default function ToastHost() {
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(-30)).current;
     const hideTimerRef = useRef(null);
+    const currentKeyRef = useRef(null);
+    const visibleRef = useRef(false);
+
+    useEffect(() => {
+        visibleRef.current = visible;
+    }, [visible]);
 
     const hide = useCallback(() => {
         if (hideTimerRef.current) {
             clearTimeout(hideTimerRef.current);
             hideTimerRef.current = null;
         }
+        currentKeyRef.current = null;
         Animated.parallel([
             Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
             Animated.timing(translateY, { toValue: -30, duration: 200, useNativeDriver: true })
@@ -159,20 +179,32 @@ export default function ToastHost() {
     }, [opacity, translateY]);
 
     useEffect(() => {
-        showToastFn = (newMessage, newType, newAction) => {
+        showToastFn = (newMessage, newType, newAction, newKey, updateOnly) => {
+            const normalizedKey = newKey != null ? newKey : null;
+            const isSameKeyUpdate = normalizedKey != null && normalizedKey === currentKeyRef.current && visibleRef.current;
+            if (updateOnly && !isSameKeyUpdate) {
+                return;
+            }
+            currentKeyRef.current = normalizedKey;
             setMessage(newMessage);
             setType(newType);
             setAction(newAction || null);
             setVisible(true);
-            opacity.setValue(0);
-            translateY.setValue(-30);
-            Animated.parallel([
-                Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-                Animated.timing(translateY, { toValue: 0, duration: 200, useNativeDriver: true })
-            ]).start();
+            if (isSameKeyUpdate) {
+                opacity.setValue(1);
+                translateY.setValue(0);
+            } else {
+                opacity.setValue(0);
+                translateY.setValue(-30);
+                Animated.parallel([
+                    Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+                    Animated.timing(translateY, { toValue: 0, duration: 200, useNativeDriver: true })
+                ]).start();
+            }
             if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
             const duration = newAction && newAction.label ? StickyDurationMs : DefaultDurationMs;
             hideTimerRef.current = setTimeout(() => {
+                currentKeyRef.current = null;
                 Animated.parallel([
                     Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
                     Animated.timing(translateY, { toValue: -30, duration: 200, useNativeDriver: true })
@@ -182,11 +214,17 @@ export default function ToastHost() {
                 });
             }, duration);
         };
+        hideToastFn = (key) => {
+            if (key != null && key === currentKeyRef.current) {
+                hide();
+            }
+        };
         return () => {
             showToastFn = null;
+            hideToastFn = null;
             if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
         };
-    }, [opacity, translateY]);
+    }, [opacity, translateY, hide]);
 
     if (!visible) return null;
 

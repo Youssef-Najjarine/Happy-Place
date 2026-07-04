@@ -48,7 +48,11 @@ export default function useSeekerSearch() {
 
     const resolveToken = useCallback(async () => {
         const existing = await tokenStorage.getToken();
-        if (existing) return existing;
+        if (existing) {
+            const validation = await authenticationService.validateToken(existing);
+            if (validation.ok) return existing;
+            await tokenStorage.clearToken();
+        }
         const response = await authenticationService.createGuest();
         if (!response.ok) return null;
         const data = await response.json();
@@ -156,6 +160,8 @@ export default function useSeekerSearch() {
             if (cancelled || !token) return;
             const session = await helpSessionStorage.get();
             if (!cancelled && session && session.mode === 'seeking' && session.chatGroupId) {
+                const validation = await authenticationService.validateToken(token);
+                if (cancelled || !validation.ok) return;
                 navigatedRef.current = false;
                 setAuthToken(token);
                 setChatGroupId(session.chatGroupId);

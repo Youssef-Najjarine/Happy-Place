@@ -1,11 +1,11 @@
 import baseService from './baseService';
 
 export default authenticationService = {
-    signUpWithEmail: function(name, email, password) {
-        return baseService.postJson("userAuthentication/signUpWithEmail", { Name: name, Email: email, Password: password });
+    signUpWithEmail: function(name, email, password, authToken) {
+        return baseService.postJson("userAuthentication/signUpWithEmail", { Name: name, Email: email, Password: password, AuthToken: authToken });
     },
-    signUpWithPhone: function(name, phoneNumber, password) {
-        return baseService.postJson("userAuthentication/signUpWithPhone", { Name: name, PhoneNumber: phoneNumber, Password: password });
+    signUpWithPhone: function(name, phoneNumber, password, authToken) {
+        return baseService.postJson("userAuthentication/signUpWithPhone", { Name: name, PhoneNumber: phoneNumber, Password: password, AuthToken: authToken });
     },
     createGuest: function() {
         return baseService.postJson("userAuthentication/createGuest", {});

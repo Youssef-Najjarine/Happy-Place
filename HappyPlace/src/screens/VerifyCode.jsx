@@ -527,7 +527,7 @@ export default function VerifyCode() {
           navigation.pop(2);
         } else {
           const responseData = await response.json();
-          navigation.replace('AccountVerified', { contact, source, authToken: responseData.authToken });
+          navigation.replace('AccountVerified', { contact, source, authToken: responseData.authToken, rememberMe: route.params?.rememberMe });
         }
       } catch {
         showToast('Something went wrong. Please try again.', 'error');

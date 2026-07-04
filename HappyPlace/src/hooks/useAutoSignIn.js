@@ -4,6 +4,7 @@ import { setUser } from 'store/userSlice';
 import tokenStorage from 'services/tokenStorage';
 import authenticationService from 'services/authenticationService';
 import pendingInvite from 'services/pendingInvite';
+import pendingNotificationRoute from 'services/pendingNotificationRoute';
 
 const VALIDATION_TIMEOUT_MS = 8000;
 
@@ -37,7 +38,9 @@ export default function useAutoSignIn(navigation) {
                     settled = true;
                     if (timeoutId) clearTimeout(timeoutId);
                     dispatch(setUser(profileData));
-                    if (!pendingInvite.peek() && !pendingInvite.wasHandled()) {
+                    const hasPendingInvite = pendingInvite.peek() || pendingInvite.wasHandled();
+                    const hasPendingNotificationRoute = pendingNotificationRoute.peek() || pendingNotificationRoute.wasHandled();
+                    if (!hasPendingInvite && !hasPendingNotificationRoute) {
                         navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
                         return;
                     }

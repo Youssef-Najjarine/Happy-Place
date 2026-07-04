@@ -15,6 +15,7 @@ import SuccessLogo from 'assets/images/accountVerified/account-verified-success-
 import HappyCheck from 'assets/images/accountVerified/happy-check-icon.svg';
 import tokenStorage from 'services/tokenStorage';
 import authenticationService from 'services/authenticationService';
+import helpSessionStorage from 'services/helpSessionStorage';
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -208,7 +209,7 @@ export default function AccountVerified() {
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
   const route = useRoute();
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(route.params?.rememberMe || false);
 
   const authToken = route.params?.authToken || null;
 
@@ -222,8 +223,10 @@ export default function AccountVerified() {
       if (rememberMe) {
         await tokenStorage.saveToken(authToken);
       } else {
+        await tokenStorage.clearToken();
         tokenStorage.setSessionToken(authToken);
       }
+      await helpSessionStorage.clear();
       const profileResponse = await authenticationService.validateToken(authToken);
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();

@@ -56,6 +56,8 @@ export default function useHelperListen() {
             if (cancelled || !session || session.mode !== 'listening') return;
             const token = await tokenStorage.getToken();
             if (cancelled || !token) return;
+            const validation = await authenticationService.validateToken(token);
+            if (cancelled || !validation.ok) return;
             const seq = intentSeqRef.current + 1;
             intentSeqRef.current = seq;
             setAuthToken(token);
@@ -78,9 +80,17 @@ export default function useHelperListen() {
         { skip: !authToken, pollingInterval: READY_INTERVAL_MS, refetchOnMountOrArgChange: true }
     );
 
+    const offeredCount = listening && Array.isArray(openRequestsData)
+        ? openRequestsData.filter((request) => request.offerStatus === 'offered').length
+        : 0;
+
     const resolveToken = useCallback(async () => {
         const existing = await tokenStorage.getToken();
-        if (existing) return existing;
+        if (existing) {
+            const validation = await authenticationService.validateToken(existing);
+            if (validation.ok) return existing;
+            await tokenStorage.clearToken();
+        }
         const response = await authenticationService.createGuest();
         if (!response.ok) return null;
         const data = await response.json();
@@ -142,5 +152,5 @@ export default function useHelperListen() {
     const pendingCount = listening && Array.isArray(openRequestsData) ? openRequestsData.length : 0;
     const readyCount = authToken && Array.isArray(startedData) ? startedData.length : 0;
 
-    return { listening, pendingCount, readyCount, startListening, stopListening, openPicker };
+    return { listening, pendingCount, readyCount, offeredCount, startListening, stopListening, openPicker };
 }

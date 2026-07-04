@@ -32,6 +32,7 @@ import EyeIcon from 'assets/images/global/eye-icon.svg';
 import EyeSlashIcon from 'assets/images/global/eye-slash-icon.svg';
 import authenticationService from 'services/authenticationService';
 import tokenStorage from 'services/tokenStorage';
+import helpSessionStorage from 'services/helpSessionStorage';
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -527,13 +528,15 @@ export default function Login() {
       }
       const responseData = await response.json();
       if (responseData.status === 'pending') {
-        navigation.navigate('VerifyCode', { contact: responseData.contact, source: 'signIn' });
+        navigation.navigate('VerifyCode', { contact: responseData.contact, source: 'signIn', rememberMe });
       } else if (responseData.status === 'verified') {
         if (rememberMe) {
           await tokenStorage.saveToken(responseData.authToken);
         } else {
+          await tokenStorage.clearToken();
           tokenStorage.setSessionToken(responseData.authToken);
         }
+        await helpSessionStorage.clear();
         const profileResponse = await authenticationService.validateToken(responseData.authToken);
         if (profileResponse.ok) {
           const profileData = await profileResponse.json();

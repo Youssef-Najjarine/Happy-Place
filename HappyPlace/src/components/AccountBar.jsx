@@ -150,8 +150,12 @@ export default function AccountBar({ closeMenus }) {
   }, [closeMenus, navigation]);
 
   const handleProfilePress = useCallback(() => {
-    navigation.navigate('Profile');
-  }, [navigation]);
+    if (user.isAnonymous) {
+      navigation.navigate('FinishAccount');
+    } else {
+      navigation.navigate('Profile');
+    }
+  }, [navigation, user.isAnonymous]);
 
   if (user.isLoggedIn) {
     return (
