@@ -3,6 +3,7 @@ import {
     getMessaging,
     requestPermission as fbRequestPermission,
     getToken as fbGetToken,
+    getAPNSToken as fbGetAPNSToken,
     registerDeviceForRemoteMessages as fbRegisterDeviceForRemoteMessages,
     isDeviceRegisteredForRemoteMessages as fbIsDeviceRegisteredForRemoteMessages,
     onTokenRefresh as fbOnTokenRefresh,
@@ -22,11 +23,19 @@ async function requestPermission() {
     return authorizationStatus === AuthorizationStatus.AUTHORIZED || authorizationStatus === AuthorizationStatus.PROVISIONAL;
 }
 
-async function ensureRegisteredForRemoteMessages() {
-    if (Platform.OS !== 'ios') return;
+async function ensureApnsToken() {
+    if (Platform.OS !== 'ios') return true;
     const messaging = getMessaging();
-    if (fbIsDeviceRegisteredForRemoteMessages(messaging)) return;
-    await fbRegisterDeviceForRemoteMessages(messaging);
+    if (!fbIsDeviceRegisteredForRemoteMessages(messaging)) {
+        await fbRegisterDeviceForRemoteMessages(messaging);
+    }
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < GetTokenTimeoutMs) {
+        const apnsToken = await fbGetAPNSToken(messaging);
+        if (apnsToken) return true;
+        await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    return false;
 }
 
 function getDeviceToken() {
@@ -51,7 +60,8 @@ function getDeviceToken() {
 
 async function resolveDeviceToken() {
     try {
-        await ensureRegisteredForRemoteMessages();
+        const ready = await ensureApnsToken();
+        if (!ready) return null;
     } catch (error) {
         return null;
     }

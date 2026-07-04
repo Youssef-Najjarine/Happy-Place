@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AppState, InteractionManager } from 'react-native';
+import { AppState } from 'react-native';
 import tokenStorage from 'src/services/tokenStorage';
 import pushNotificationService from 'src/services/pushNotificationService';
 import navigationRef from 'src/services/navigationService';
@@ -43,7 +43,8 @@ export default function usePushNotifications() {
         });
 
         const runWhenSettled = (callback) => {
-            InteractionManager.runAfterInteractions(() => {
+            const runner = global.requestIdleCallback || ((cb) => setTimeout(cb, 0));
+            runner(() => {
                 requestAnimationFrame(() => {
                     callback();
                 });
