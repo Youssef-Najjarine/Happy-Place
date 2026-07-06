@@ -154,16 +154,16 @@ public class LeaveChatGroupTest {
     // Tests - Effect On Feed
 
     [Fact]
-    public void LeftMemberNoLongerSeesPrivateGroupInFeed() {
+    public void LeftMemberNoLongerJoinedInPrivateGroupFeed() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string memberAuthToken = CreateUser(testingMockProvidersContainer, "Member");
         Guid groupId = CreateActiveGroup(SeedUser("Owner", null), "Private Group", false);
         AddActiveMember(groupId, ResolveUserAccountId(memberAuthToken));
-        Assert.True(ListContainsGroup(testingMockProvidersContainer, memberAuthToken, groupId));
+        Assert.True(GetGroupFromList(testingMockProvidersContainer, memberAuthToken, groupId).GetProperty("joined").GetBoolean());
 
         Leave(testingMockProvidersContainer, memberAuthToken, groupId);
 
-        Assert.False(ListContainsGroup(testingMockProvidersContainer, memberAuthToken, groupId));
+        Assert.False(GetGroupFromList(testingMockProvidersContainer, memberAuthToken, groupId).GetProperty("joined").GetBoolean());
     }
 
     [Fact]

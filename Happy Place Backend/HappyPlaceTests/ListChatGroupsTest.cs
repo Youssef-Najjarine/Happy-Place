@@ -91,15 +91,18 @@ public class ListChatGroupsTest {
     }
 
     [Fact]
-    public void PrivateGroupWithNoRelationshipIsExcluded() {
+    public void PrivateGroupWithNoRelationshipAppearsForDiscovery() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
         string strangerAuthToken = CreateUser(testingMockProvidersContainer, "Stranger");
         Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "Private Group", false);
 
-        JsonElement root = List(testingMockProvidersContainer, strangerAuthToken);
+        JsonElement group = GetGroup(List(testingMockProvidersContainer, strangerAuthToken), groupId);
 
-        Assert.False(ContainsGroup(root, groupId));
+        Assert.False(group.GetProperty("owner").GetBoolean());
+        Assert.False(group.GetProperty("joined").GetBoolean());
+        Assert.False(group.GetProperty("joinRequest").GetBoolean());
+        Assert.False(group.GetProperty("isPublic").GetBoolean());
     }
 
     [Fact]
@@ -235,7 +238,7 @@ public class ListChatGroupsTest {
     }
 
     [Fact]
-    public void HelpersEmptyForDiscoveryGroupIAmNotMemberOf() {
+    public void HelpersReturnedForPublicGroupIAmNotMemberOf() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
         string strangerAuthToken = CreateUser(testingMockProvidersContainer, "Stranger");
@@ -244,7 +247,7 @@ public class ListChatGroupsTest {
 
         JsonElement group = GetGroup(List(testingMockProvidersContainer, strangerAuthToken), groupId);
 
-        Assert.Equal(0, group.GetProperty("helpers").GetArrayLength());
+        Assert.Equal(2, group.GetProperty("helpers").GetArrayLength());
         Assert.Equal(2, group.GetProperty("memberCount").GetInt32());
     }
 
@@ -317,31 +320,125 @@ public class ListChatGroupsTest {
     // Tests - Isolation And Ordering
 
     [Fact]
-    public void OtherUsersPrivateGroupDoesNotLeakIntoMyFeed() {
+    public void OtherUsersPrivateGroupAppearsInDirectory() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string requesterAuthToken = CreateUser(testingMockProvidersContainer, "Requester");
         Guid otherOwnerUserAccountId = SeedUser("Other Owner", null);
         Guid privateGroupId = CreateActiveGroup(otherOwnerUserAccountId, "Other Private Group", false);
         AddActiveMember(privateGroupId, SeedUser("Other Member", null));
 
-        JsonElement root = List(testingMockProvidersContainer, requesterAuthToken);
+        JsonElement group = GetGroup(List(testingMockProvidersContainer, requesterAuthToken), privateGroupId);
 
-        Assert.False(ContainsGroup(root, privateGroupId));
+        Assert.False(group.GetProperty("joined").GetBoolean());
+        Assert.Equal(2, group.GetProperty("memberCount").GetInt32());
+        Assert.Equal(0, group.GetProperty("helpers").GetArrayLength());
     }
 
     [Fact]
-    public void ReturnsMostRecentlyActiveGroupFirst() {
+    public void OwnedGroupAppearsBeforeOtherGroupEvenIfOlder() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
-        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
-        Guid ownerUserAccountId = ResolveUserAccountId(ownerAuthToken);
-        Guid olderGroupId = CreateActiveGroup(ownerUserAccountId, "Older Group", true);
-        Guid newerGroupId = CreateActiveGroup(ownerUserAccountId, "Newer Group", true);
-        SetGroupLastSeen(olderGroupId, DateTime.UtcNow.AddMinutes(-30));
-        SetGroupLastSeen(newerGroupId, DateTime.UtcNow);
+        string meAuthToken = CreateUser(testingMockProvidersContainer, "Me");
+        Guid myOldGroupId = CreateActiveGroup(ResolveUserAccountId(meAuthToken), "My Old Group", true);
+        Guid otherNewGroupId = CreateActiveGroup(SeedUser("Other Owner", null), "Other New Group", true);
+        SetGroupCreatedAt(myOldGroupId, DateTime.UtcNow.AddDays(-10));
+        SetGroupCreatedAt(otherNewGroupId, DateTime.UtcNow);
 
-        JsonElement root = List(testingMockProvidersContainer, ownerAuthToken);
+        JsonElement root = List(testingMockProvidersContainer, meAuthToken);
 
-        Assert.Equal(newerGroupId.ToString(), root[0].GetProperty("id").GetString());
+        Assert.True(IndexOfGroup(root, myOldGroupId) < IndexOfGroup(root, otherNewGroupId));
+    }
+
+    [Fact]
+    public void OwnedGroupsOrderedByMostRecentlyCreatedFirst() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string meAuthToken = CreateUser(testingMockProvidersContainer, "Me");
+        Guid meUserAccountId = ResolveUserAccountId(meAuthToken);
+        Guid olderGroupId = CreateActiveGroup(meUserAccountId, "Older Owned", true);
+        Guid newerGroupId = CreateActiveGroup(meUserAccountId, "Newer Owned", true);
+        SetGroupCreatedAt(olderGroupId, DateTime.UtcNow.AddMinutes(-30));
+        SetGroupCreatedAt(newerGroupId, DateTime.UtcNow);
+
+        JsonElement root = List(testingMockProvidersContainer, meAuthToken);
+
+        Assert.True(IndexOfGroup(root, newerGroupId) < IndexOfGroup(root, olderGroupId));
+    }
+
+    [Fact]
+    public void JoinedGroupAppearsBeforePendingGroup() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string meAuthToken = CreateUser(testingMockProvidersContainer, "Me");
+        Guid meUserAccountId = ResolveUserAccountId(meAuthToken);
+        Guid joinedGroupId = CreateActiveGroup(SeedUser("Owner A", null), "Joined Group", true);
+        AddActiveMember(joinedGroupId, meUserAccountId);
+        Guid pendingGroupId = CreateActiveGroup(SeedUser("Owner B", null), "Pending Group", false);
+        AddPendingMember(pendingGroupId, meUserAccountId);
+
+        JsonElement root = List(testingMockProvidersContainer, meAuthToken);
+
+        Assert.True(IndexOfGroup(root, joinedGroupId) < IndexOfGroup(root, pendingGroupId));
+    }
+
+    [Fact]
+    public void PendingGroupAppearsBeforeUnrelatedGroup() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string meAuthToken = CreateUser(testingMockProvidersContainer, "Me");
+        Guid meUserAccountId = ResolveUserAccountId(meAuthToken);
+        Guid pendingGroupId = CreateActiveGroup(SeedUser("Owner A", null), "Pending Group", false);
+        AddPendingMember(pendingGroupId, meUserAccountId);
+        Guid unrelatedGroupId = CreateActiveGroup(SeedUser("Owner B", null), "Unrelated Group", true);
+
+        JsonElement root = List(testingMockProvidersContainer, meAuthToken);
+
+        Assert.True(IndexOfGroup(root, pendingGroupId) < IndexOfGroup(root, unrelatedGroupId));
+    }
+
+    [Fact]
+    public void MoreRecentlyJoinedGroupAppearsFirst() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string meAuthToken = CreateUser(testingMockProvidersContainer, "Me");
+        Guid meUserAccountId = ResolveUserAccountId(meAuthToken);
+        Guid joinedEarlierGroupId = CreateActiveGroup(SeedUser("Owner A", null), "Joined Earlier", true);
+        Guid joinedLaterGroupId = CreateActiveGroup(SeedUser("Owner B", null), "Joined Later", true);
+        AddActiveMemberAt(joinedEarlierGroupId, meUserAccountId, DateTime.UtcNow.AddMinutes(-30));
+        AddActiveMemberAt(joinedLaterGroupId, meUserAccountId, DateTime.UtcNow);
+
+        JsonElement root = List(testingMockProvidersContainer, meAuthToken);
+
+        Assert.True(IndexOfGroup(root, joinedLaterGroupId) < IndexOfGroup(root, joinedEarlierGroupId));
+    }
+
+    [Fact]
+    public void MoreRecentlyRequestedPendingGroupAppearsFirst() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string meAuthToken = CreateUser(testingMockProvidersContainer, "Me");
+        Guid meUserAccountId = ResolveUserAccountId(meAuthToken);
+        Guid requestedYesterdayGroupId = CreateActiveGroup(SeedUser("Owner A", null), "Requested Yesterday", false);
+        Guid requestedTodayGroupId = CreateActiveGroup(SeedUser("Owner B", null), "Requested Today", false);
+        AddPendingMemberAt(requestedYesterdayGroupId, meUserAccountId, DateTime.UtcNow.AddDays(-1));
+        AddPendingMemberAt(requestedTodayGroupId, meUserAccountId, DateTime.UtcNow);
+
+        JsonElement root = List(testingMockProvidersContainer, meAuthToken);
+
+        Assert.True(IndexOfGroup(root, requestedTodayGroupId) < IndexOfGroup(root, requestedYesterdayGroupId));
+    }
+
+    [Fact]
+    public void DefaultOrderIsCreatedThenJoinedThenPendingThenOthers() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string meAuthToken = CreateUser(testingMockProvidersContainer, "Me");
+        Guid meUserAccountId = ResolveUserAccountId(meAuthToken);
+        Guid ownedGroupId = CreateActiveGroup(meUserAccountId, "Owned", true);
+        Guid joinedGroupId = CreateActiveGroup(SeedUser("Owner B", null), "Joined", true);
+        AddActiveMember(joinedGroupId, meUserAccountId);
+        Guid pendingGroupId = CreateActiveGroup(SeedUser("Owner C", null), "Pending", false);
+        AddPendingMember(pendingGroupId, meUserAccountId);
+        Guid otherGroupId = CreateActiveGroup(SeedUser("Owner D", null), "Other", true);
+
+        JsonElement root = List(testingMockProvidersContainer, meAuthToken);
+
+        Assert.True(IndexOfGroup(root, ownedGroupId) < IndexOfGroup(root, joinedGroupId));
+        Assert.True(IndexOfGroup(root, joinedGroupId) < IndexOfGroup(root, pendingGroupId));
+        Assert.True(IndexOfGroup(root, pendingGroupId) < IndexOfGroup(root, otherGroupId));
     }
 
     // Tests - Avatar Correctness And Cross Contamination
@@ -464,10 +561,24 @@ public class ListChatGroupsTest {
         dbContext.SaveChanges();
     }
 
-    private static void SetGroupLastSeen(Guid groupId, DateTime lastSeenAtUtc) {
+    private static void SetGroupCreatedAt(Guid groupId, DateTime createdAtUtc) {
         using var dbContext = HappyPlaceDbContext.Create();
         ChatGroup chatGroup = dbContext.ChatGroups.Single(field => field.Id == groupId);
-        chatGroup.LastSeenAtUtc = lastSeenAtUtc;
+        chatGroup.CreatedAtUtc = createdAtUtc;
+        dbContext.SaveChanges();
+    }
+
+    private static void AddActiveMemberAt(Guid groupId, Guid userAccountId, DateTime joinedAtUtc) {
+        AddMemberAt(groupId, userAccountId, ChatGroupMemberStatus.Active, joinedAtUtc);
+    }
+
+    private static void AddPendingMemberAt(Guid groupId, Guid userAccountId, DateTime joinedAtUtc) {
+        AddMemberAt(groupId, userAccountId, ChatGroupMemberStatus.Pending, joinedAtUtc);
+    }
+
+    private static void AddMemberAt(Guid groupId, Guid userAccountId, ChatGroupMemberStatus status, DateTime joinedAtUtc) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        dbContext.ChatGroupMembers.Add(new ChatGroupMember { Id = Guid.NewGuid(), ChatGroupId = groupId, UserAccountId = userAccountId, MemberRole = ChatGroupMemberRole.Member, Status = status, JoinedAtUtc = joinedAtUtc });
         dbContext.SaveChanges();
     }
 
@@ -491,6 +602,17 @@ public class ListChatGroupsTest {
         foreach (JsonElement element in root.EnumerateArray())
             if (element.GetProperty("id").GetString() == target)
                 return element;
+        throw new InvalidOperationException("Chat group was not present in the response.");
+    }
+
+    private static int IndexOfGroup(JsonElement root, Guid groupId) {
+        string target = groupId.ToString();
+        int index = 0;
+        foreach (JsonElement element in root.EnumerateArray()) {
+            if (element.GetProperty("id").GetString() == target)
+                return index;
+            index++;
+        }
         throw new InvalidOperationException("Chat group was not present in the response.");
     }
 }

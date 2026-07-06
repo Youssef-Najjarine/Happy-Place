@@ -18,39 +18,39 @@ public static class ChatGroupManager {
             return [];
         using var dbContext = HappyPlaceDbContext.Create();
 
-        HashSet<Guid> activeGroupIds = [.. dbContext.ChatGroupMembers
-            .Where(field => field.UserAccountId == userAccountId.Value && field.Status == ChatGroupMemberStatus.Active)
-            .Select(field => field.ChatGroupId)];
-        HashSet<Guid> pendingGroupIds = [.. dbContext.ChatGroupMembers
-            .Where(field => field.UserAccountId == userAccountId.Value && field.Status == ChatGroupMemberStatus.Pending)
-            .Select(field => field.ChatGroupId)];
-        HashSet<Guid> myGroupIds = [.. activeGroupIds];
-        myGroupIds.UnionWith(pendingGroupIds);
+        List<ChatGroupMember> myMemberships = [.. dbContext.ChatGroupMembers
+            .Where(field => field.UserAccountId == userAccountId.Value)];
+        HashSet<Guid> activeGroupIds = [.. myMemberships.Where(field => field.Status == ChatGroupMemberStatus.Active).Select(field => field.ChatGroupId)];
+        HashSet<Guid> pendingGroupIds = [.. myMemberships.Where(field => field.Status == ChatGroupMemberStatus.Pending).Select(field => field.ChatGroupId)];
+        Dictionary<Guid, DateTime> myJoinedAtByGroup = myMemberships.ToDictionary(field => field.ChatGroupId, field => field.JoinedAtUtc);
 
-        List<ChatGroup> candidateGroups = [.. dbContext.ChatGroups
-            .Where(field => field.Status == ChatGroupStatus.Active && (field.IsPublic || myGroupIds.Contains(field.Id)))
-            .OrderByDescending(field => field.LastSeenAtUtc)];
-        if (candidateGroups.Count == 0)
+        List<ChatGroup> activeGroups = [.. dbContext.ChatGroups
+            .Where(field => field.Status == ChatGroupStatus.Active)];
+        if (activeGroups.Count == 0)
             return [];
 
-        List<Guid> candidateGroupIds = [.. candidateGroups.Select(field => field.Id)];
+        List<Guid> activeGroupIdList = [.. activeGroups.Select(field => field.Id)];
 
         Dictionary<Guid, int> memberCounts = dbContext.ChatGroupMembers
-            .Where(field => candidateGroupIds.Contains(field.ChatGroupId) && field.Status == ChatGroupMemberStatus.Active)
+            .Where(field => activeGroupIdList.Contains(field.ChatGroupId) && field.Status == ChatGroupMemberStatus.Active)
             .GroupBy(field => field.ChatGroupId)
             .Select(group => new { ChatGroupId = group.Key, Count = group.Count() })
             .ToDictionary(row => row.ChatGroupId, row => row.Count);
 
         HashSet<Guid> groupIdsWithPendingMembers = [.. dbContext.ChatGroupMembers
-            .Where(field => candidateGroupIds.Contains(field.ChatGroupId) && field.Status == ChatGroupMemberStatus.Pending)
+            .Where(field => activeGroupIdList.Contains(field.ChatGroupId) && field.Status == ChatGroupMemberStatus.Pending)
             .Select(field => field.ChatGroupId)
             .Distinct()];
 
-        List<Guid> avatarGroupIds = [.. candidateGroups.Where(field => activeGroupIds.Contains(field.Id)).Select(field => field.Id)];
+        List<Guid> avatarGroupIds = [.. activeGroups.Where(field => field.IsPublic || activeGroupIds.Contains(field.Id)).Select(field => field.Id)];
         Dictionary<Guid, List<ChatGroupHelperAvatar>> helpersByGroup = LoadHelperAvatars(dbContext, avatarGroupIds);
 
+        List<ChatGroup> orderedGroups = [.. activeGroups
+            .OrderBy(group => FeedBucketRank(group, userAccountId.Value, activeGroupIds, pendingGroupIds))
+            .ThenByDescending(group => FeedSortTimestamp(group, userAccountId.Value, activeGroupIds, pendingGroupIds, myJoinedAtByGroup))];
+
         List<ChatGroupSummaryResult> results = [];
-        foreach (ChatGroup group in candidateGroups) {
+        foreach (ChatGroup group in orderedGroups) {
             bool owner = group.OwnerUserAccountId == userAccountId.Value;
             bool joined = activeGroupIds.Contains(group.Id);
             bool joinRequest = pendingGroupIds.Contains(group.Id);
@@ -98,7 +98,7 @@ public static class ChatGroupManager {
         if (chatGroup == null || chatGroup.Status != ChatGroupStatus.Active)
             return ChatGroupMembersResult.Empty();
         bool callerIsActiveMember = dbContext.ChatGroupMembers.Any(field => field.ChatGroupId == chatGroupId && field.UserAccountId == userAccountId.Value && field.Status == ChatGroupMemberStatus.Active);
-        if (!callerIsActiveMember)
+        if (!chatGroup.IsPublic && !callerIsActiveMember)
             return ChatGroupMembersResult.Empty();
 
         List<ChatGroupMember> activeMembers = [.. dbContext.ChatGroupMembers
@@ -277,6 +277,22 @@ public static class ChatGroupManager {
             entries.Add(new ChatGroupMemberEntry(user.Id.ToString(), user.DisplayName, user.Username, user.ProfilePhotoUrl, UserAccountRegistrar.GetAvatarColor(user.Id), user.Id == ownerUserAccountId));
         }
         return entries;
+    }
+
+    private static int FeedBucketRank(ChatGroup group, Guid userAccountId, HashSet<Guid> activeGroupIds, HashSet<Guid> pendingGroupIds) {
+        if (group.OwnerUserAccountId == userAccountId)
+            return 0;
+        if (activeGroupIds.Contains(group.Id))
+            return 1;
+        if (pendingGroupIds.Contains(group.Id))
+            return 2;
+        return 3;
+    }
+
+    private static DateTime FeedSortTimestamp(ChatGroup group, Guid userAccountId, HashSet<Guid> activeGroupIds, HashSet<Guid> pendingGroupIds, Dictionary<Guid, DateTime> myJoinedAtByGroup) {
+        if (group.OwnerUserAccountId != userAccountId && (activeGroupIds.Contains(group.Id) || pendingGroupIds.Contains(group.Id)) && myJoinedAtByGroup.TryGetValue(group.Id, out DateTime joinedAt))
+            return joinedAt;
+        return group.CreatedAtUtc;
     }
 
     private static bool IsOwnedActiveGroup(ChatGroup chatGroup, Guid userAccountId) {

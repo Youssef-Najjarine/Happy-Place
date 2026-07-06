@@ -78,18 +78,18 @@ public class RemoveMemberTest {
     }
 
     [Fact]
-    public void RemovedMemberNoLongerSeesPrivateGroupInFeed() {
+    public void RemovedMemberNoLongerJoinedInPrivateGroupFeed() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
         string memberAuthToken = CreateUser(testingMockProvidersContainer, "Member");
         Guid memberUserAccountId = ResolveUserAccountId(memberAuthToken);
         Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "Private Group", false);
         AddActiveMember(groupId, memberUserAccountId);
-        Assert.True(ListContainsGroup(testingMockProvidersContainer, memberAuthToken, groupId));
+        Assert.True(GetGroupFromList(testingMockProvidersContainer, memberAuthToken, groupId).GetProperty("joined").GetBoolean());
 
         RemoveMember(testingMockProvidersContainer, ownerAuthToken, groupId, memberUserAccountId);
 
-        Assert.False(ListContainsGroup(testingMockProvidersContainer, memberAuthToken, groupId));
+        Assert.False(GetGroupFromList(testingMockProvidersContainer, memberAuthToken, groupId).GetProperty("joined").GetBoolean());
     }
 
     [Fact]
@@ -308,13 +308,13 @@ public class RemoveMemberTest {
         return testingMockProvidersContainer.WebClient.PostJson("api/chatGroup/listMembers", new { AuthToken = authToken, ChatGroupId = chatGroupId }).ReadContentAsJsonDocument().RootElement.Clone();
     }
 
-    private static bool ListContainsGroup(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId) {
-        JsonElement root = testingMockProvidersContainer.WebClient.PostJson("api/chatGroup/list", new { AuthToken = authToken }).ReadContentAsJsonDocument().RootElement;
+    private static JsonElement GetGroupFromList(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId) {
+        JsonElement root = testingMockProvidersContainer.WebClient.PostJson("api/chatGroup/list", new { AuthToken = authToken }).ReadContentAsJsonDocument().RootElement.Clone();
         string target = chatGroupId.ToString();
         foreach (JsonElement element in root.EnumerateArray())
             if (element.GetProperty("id").GetString() == target)
-                return true;
-        return false;
+                return element;
+        throw new InvalidOperationException("Chat group was not present in the response.");
     }
 
     private static List<Exception> RunConcurrently(params Action[] actions) {

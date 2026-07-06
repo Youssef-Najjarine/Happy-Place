@@ -139,29 +139,29 @@ public class ChatGroupVisibilityTest {
     // Tests - Effect On Discovery
 
     [Fact]
-    public void MakingGroupPrivateRemovesItFromStrangerDiscovery() {
+    public void MakingGroupPrivateKeepsItVisibleButNotPublic() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
         string strangerAuthToken = CreateUser(testingMockProvidersContainer, "Stranger");
         Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "Public Group", true);
-        Assert.True(ListContainsGroup(testingMockProvidersContainer, strangerAuthToken, groupId));
+        Assert.True(GetGroupFromList(testingMockProvidersContainer, strangerAuthToken, groupId).GetProperty("isPublic").GetBoolean());
 
         SetVisibility(testingMockProvidersContainer, ownerAuthToken, groupId, false);
 
-        Assert.False(ListContainsGroup(testingMockProvidersContainer, strangerAuthToken, groupId));
+        Assert.False(GetGroupFromList(testingMockProvidersContainer, strangerAuthToken, groupId).GetProperty("isPublic").GetBoolean());
     }
 
     [Fact]
-    public void MakingGroupPublicAddsItToStrangerDiscovery() {
+    public void MakingGroupPublicKeepsItVisibleAndMarksPublic() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
         string strangerAuthToken = CreateUser(testingMockProvidersContainer, "Stranger");
         Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "Private Group", false);
-        Assert.False(ListContainsGroup(testingMockProvidersContainer, strangerAuthToken, groupId));
+        Assert.False(GetGroupFromList(testingMockProvidersContainer, strangerAuthToken, groupId).GetProperty("isPublic").GetBoolean());
 
         SetVisibility(testingMockProvidersContainer, ownerAuthToken, groupId, true);
 
-        Assert.True(ListContainsGroup(testingMockProvidersContainer, strangerAuthToken, groupId));
+        Assert.True(GetGroupFromList(testingMockProvidersContainer, strangerAuthToken, groupId).GetProperty("isPublic").GetBoolean());
     }
 
     // Tests - Response Shape
@@ -235,6 +235,15 @@ public class ChatGroupVisibilityTest {
             if (element.GetProperty("id").GetString() == target)
                 return true;
         return false;
+    }
+
+    private static JsonElement GetGroupFromList(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId) {
+        JsonElement root = testingMockProvidersContainer.WebClient.PostJson("api/chatGroup/list", new { AuthToken = authToken }).ReadContentAsJsonDocument().RootElement.Clone();
+        string target = chatGroupId.ToString();
+        foreach (JsonElement element in root.EnumerateArray())
+            if (element.GetProperty("id").GetString() == target)
+                return element;
+        throw new InvalidOperationException("Chat group was not present in the response.");
     }
 
     // Helpers - Seeding

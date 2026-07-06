@@ -64,18 +64,18 @@ public class RejectMemberTest {
     }
 
     [Fact]
-    public void RejectedMemberNoLongerSeesPrivateGroupInFeed() {
+    public void RejectedRequesterNoLongerHasJoinRequestInFeed() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
         string requesterAuthToken = CreateUser(testingMockProvidersContainer, "Requester");
         Guid requesterUserAccountId = ResolveUserAccountId(requesterAuthToken);
         Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "Private Group", false);
         AddPendingMember(groupId, requesterUserAccountId);
-        Assert.True(ListContainsGroup(testingMockProvidersContainer, requesterAuthToken, groupId));
+        Assert.True(GetGroupFromList(testingMockProvidersContainer, requesterAuthToken, groupId).GetProperty("joinRequest").GetBoolean());
 
         RejectMember(testingMockProvidersContainer, ownerAuthToken, groupId, requesterUserAccountId);
 
-        Assert.False(ListContainsGroup(testingMockProvidersContainer, requesterAuthToken, groupId));
+        Assert.False(GetGroupFromList(testingMockProvidersContainer, requesterAuthToken, groupId).GetProperty("joinRequest").GetBoolean());
     }
 
     [Fact]
@@ -199,15 +199,6 @@ public class RejectMemberTest {
 
     private static JsonElement RejectMember(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId, Guid memberUserAccountId) {
         return testingMockProvidersContainer.WebClient.PostJson("api/chatGroup/rejectMember", new { AuthToken = authToken, ChatGroupId = chatGroupId, MemberUserAccountId = memberUserAccountId }).ReadContentAsJsonDocument().RootElement.Clone();
-    }
-
-    private static bool ListContainsGroup(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId) {
-        JsonElement root = testingMockProvidersContainer.WebClient.PostJson("api/chatGroup/list", new { AuthToken = authToken }).ReadContentAsJsonDocument().RootElement;
-        string target = chatGroupId.ToString();
-        foreach (JsonElement element in root.EnumerateArray())
-            if (element.GetProperty("id").GetString() == target)
-                return true;
-        return false;
     }
 
     private static JsonElement GetGroupFromList(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId) {

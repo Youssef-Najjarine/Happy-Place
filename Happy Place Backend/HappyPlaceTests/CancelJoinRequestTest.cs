@@ -115,16 +115,16 @@ public class CancelJoinRequestTest {
     // Tests - Effect On Feed
 
     [Fact]
-    public void CancelledRequesterNoLongerSeesPrivateGroupInFeed() {
+    public void CancelledRequesterNoLongerHasJoinRequestInFeed() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string requesterAuthToken = CreateUser(testingMockProvidersContainer, "Requester");
         Guid groupId = CreateActiveGroup(SeedUser("Owner", null), "Private Group", false);
         AddPendingMember(groupId, ResolveUserAccountId(requesterAuthToken));
-        Assert.True(ListContainsGroup(testingMockProvidersContainer, requesterAuthToken, groupId));
+        Assert.True(GetGroupFromList(testingMockProvidersContainer, requesterAuthToken, groupId).GetProperty("joinRequest").GetBoolean());
 
         CancelJoinRequest(testingMockProvidersContainer, requesterAuthToken, groupId);
 
-        Assert.False(ListContainsGroup(testingMockProvidersContainer, requesterAuthToken, groupId));
+        Assert.False(GetGroupFromList(testingMockProvidersContainer, requesterAuthToken, groupId).GetProperty("joinRequest").GetBoolean());
     }
 
     // Tests - Response Shape
@@ -171,13 +171,13 @@ public class CancelJoinRequestTest {
         return testingMockProvidersContainer.WebClient.PostJson("api/chatGroup/cancelJoinRequest", new { AuthToken = authToken, ChatGroupId = chatGroupId }).ReadContentAsJsonDocument().RootElement.Clone();
     }
 
-    private static bool ListContainsGroup(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId) {
-        JsonElement root = testingMockProvidersContainer.WebClient.PostJson("api/chatGroup/list", new { AuthToken = authToken }).ReadContentAsJsonDocument().RootElement;
+    private static JsonElement GetGroupFromList(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId) {
+        JsonElement root = testingMockProvidersContainer.WebClient.PostJson("api/chatGroup/list", new { AuthToken = authToken }).ReadContentAsJsonDocument().RootElement.Clone();
         string target = chatGroupId.ToString();
         foreach (JsonElement element in root.EnumerateArray())
             if (element.GetProperty("id").GetString() == target)
-                return true;
-        return false;
+                return element;
+        throw new InvalidOperationException("Chat group was not present in the response.");
     }
 
     // Helpers - Seeding

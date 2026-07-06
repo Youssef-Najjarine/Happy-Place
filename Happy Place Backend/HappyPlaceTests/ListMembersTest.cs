@@ -72,14 +72,31 @@ public class ListMembersTest {
     }
 
     [Fact]
-    public void StrangerGetsEmptyLists() {
+    public void StrangerGetsEmptyListsForPrivateGroup() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string strangerAuthToken = CreateUser(testingMockProvidersContainer, "Stranger");
-        Guid groupId = CreateActiveGroup(SeedUser("Owner", null), "Public Group", true);
+        Guid groupId = CreateActiveGroup(SeedUser("Owner", null), "Private Group", false);
 
         JsonElement root = ListMembers(testingMockProvidersContainer, strangerAuthToken, groupId);
 
         Assert.Equal(0, root.GetProperty("members").GetArrayLength());
+        Assert.Equal(0, root.GetProperty("pendingMembers").GetArrayLength());
+    }
+
+    [Fact]
+    public void StrangerSeesRosterButNoPendingForPublicGroup() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        string strangerAuthToken = CreateUser(testingMockProvidersContainer, "Stranger");
+        Guid ownerUserAccountId = ResolveUserAccountId(ownerAuthToken);
+        Guid memberUserAccountId = SeedUser("Member", null);
+        Guid groupId = CreateActiveGroup(ownerUserAccountId, "Public Group", true);
+        AddActiveMember(groupId, memberUserAccountId);
+
+        JsonElement root = ListMembers(testingMockProvidersContainer, strangerAuthToken, groupId);
+
+        Assert.True(ContainsUser(root.GetProperty("members"), ownerUserAccountId));
+        Assert.True(ContainsUser(root.GetProperty("members"), memberUserAccountId));
         Assert.Equal(0, root.GetProperty("pendingMembers").GetArrayLength());
     }
 
