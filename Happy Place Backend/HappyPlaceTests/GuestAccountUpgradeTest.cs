@@ -351,7 +351,7 @@ public class GuestAccountUpgradeTest {
 
     private static Guid GroupOwner(Guid chatGroupId) {
         using var dbContext = HappyPlaceDbContext.Create();
-        return dbContext.ChatGroups.Single(field => field.Id == chatGroupId).OwnerUserAccountId;
+        return (Guid)dbContext.ChatGroups.Single(field => field.Id == chatGroupId).OwnerUserAccountId;
     }
 
     private static ChatGroupStatus GroupStatus(Guid chatGroupId) {

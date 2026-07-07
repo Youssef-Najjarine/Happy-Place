@@ -52,9 +52,9 @@ public static class NotificationDispatchManager {
         try {
             using var dbContext = HappyPlaceDbContext.Create();
             ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId);
-            if (chatGroup == null)
+            if (chatGroup == null || chatGroup.OwnerUserAccountId == null)
                 return;
-            EnsureOffersChannel(chatGroupId, chatGroup.OwnerUserAccountId);
+            EnsureOffersChannel(chatGroupId, chatGroup.OwnerUserAccountId.Value);
             MarkDirty(dbContext.NotificationChannels.Where(field => field.Kind == NotificationChannelKind.Offers && field.ScopeChatGroupId == chatGroupId));
         }
         catch (Exception) {

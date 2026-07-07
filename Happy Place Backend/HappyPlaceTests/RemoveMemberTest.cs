@@ -294,6 +294,22 @@ public class RemoveMemberTest {
         Assert.Equal(expectedProperties, actualProperties);
     }
 
+    // Tests - Help Offer Cleanup
+
+    [Fact]
+    public void RemovingMemberReleasesTheirConnectedOffer() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid memberUserAccountId = SeedUser("Member", null);
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "Private Group", false);
+        AddActiveMember(groupId, memberUserAccountId);
+        SeedConnectedOffer(groupId, memberUserAccountId);
+
+        RemoveMember(testingMockProvidersContainer, ownerAuthToken, groupId, memberUserAccountId);
+
+        Assert.Equal(HelpOfferStatus.Released, GetOfferStatus(groupId, memberUserAccountId));
+    }
+
     // Helpers - Acting
 
     private static string CreateUser(TestingMockProvidersContainer testingMockProvidersContainer, string name) {
@@ -379,6 +395,18 @@ public class RemoveMemberTest {
     }
 
     // Helpers - Reading
+
+    private static void SeedConnectedOffer(Guid groupId, Guid helperUserAccountId) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        DateTime now = DateTime.UtcNow;
+        dbContext.HelpOffers.Add(new HelpOffer { Id = Guid.NewGuid(), ChatGroupId = groupId, HelperUserAccountId = helperUserAccountId, Status = HelpOfferStatus.Connected, CreatedAtUtc = now, LastSeenAtUtc = now });
+        dbContext.SaveChanges();
+    }
+
+    private static HelpOfferStatus GetOfferStatus(Guid groupId, Guid helperUserAccountId) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        return dbContext.HelpOffers.Single(field => field.ChatGroupId == groupId && field.HelperUserAccountId == helperUserAccountId).Status;
+    }
 
     private static bool MembershipExists(Guid groupId, Guid userAccountId) {
         using var dbContext = HappyPlaceDbContext.Create();

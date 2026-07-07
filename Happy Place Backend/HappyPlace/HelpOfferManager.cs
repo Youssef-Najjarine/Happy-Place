@@ -71,6 +71,8 @@ public static class HelpOfferManager {
             return HelpJoinResult.Joined(chatGroup.Id, chatGroup.Name);
         dbContext.ChatGroupMembers.Add(new() { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, UserAccountId = userAccountId.Value, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = now });
         TrySaveChanges(dbContext);
+        if (chatGroup.OwnerUserAccountId == null)
+            ClaimOwnershipIfUnowned(dbContext, chatGroupId, userAccountId.Value);
         return HelpJoinResult.Joined(chatGroup.Id, chatGroup.Name);
     }
 
@@ -170,6 +172,17 @@ public static class HelpOfferManager {
         existingOffer.Status = status;
         existingOffer.LastSeenAtUtc = now;
         TrySaveChanges(dbContext);
+    }
+
+    private static void ClaimOwnershipIfUnowned(HappyPlaceDbContext dbContext, Guid chatGroupId, Guid userAccountId) {
+        int claimed = dbContext.ChatGroups
+            .Where(field => field.Id == chatGroupId && field.OwnerUserAccountId == null)
+            .ExecuteUpdate(setters => setters.SetProperty(field => field.OwnerUserAccountId, (Guid?)userAccountId));
+        if (claimed != 1)
+            return;
+        dbContext.ChatGroupMembers
+            .Where(field => field.ChatGroupId == chatGroupId && field.UserAccountId == userAccountId && field.Status == ChatGroupMemberStatus.Active)
+            .ExecuteUpdate(setters => setters.SetProperty(field => field.MemberRole, ChatGroupMemberRole.Owner));
     }
 
     private static void TrySaveChanges(HappyPlaceDbContext dbContext) {

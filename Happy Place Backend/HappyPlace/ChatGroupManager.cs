@@ -9,6 +9,7 @@ public static class ChatGroupManager {
     private static readonly int MaxHelperAvatars = 5;
     private static readonly int MaxAvailableHelpers = 50;
     private static readonly int MaxChatGroupNameLength = 100;
+    private static readonly int MaxOwnerLeaveAttempts = 5;
 
     // Methods - Reads
 
@@ -166,18 +167,25 @@ public static class ChatGroupManager {
 
     // Methods - Membership
 
-    public static ChatGroupLeaveResult Leave(string authToken, Guid chatGroupId) {
+    public static ChatGroupLeaveResult Leave(string authToken, Guid chatGroupId, ChatGroupLeaveDisposition disposition) {
         Guid? userAccountId = HelpParticipant.ResolveUserAccountId(authToken);
         if (userAccountId == null)
             return ChatGroupLeaveResult.NotMember();
-        using var dbContext = HappyPlaceDbContext.Create();
-        ChatGroupMember membership = dbContext.ChatGroupMembers.SingleOrDefault(field => field.ChatGroupId == chatGroupId && field.UserAccountId == userAccountId.Value && field.Status == ChatGroupMemberStatus.Active);
-        if (membership == null)
-            return ChatGroupLeaveResult.NotMember();
-        if (membership.MemberRole == ChatGroupMemberRole.Owner)
-            return ChatGroupLeaveResult.OwnerCannotLeave();
-        dbContext.ChatGroupMembers.Where(field => field.Id == membership.Id).ExecuteDelete();
-        return ChatGroupLeaveResult.Left();
+        for (int attempt = 0; attempt < MaxOwnerLeaveAttempts; attempt++) {
+            using var dbContext = HappyPlaceDbContext.Create();
+            ChatGroupMember membership = dbContext.ChatGroupMembers.SingleOrDefault(field => field.ChatGroupId == chatGroupId && field.UserAccountId == userAccountId.Value && field.Status == ChatGroupMemberStatus.Active);
+            if (membership == null)
+                return ChatGroupLeaveResult.NotMember();
+            if (membership.MemberRole != ChatGroupMemberRole.Owner) {
+                dbContext.ChatGroupMembers.Where(field => field.Id == membership.Id).ExecuteDelete();
+                ReleaseConnectedOffer(dbContext, chatGroupId, userAccountId.Value);
+                return ChatGroupLeaveResult.Left();
+            }
+            ChatGroupLeaveResult ownerResult = TryOwnerLeave(dbContext, chatGroupId, userAccountId.Value, membership.Id, disposition);
+            if (ownerResult != null)
+                return ownerResult;
+        }
+        return ChatGroupLeaveResult.NotMember();
     }
 
     public static ChatGroupJoinRequestResult RequestToJoin(string authToken, Guid chatGroupId) {
@@ -264,12 +272,88 @@ public static class ChatGroupManager {
             .ExecuteDelete();
         if (removedCount == 0)
             return ChatGroupRemoveResult.NotMember();
+        dbContext.HelpOffers
+            .Where(field => field.ChatGroupId == chatGroupId && field.HelperUserAccountId == memberUserAccountId && field.Status == HelpOfferStatus.Connected)
+            .ExecuteUpdate(setters => setters.SetProperty(field => field.Status, HelpOfferStatus.Released));
         return ChatGroupRemoveResult.Removed();
+    }
+
+    // Helpers - Owner Leave
+
+    private static ChatGroupLeaveResult TryOwnerLeave(HappyPlaceDbContext dbContext, Guid chatGroupId, Guid ownerUserAccountId, Guid ownerMembershipId, ChatGroupLeaveDisposition disposition) {
+        try {
+            using var transaction = dbContext.Database.BeginTransaction();
+            int removed = dbContext.ChatGroupMembers
+                .Where(field => field.Id == ownerMembershipId && field.Status == ChatGroupMemberStatus.Active)
+                .ExecuteDelete();
+            if (removed != 1) {
+                transaction.Rollback();
+                return null;
+            }
+            ReleaseConnectedOffer(dbContext, chatGroupId, ownerUserAccountId);
+            ChatGroupMember successor = dbContext.ChatGroupMembers
+                .Where(field => field.ChatGroupId == chatGroupId && field.Status == ChatGroupMemberStatus.Active)
+                .OrderBy(field => field.JoinedAtUtc)
+                .ThenBy(field => field.Id)
+                .FirstOrDefault();
+            if (successor != null) {
+                int promoted = dbContext.ChatGroupMembers
+                    .Where(field => field.Id == successor.Id && field.Status == ChatGroupMemberStatus.Active)
+                    .ExecuteUpdate(setters => setters.SetProperty(field => field.MemberRole, ChatGroupMemberRole.Owner));
+                if (promoted != 1) {
+                    transaction.Rollback();
+                    return null;
+                }
+                dbContext.ChatGroups
+                    .Where(field => field.Id == chatGroupId)
+                    .ExecuteUpdate(setters => setters.SetProperty(field => field.OwnerUserAccountId, (Guid?)successor.UserAccountId));
+                transaction.Commit();
+                return ChatGroupLeaveResult.Transferred();
+            }
+            if (disposition == ChatGroupLeaveDisposition.Delete) {
+                int deleted = dbContext.ChatGroups
+                    .Where(field => field.Id == chatGroupId && !dbContext.ChatGroupMembers.Any(member => member.ChatGroupId == chatGroupId && member.Status == ChatGroupMemberStatus.Active))
+                    .ExecuteDelete();
+                if (deleted != 1) {
+                    transaction.Rollback();
+                    return null;
+                }
+                transaction.Commit();
+                return ChatGroupLeaveResult.Deleted();
+            }
+            if (disposition == ChatGroupLeaveDisposition.MakePublic) {
+                int madePublic = dbContext.ChatGroups
+                    .Where(field => field.Id == chatGroupId && !dbContext.ChatGroupMembers.Any(member => member.ChatGroupId == chatGroupId && member.Status == ChatGroupMemberStatus.Active))
+                    .ExecuteUpdate(setters => setters
+                        .SetProperty(field => field.IsPublic, true)
+                        .SetProperty(field => field.OwnerUserAccountId, (Guid?)null));
+                if (madePublic != 1) {
+                    transaction.Rollback();
+                    return null;
+                }
+                dbContext.ChatGroupMembers
+                    .Where(field => field.ChatGroupId == chatGroupId && field.Status == ChatGroupMemberStatus.Pending)
+                    .ExecuteDelete();
+                transaction.Commit();
+                return ChatGroupLeaveResult.MadePublic();
+            }
+            transaction.Rollback();
+            return ChatGroupLeaveResult.LastOwner();
+        }
+        catch (Exception) {
+            return null;
+        }
+    }
+
+    private static void ReleaseConnectedOffer(HappyPlaceDbContext dbContext, Guid chatGroupId, Guid userAccountId) {
+        dbContext.HelpOffers
+            .Where(field => field.ChatGroupId == chatGroupId && field.HelperUserAccountId == userAccountId && field.Status == HelpOfferStatus.Connected)
+            .ExecuteUpdate(setters => setters.SetProperty(field => field.Status, HelpOfferStatus.Released));
     }
 
     // Helpers
 
-    private static List<ChatGroupMemberEntry> BuildMemberEntries(List<ChatGroupMember> members, Dictionary<Guid, UserAccount> usersById, Guid ownerUserAccountId) {
+    private static List<ChatGroupMemberEntry> BuildMemberEntries(List<ChatGroupMember> members, Dictionary<Guid, UserAccount> usersById, Guid? ownerUserAccountId) {
         List<ChatGroupMemberEntry> entries = [];
         foreach (ChatGroupMember member in members) {
             if (!usersById.TryGetValue(member.UserAccountId, out UserAccount user))

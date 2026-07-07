@@ -4,7 +4,7 @@ CREATE TABLE [dbo].[ChatGroup]
 		constraint [Pk-ChatGroup] PRIMARY KEY clustered
 		constraint [DF-ChatGroup-Id] default newid(),
 	[Name] nvarchar(100) NOT NULL,
-	[OwnerUserAccountId] uniqueidentifier NOT NULL
+	[OwnerUserAccountId] uniqueidentifier NULL
 		constraint [FK-ChatGroup-OwnerUserAccountId]
 		FOREIGN KEY REFERENCES [dbo].[UserAccount]([Id]),
 	[IsPublic] bit NOT NULL
