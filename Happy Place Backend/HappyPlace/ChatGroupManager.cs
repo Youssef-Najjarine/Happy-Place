@@ -13,7 +13,7 @@ public static class ChatGroupManager {
 
     // Methods - Reads
 
-    public static List<ChatGroupSummaryResult> ListForUser(string authToken) {
+    public static List<ChatGroupSummaryResult> ListForUser(string authToken, string sortBy, string search) {
         Guid? userAccountId = HelpParticipant.ResolveUserAccountId(authToken);
         if (userAccountId == null)
             return [];
@@ -25,30 +25,38 @@ public static class ChatGroupManager {
         HashSet<Guid> pendingGroupIds = [.. myMemberships.Where(field => field.Status == ChatGroupMemberStatus.Pending).Select(field => field.ChatGroupId)];
         Dictionary<Guid, DateTime> myJoinedAtByGroup = myMemberships.ToDictionary(field => field.ChatGroupId, field => field.JoinedAtUtc);
 
-        List<ChatGroup> activeGroups = [.. dbContext.ChatGroups
-            .Where(field => field.Status == ChatGroupStatus.Active)];
-        if (activeGroups.Count == 0)
+        ChatGroupSortMode sortMode = ParseSortMode(sortBy);
+        IQueryable<ChatGroup> matchingQuery = dbContext.ChatGroups
+            .Where(field => field.Status == ChatGroupStatus.Active);
+        if (sortMode == ChatGroupSortMode.Public)
+            matchingQuery = matchingQuery.Where(field => field.IsPublic);
+        else if (sortMode == ChatGroupSortMode.Private)
+            matchingQuery = matchingQuery.Where(field => !field.IsPublic);
+        string searchPattern = BuildSearchPattern(search);
+        if (searchPattern != null)
+            matchingQuery = matchingQuery.Where(field => EF.Functions.Like(field.Name, searchPattern));
+
+        List<ChatGroup> matchingGroups = [.. matchingQuery];
+        if (matchingGroups.Count == 0)
             return [];
 
-        List<Guid> activeGroupIdList = [.. activeGroups.Select(field => field.Id)];
+        List<Guid> matchingGroupIdList = [.. matchingGroups.Select(field => field.Id)];
 
         Dictionary<Guid, int> memberCounts = dbContext.ChatGroupMembers
-            .Where(field => activeGroupIdList.Contains(field.ChatGroupId) && field.Status == ChatGroupMemberStatus.Active)
+            .Where(field => matchingGroupIdList.Contains(field.ChatGroupId) && field.Status == ChatGroupMemberStatus.Active)
             .GroupBy(field => field.ChatGroupId)
             .Select(group => new { ChatGroupId = group.Key, Count = group.Count() })
             .ToDictionary(row => row.ChatGroupId, row => row.Count);
 
         HashSet<Guid> groupIdsWithPendingMembers = [.. dbContext.ChatGroupMembers
-            .Where(field => activeGroupIdList.Contains(field.ChatGroupId) && field.Status == ChatGroupMemberStatus.Pending)
+            .Where(field => matchingGroupIdList.Contains(field.ChatGroupId) && field.Status == ChatGroupMemberStatus.Pending)
             .Select(field => field.ChatGroupId)
             .Distinct()];
 
-        List<Guid> avatarGroupIds = [.. activeGroups.Where(field => field.IsPublic || activeGroupIds.Contains(field.Id)).Select(field => field.Id)];
+        List<Guid> avatarGroupIds = [.. matchingGroups.Where(field => field.IsPublic || activeGroupIds.Contains(field.Id)).Select(field => field.Id)];
         Dictionary<Guid, List<ChatGroupHelperAvatar>> helpersByGroup = LoadHelperAvatars(dbContext, avatarGroupIds);
 
-        List<ChatGroup> orderedGroups = [.. activeGroups
-            .OrderBy(group => FeedBucketRank(group, userAccountId.Value, activeGroupIds, pendingGroupIds))
-            .ThenByDescending(group => FeedSortTimestamp(group, userAccountId.Value, activeGroupIds, pendingGroupIds, myJoinedAtByGroup))];
+        List<ChatGroup> orderedGroups = OrderGroups(matchingGroups, sortMode, userAccountId.Value, activeGroupIds, pendingGroupIds, myJoinedAtByGroup, memberCounts);
 
         List<ChatGroupSummaryResult> results = [];
         foreach (ChatGroup group in orderedGroups) {
@@ -397,14 +405,16 @@ public static class ChatGroupManager {
         if (groupIds.Count == 0)
             return helpersByGroup;
 
+        List<ChatGroupMember> activeMembers = [.. dbContext.ChatGroupMembers
+            .Where(field => groupIds.Contains(field.ChatGroupId) && field.Status == ChatGroupMemberStatus.Active)
+            .OrderBy(field => field.ChatGroupId)
+            .ThenBy(field => field.JoinedAtUtc)];
+
         Dictionary<Guid, List<ChatGroupMember>> topMembersByGroup = [];
         List<Guid> neededUserAccountIds = [];
-        foreach (Guid groupId in groupIds) {
-            List<ChatGroupMember> topMembers = [.. dbContext.ChatGroupMembers
-                .Where(field => field.ChatGroupId == groupId && field.Status == ChatGroupMemberStatus.Active)
-                .OrderBy(field => field.JoinedAtUtc)
-                .Take(MaxHelperAvatars)];
-            topMembersByGroup[groupId] = topMembers;
+        foreach (IGrouping<Guid, ChatGroupMember> membersInGroup in activeMembers.GroupBy(field => field.ChatGroupId)) {
+            List<ChatGroupMember> topMembers = [.. membersInGroup.Take(MaxHelperAvatars)];
+            topMembersByGroup[membersInGroup.Key] = topMembers;
             neededUserAccountIds.AddRange(topMembers.Select(member => member.UserAccountId));
         }
 
@@ -429,6 +439,59 @@ public static class ChatGroupManager {
         if (trimmedDisplayName.Length == 0)
             return "?";
         return trimmedDisplayName[..1].ToUpperInvariant();
+    }
+
+    // Helpers - Search And Sort
+
+    private static ChatGroupSortMode ParseSortMode(string sortBy) {
+        string normalizedSortBy = (sortBy ?? "").Trim();
+        if (string.Equals(normalizedSortBy, "Popular", StringComparison.OrdinalIgnoreCase))
+            return ChatGroupSortMode.Popular;
+        if (string.Equals(normalizedSortBy, "Most Active", StringComparison.OrdinalIgnoreCase))
+            return ChatGroupSortMode.MostActive;
+        if (string.Equals(normalizedSortBy, "Public", StringComparison.OrdinalIgnoreCase))
+            return ChatGroupSortMode.Public;
+        if (string.Equals(normalizedSortBy, "Private", StringComparison.OrdinalIgnoreCase))
+            return ChatGroupSortMode.Private;
+        return ChatGroupSortMode.Latest;
+    }
+
+    private static string BuildSearchPattern(string search) {
+        string normalizedSearch = (search ?? "").Trim();
+        if (normalizedSearch.Length == 0)
+            return null;
+        return "%" + EscapeLikePattern(normalizedSearch) + "%";
+    }
+
+    private static string EscapeLikePattern(string value) {
+        return value
+            .Replace("[", "[[]")
+            .Replace("%", "[%]")
+            .Replace("_", "[_]");
+    }
+
+    private static List<ChatGroup> OrderGroups(List<ChatGroup> groups, ChatGroupSortMode sortMode, Guid userAccountId, HashSet<Guid> activeGroupIds, HashSet<Guid> pendingGroupIds, Dictionary<Guid, DateTime> myJoinedAtByGroup, Dictionary<Guid, int> memberCounts) {
+        if (sortMode == ChatGroupSortMode.Popular)
+            return [.. groups
+                .OrderByDescending(group => memberCounts.TryGetValue(group.Id, out int memberCount) ? memberCount : 0)
+                .ThenByDescending(group => group.CreatedAtUtc)
+                .ThenBy(group => group.Id)];
+        if (sortMode == ChatGroupSortMode.MostActive)
+            return [.. groups
+                .OrderByDescending(group => group.LastSeenAtUtc)
+                .ThenByDescending(group => group.CreatedAtUtc)
+                .ThenBy(group => group.Id)];
+        return [.. groups
+            .OrderBy(group => FeedBucketRank(group, userAccountId, activeGroupIds, pendingGroupIds))
+            .ThenByDescending(group => FeedSortTimestamp(group, userAccountId, activeGroupIds, pendingGroupIds, myJoinedAtByGroup))];
+    }
+
+    private enum ChatGroupSortMode : byte {
+        Latest = 0,
+        Popular = 1,
+        MostActive = 2,
+        Public = 3,
+        Private = 4
     }
 
     private static void TrySaveChanges(HappyPlaceDbContext dbContext) {

@@ -1,6 +1,6 @@
 namespace HappyWorld.HappyPlace.Web.Models.ChatGroup;
 
-public record ChatGroupListModel(string AuthToken) {
+public record ChatGroupListModel(string AuthToken, string SortBy = null, string Search = null) {
     // Methods
 
     public bool IsAuthenticated() {
@@ -8,6 +8,6 @@ public record ChatGroupListModel(string AuthToken) {
     }
 
     public List<ChatGroupSummaryResult> Load() {
-        return ChatGroupManager.ListForUser(this.AuthToken);
+        return ChatGroupManager.ListForUser(this.AuthToken, this.SortBy, this.Search);
     }
 }
