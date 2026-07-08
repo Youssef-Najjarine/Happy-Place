@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, TouchableOpacity, StyleSheet, Image, FlatList, useWindowDimensions, Pressable } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import HelpHub from 'src/components/HelpHub';
 import AccountBar from 'src/components/AccountBar';
@@ -22,22 +22,36 @@ import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import EditChatNameModal from 'src/components/EditChatNameModal';
 import DeleteChatGroupModal from 'src/components/DeleteChatGroupModal';
 import LeaveChatGroupModal from 'src/components/LeaveChatGroupModal';
+import LeaveGroupOwnerOptionsModal from 'src/components/LeaveGroupOwnerOptionsModal';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import { tabletBreakpoint } from 'src/constants/breakpoints';
 import CustomText from 'src/components/FontFamilyText';
-import CustomTextInput from 'src/components/FontFamilyTextInput';
 import HappyEmoji from 'assets/images/global/happy-emoji.svg';
-import SearchIcon from 'assets/images/global/search-icon.svg';
-import SortIcon from 'assets/images/chatGroups/sort-icon.svg';
 import LinkIcon from 'assets/images/chatGroups/share-chat-link-icon.svg';
 import EllipsisIcon from 'assets/images/global/three-dots-icon.svg';
 import EditIcon from 'assets/images/global/edit-icon.svg';
-import DownArrowIcon from 'assets/images/global/arrow-down-icon.svg';
 import MembersIcon from 'assets/images/global/members-icon.svg';
+import { SearchAndSortChatGroupsBar, SearchAndSortChatGroupsDropdown } from 'src/components/SearchAndSortChatGroups';
 import PendingMembersCircle from 'assets/images/global/pending-members-circle.svg';
 import PrivateIcon from 'assets/images/global/private-chat-icon.svg';
 import TrashIcon from 'assets/images/global/trash-outline-icon.svg';
+import Avatar from 'src/components/Avatar';
+import tokenStorage from 'src/services/tokenStorage';
+import authenticationService from 'src/services/authenticationService';
+import {
+  useListChatGroupsQuery,
+  useAvailableHelpersQuery,
+  useRenameChatGroupMutation,
+  useSetChatGroupVisibilityMutation,
+  useDeleteChatGroupMutation,
+  useLeaveChatGroupMutation,
+  useRequestToJoinChatGroupMutation,
+  useCancelJoinRequestMutation,
+  useJoinPublicChatGroupMutation,
+} from 'src/store/chatGroupsApi';
+import { useDispatch } from 'react-redux';
+import { showLoading, hideLoading } from 'src/store/loadingSlice';
 
 const ActiveIndexContext = React.createContext(-1);
 const stylesActive = StyleSheet.create({
@@ -57,9 +71,11 @@ function ActiveListCell({ children, index, style, ...props }) {
 const HelperStack = React.memo(
   function HelperStack({
     helpers,
+    total,
     spacing,
     maxVisible = 5,
     imageBaseStyle,
+    initialStyle,
     wrapperStyle,
     stackStyle,
     extraCircleStyle,
@@ -67,6 +83,7 @@ const HelperStack = React.memo(
     TextComponent,
   }) {
     const capped = useMemo(() => helpers.slice(0, maxVisible), [helpers, maxVisible]);
+    const overflow = (total || 0) - capped.length;
 
     return (
       <View style={wrapperStyle}>
@@ -76,20 +93,20 @@ const HelperStack = React.memo(
           shouldRasterizeIOS
           renderToHardwareTextureAndroid
         >
-          {capped.map((h, i) => (
-            <Image
+          {capped.map((helper, i) => (
+            <Avatar
               key={i}
-              source={h.image}
-              defaultSource={h.image}
-              fadeDuration={0}
-              progressiveRenderingEnabled={false}
+              uri={helper.profilePhotoUrl}
+              color={helper.avatarColor}
+              initial={helper.initial}
               style={[imageBaseStyle, { left: i * spacing }]}
+              initialStyle={initialStyle}
             />
           ))}
 
-          {helpers.length > maxVisible && (
-            <View style={[extraCircleStyle, { left: maxVisible * spacing }]}>
-              <TextComponent style={extraTextStyle}>+{helpers.length - maxVisible}</TextComponent>
+          {capped.length > 0 && overflow > 0 && (
+            <View style={[extraCircleStyle, { left: capped.length * spacing }]}>
+              <TextComponent style={extraTextStyle}>+{overflow}</TextComponent>
             </View>
           )}
         </View>
@@ -98,6 +115,7 @@ const HelperStack = React.memo(
   },
   (prev, next) =>
     prev.helpers === next.helpers &&
+    prev.total === next.total &&
     prev.spacing === next.spacing &&
     prev.maxVisible === next.maxVisible
 );
@@ -118,106 +136,6 @@ const phoneStyles = StyleSheet.create({
     width: '100%',
     backgroundColor: White,
     justifyContent: 'space-between'
-  },
-  topNavIcons: { 
-    width: scaleWidth(20), 
-    height: scaleHeight(20), 
-    resizeMode: 'contain' 
-  },
-  searchAndSortRow: {
-    paddingHorizontal: scaleWidth(20),
-    height: scaleHeight(39),
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  search: { 
-    width: scaleWidth(200),
-    height: '100%' 
-  },
-  searchIcon: { 
-    top: scaleHeight(9), 
-    left: scaleWidth(10), 
-    position: 'absolute' 
-  },
-  searchInput: {
-    borderRadius: scaleWidth(99),
-    paddingLeft: scaleWidth(38),
-    paddingVertical: scaleHeight(9),
-    paddingRight: scaleWidth(16),
-    fontSize: scaleFont(14),
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14),
-    fontWeight: 500,
-    width: '100%',
-    height: '100%',
-    backgroundColor: VeryLightGray,
-    color: Black
-  },
-  sort: { 
-    width: scaleWidth(127), 
-    height: '100%' 
-  },
-  sortBtn: {
-    borderRadius: scaleWidth(99),
-    paddingVertical: scaleHeight(9),
-    paddingHorizontal: scaleWidth(10),
-    width: '100%',
-    height: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: VeryLightGray
-  },
-  sortTxt: { 
-    fontSize: scaleFont(14), 
-    lineHeight: scaleLineHeight(21), 
-    letterSpacing: scaleLetterSpacing(-0.14), 
-    fontWeight: 600, 
-    color: Black 
-  },
-  sortByDropdown: {
-    top: scaleHeight(-32),
-    right: scaleWidth(20),
-    width: scaleWidth(127),
-    borderRadius: scaleWidth(16),
-    borderWidth: scaleWidth(1.341),
-    shadowRadius: scaleWidth(15),
-    shadowOffset: { 
-      width: scaleWidth(8), 
-      height: scaleHeight(8) 
-    },
-    position: 'absolute',
-    borderColor: SoftGray,
-    backgroundColor: White,
-    shadowColor: VeryLightLavenderTint,
-    shadowOpacity: 1,
-    elevation: 12,
-    zIndex: 2000
-  },
-  sortByOptions: { 
-    paddingHorizontal: scaleWidth(16), 
-    paddingVertical: scaleHeight(8), 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center' 
-  },
-  sortByDropdownTxt: { 
-    fontSize: scaleFont(14), 
-    lineHeight: scaleLineHeight(21), 
-    letterSpacing: scaleLetterSpacing(-0.14), 
-    fontWeight: 500 
-  },
-  sortByNotSelectedTxt: { 
-    color: Black 
-  },
-  sortBySelectedTxt: { 
-    color: HappyColor 
-  },
-  sortByOptionsBorderBottom: { 
-    borderBottomWidth: scaleHeight(0.671), 
-    borderBottomColor: TranslucentBlack 
   },
   mainContent: { 
     flex: 1 
@@ -259,6 +177,8 @@ const phoneStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(21),
     letterSpacing: scaleLetterSpacing(-0.14), 
     height: scaleHeight(21),
+    width: '100%',
+    textAlign: 'center',
     color: Black
   },
   ChatGroups: { 
@@ -312,8 +232,7 @@ const phoneStyles = StyleSheet.create({
     opacity: 0.6
   },
   chatGroupCard: {
-    height: scaleHeight(163),
-    maxHeight: scaleHeight(163),
+    minHeight: scaleHeight(163),
     borderRadius: scaleWidth(16),
     paddingVertical: scaleHeight(16),
     paddingHorizontal: scaleWidth(16),
@@ -333,6 +252,18 @@ const phoneStyles = StyleSheet.create({
     height: scaleHeight(36), 
     position: 'relative', 
     overflow: 'visible' 
+  },
+  memberCountWrapper: {
+    height: scaleHeight(36),
+    justifyContent: 'center'
+  },
+  memberCountText: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    fontWeight: '600',
+    opacity: 0.6,
+    color: Black
   },
   chatGroupHelperImage: {
     width: scaleWidth(36),
@@ -596,106 +527,6 @@ const tabletStyles = StyleSheet.create({
     backgroundColor: White,
     justifyContent: 'space-between'
   },
-  topNavIcons: { 
-    width: scaleWidth(24), 
-    height: scaleHeight(24), 
-    resizeMode: 'contain' 
-  },
-  searchAndSortRow: {
-    paddingHorizontal: scaleWidth(24),
-    height: scaleHeight(47),
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  search: { 
-    width: scaleWidth(532),
-    height: '100%' 
-  },
-  searchIcon: { 
-    top: scaleHeight(10), 
-    left: scaleWidth(12), 
-    position: 'absolute' 
-  },
-  searchInput: {
-    borderRadius: scaleWidth(132.792),
-    paddingLeft: scaleWidth(44),
-    paddingVertical: scaleHeight(10),
-    paddingRight: scaleWidth(12),
-    fontSize: scaleFont(18),
-    lineHeight: scaleLineHeight(27),
-    letterSpacing: scaleLetterSpacing(-0.18),
-    fontWeight: 500,
-    width: '100%',
-    height: '100%',
-    backgroundColor: VeryLightGray,
-    color: Black
-  },
-  sort: { 
-    width: scaleWidth(152), 
-    height: '100%' 
-  },
-  sortBtn: {
-    borderRadius: scaleWidth(132.792),
-    paddingVertical: scaleHeight(11.5),
-    paddingHorizontal: scaleWidth(12),
-    width: '100%',
-    height: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: VeryLightGray
-  },
-  sortTxt: { 
-    fontSize: scaleFont(18), 
-    lineHeight: scaleLineHeight(27), 
-    letterSpacing: scaleLetterSpacing(-0.18), 
-    fontWeight: 600, 
-    color: Black 
-  },
-  sortByDropdown: {
-    top: scaleHeight(-42.57),
-    right: scaleWidth(24),
-    width: scaleWidth(152),
-    borderRadius: scaleWidth(21.461),
-    borderWidth: scaleWidth(1.341),
-    shadowColor: VividBlueViolet,
-    shadowOpacity: 0.10,             
-    shadowOffset: {
-      width:  scaleWidth(10.731),
-      height: scaleHeight(10.731),
-    },
-    shadowRadius: scaleWidth(40.24),
-    elevation: 16,
-    position: 'absolute',
-    borderColor: SoftGray,
-    backgroundColor: White,
-    zIndex: 2000
-  },
-  sortByOptions: { 
-    paddingHorizontal: scaleWidth(21.461), 
-    paddingVertical: scaleHeight(8), 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center' 
-  },
-  sortByDropdownTxt: { 
-    fontSize: scaleFont(18), 
-    lineHeight: scaleLineHeight(27), 
-    letterSpacing: scaleLetterSpacing(-0.18), 
-    fontWeight: 500 
-  },
-  sortByNotSelectedTxt: { 
-    color: Black 
-  },
-  sortBySelectedTxt: { 
-    color: HappyColor 
-  },
-  sortByOptionsBorderBottom: { 
-    borderBottomWidth: scaleHeight(0.671), 
-    borderBottomColor: TranslucentBlack 
-  },
   mainContent: { 
     flex: 1 
   },
@@ -736,6 +567,8 @@ const tabletStyles = StyleSheet.create({
     lineHeight: scaleLineHeight(24),
     letterSpacing: scaleLetterSpacing(-0.16), 
     height: scaleHeight(24),
+    width: '100%',
+    textAlign: 'center',
     color: Black
   },
   ChatGroups: { 
@@ -789,8 +622,7 @@ const tabletStyles = StyleSheet.create({
     opacity: 0.6
   },
   chatGroupCard: {
-    height: scaleHeight(212.11467),
-    maxHeight: scaleHeight(212.11467),
+    minHeight: scaleHeight(212.11467),
     borderRadius: scaleWidth(21.461),
     paddingVertical: scaleHeight(24),
     paddingHorizontal: scaleWidth(24),
@@ -810,6 +642,18 @@ const tabletStyles = StyleSheet.create({
     height: 66.98, 
     position: 'relative', 
     overflow: 'visible' 
+  },
+  memberCountWrapper: {
+    height: scaleHeight(48.28799),
+    justifyContent: 'center'
+  },
+  memberCountText: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    fontWeight: '600',
+    opacity: 0.6,
+    color: Black
   },
   chatGroupHelperImage: {
     width: 66.98,
@@ -1056,24 +900,87 @@ const tabletStyles = StyleSheet.create({
 });
 
 export default function ChatGroups() {
-  const helpersTop = [];
   const route = useRoute();
-  const sortOptions = ['Popular', 'Latest', 'A - Z', 'Z - A'];
-  const [isSortOpen, setIsSortOpen] = useState(false);
-  const [sortBy, setSortBy] = useState('Popular');
-  const [activeDropdownIndex, setActiveDropdownIndex] = useState(null);
+  const dispatch = useDispatch();
+  const [authToken, setAuthToken] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      let token = await tokenStorage.getToken();
+      while (!cancelled && !token) {
+        try {
+          const response = await authenticationService.createGuest();
+          if (response.ok) {
+            const data = await response.json();
+            await tokenStorage.saveToken(data.authToken);
+            token = data.authToken;
+          }
+        } catch {}
+        if (!token && !cancelled) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          token = await tokenStorage.getToken();
+        }
+      }
+      if (!cancelled && token) setAuthToken(token);
+    })();
+    const unsubscribe = tokenStorage.subscribe((token) => {
+      if (!cancelled) setAuthToken(token);
+    });
+    return () => { cancelled = true; unsubscribe(); };
+  }, []);
+  const [sortBy, setSortBy] = useState('Latest');
   const [search, setSearch] = useState('');
-  const [chatGroups, setChatGroups] = useState([]);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+  const { data: chatGroupsData, isSuccess: chatGroupsQuerySucceeded, isError: chatGroupsQueryErrored, refetch: refetchChatGroups } = useListChatGroupsQuery({ authToken, sortBy, search: debouncedSearch }, { skip: !authToken, pollingInterval: 5000 });
+  const { data: availableHelpersData, refetch: refetchAvailableHelpers } = useAvailableHelpersQuery(authToken, { skip: !authToken, pollingInterval: 5000 });
+  const [displayedGroups, setDisplayedGroups] = useState([]);
+  const [hasLoadedChatGroups, setHasLoadedChatGroups] = useState(false);
+  useEffect(() => {
+    if (chatGroupsData !== undefined) setDisplayedGroups(chatGroupsData);
+  }, [chatGroupsData]);
+  useEffect(() => {
+    if ((chatGroupsQuerySucceeded || chatGroupsQueryErrored) && !hasLoadedChatGroups) setHasLoadedChatGroups(true);
+  }, [chatGroupsQuerySucceeded, chatGroupsQueryErrored, hasLoadedChatGroups]);
+  const isChatGroupsInitialLoading = !hasLoadedChatGroups;
+  useEffect(() => {
+    if (!isChatGroupsInitialLoading) return;
+    dispatch(showLoading());
+    return () => dispatch(hideLoading());
+  }, [isChatGroupsInitialLoading, dispatch]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!authToken) return;
+      refetchChatGroups();
+      refetchAvailableHelpers();
+    }, [authToken, refetchChatGroups, refetchAvailableHelpers])
+  );
+  const helpersTop = availableHelpersData || [];
+  const [renameChatGroup] = useRenameChatGroupMutation();
+  const [setChatGroupVisibility] = useSetChatGroupVisibilityMutation();
+  const [deleteChatGroup] = useDeleteChatGroupMutation();
+  const [leaveChatGroup] = useLeaveChatGroupMutation();
+  const [requestToJoinChatGroup] = useRequestToJoinChatGroupMutation();
+  const [cancelJoinRequest] = useCancelJoinRequestMutation();
+  const [joinPublicChatGroup] = useJoinPublicChatGroupMutation();
+  const sortOptions = ['Popular', 'Latest', 'Most Active', 'Public', 'Private'];
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const [activeDropdownIndex, setActiveDropdownIndex] = useState(null);
   const [selectedChatGroupId, setSelectedChatGroupId] = useState(null);
   const [showEditChatNameModal, setShowEditChatNameModal] = useState(false);
   const [showDeleteChatGroupModal, setShowDeleteChatGroupModal] = useState(false);
   const [showLeaveChatGroupModal, setShowLeaveChatGroupModal] = useState(false);
+  const [showOwnerLeaveOptionsModal, setShowOwnerLeaveOptionsModal] = useState(false);
   const ellipsisRefs = useRef([]);
   const chatGroupsRef = useRef(null);
   const sortBtnRef = useRef(null);
   const sortDropdownRef = useRef(null);
   const chatDropdownRef = useRef(null);
   const swallowNextCloseRef = useRef(false);
+  const activeDropdownGroupIdRef = useRef(null);
   const rectsRef = useRef({
     sortBtn: null,
     sortDropdown: null,
@@ -1084,23 +991,9 @@ export default function ChatGroups() {
     () => ({ keyboardShouldPersistTaps: 'always', onScrollBeginDrag: closeAllMenus }),
     [closeAllMenus]
   );
-  const sortedChatGroups = useMemo(() => {
-    const arr = [...chatGroups];
-    switch (sortBy) {
-      case 'Popular':
-        return arr.sort((a, b) => (b.helpers?.length || 0) - (a.helpers?.length || 0));
-      case 'A - Z':
-        return arr.sort((a, b) => a.title.localeCompare(b.title));
-      case 'Z - A':
-        return arr.sort((a, b) => b.title.localeCompare(a.title));
-      case 'Latest':
-      default:
-        return arr;
-    }
-  }, [chatGroups, sortBy]);
   const selectedChat = useMemo(
-   () => chatGroups.find(g => g.id === selectedChatGroupId) ?? null,
-   [chatGroups, selectedChatGroupId]
+   () => displayedGroups.find(g => g.id === selectedChatGroupId) ?? null,
+   [displayedGroups, selectedChatGroupId]
   );
   const measureToRect = useCallback((ref, key) => {
     if (!ref?.current) {
@@ -1137,6 +1030,7 @@ export default function ChatGroups() {
   const closeAllMenus = useCallback(() => {
     setIsSortOpen(false);
     setActiveDropdownIndex(null);
+    activeDropdownGroupIdRef.current = null;
   }, []);
   const handleHelpersScroll = useCallback(() => {
     if (isSortOpen) setIsSortOpen(false);
@@ -1145,11 +1039,19 @@ export default function ChatGroups() {
     if (activeDropdownIndex !== null) setActiveDropdownIndex(null);
     if (isSortOpen) setIsSortOpen(false);
   }, [activeDropdownIndex, isSortOpen]);
-  const handleEllipsisPress = useCallback((index) => {
+  const handleEllipsisPress = useCallback((index, groupId) => {
     swallowNextCloseRef.current = true;
     setIsSortOpen(false);
     setActiveDropdownIndex((curr) => (curr === index ? null : index));
+    activeDropdownGroupIdRef.current = groupId;
   }, []);
+  useEffect(() => {
+    if (activeDropdownIndex === null) return;
+    const openGroup = displayedGroups[activeDropdownIndex];
+    if (!openGroup || openGroup.id !== activeDropdownGroupIdRef.current) {
+      closeAllMenus();
+    }
+  }, [displayedGroups, activeDropdownIndex, closeAllMenus]);
   const handleSortPressIn = useCallback(() => {
     swallowNextCloseRef.current = true;
     setActiveDropdownIndex(null);
@@ -1169,30 +1071,24 @@ export default function ChatGroups() {
   }, []);
   const handleConfirmEditName = useCallback((newName) => {
     if (!selectedChatGroupId) return;
-    setChatGroups(prev =>
-      prev.map(g => g.id === selectedChatGroupId ? { ...g, title: newName } : g)
-    );
+    if (authToken) renameChatGroup({ authToken, chatGroupId: selectedChatGroupId, name: newName });
     setShowEditChatNameModal(false);
     setSelectedChatGroupId(null);
-  }, [selectedChatGroupId]);
-  const handleMembersPressIn = useCallback((id) => {
+  }, [selectedChatGroupId, authToken, renameChatGroup]);
+  const handleMembersPressIn = useCallback((id, isOwner) => {
     swallowNextCloseRef.current = true;
-    navigation.navigate('Members');
+    navigation.navigate('Members', { chatGroupId: id, isOwner });
   }, []);
   const handleMakeChatPrivatePressIn = useCallback((id) => {
     closeAllMenus();
     swallowNextCloseRef.current = true;
-    setChatGroups(prev =>
-      prev.map(g => g.id === id ? { ...g, public: false } : g)
-    );
-  }, []);
+    if (authToken) setChatGroupVisibility({ authToken, chatGroupId: id, isPublic: false });
+  }, [closeAllMenus, authToken, setChatGroupVisibility]);
   const handleMakeChatPublicPressIn = useCallback((id) => {
     closeAllMenus();
     swallowNextCloseRef.current = true;
-    setChatGroups(prev =>
-      prev.map(g => g.id === id ? { ...g, public: true } : g)
-    );
-  }, []);
+    if (authToken) setChatGroupVisibility({ authToken, chatGroupId: id, isPublic: true });
+  }, [closeAllMenus, authToken, setChatGroupVisibility]);
   const handleShareChatPressIn = useCallback((id) => {
     swallowNextCloseRef.current = true;
   }, []);  
@@ -1203,50 +1099,83 @@ export default function ChatGroups() {
   }, []);
   const handleConfirmDeleteChatGroup = useCallback(() => {
     if (!selectedChatGroupId) return;
-    setChatGroups(prev => prev.filter(g => g.id !== selectedChatGroupId));
+    if (authToken) deleteChatGroup({ authToken, chatGroupId: selectedChatGroupId });
     setShowDeleteChatGroupModal(false);
     setSelectedChatGroupId(null);
-  }, [selectedChatGroupId]);
- const handleConfirmLeaveChatGroup = useCallback(() => {
+  }, [selectedChatGroupId, authToken, deleteChatGroup]);
+  const handleConfirmLeaveChatGroup = useCallback(async () => {
     if (!selectedChatGroupId) return;
-    setChatGroups(prev =>
-      prev.map(g => g.id === selectedChatGroupId ? { ...g, joined: false } : g)
-    );
     setShowLeaveChatGroupModal(false);
+    if (!authToken) { setSelectedChatGroupId(null); return; }
+    try {
+      const response = await leaveChatGroup({ authToken, chatGroupId: selectedChatGroupId }).unwrap();
+      if (response && response.status === 'lastOwner') {
+        setShowOwnerLeaveOptionsModal(true);
+        return;
+      }
+    } catch (error) {
+    }
     setSelectedChatGroupId(null);
-  }, [selectedChatGroupId]);
-  const handleLeaveChatGroupPress = useCallback((id) => {
+  }, [selectedChatGroupId, authToken, leaveChatGroup]);
+  const handleConfirmMakePublicAndLeave = useCallback(async () => {
+    if (!selectedChatGroupId) return;
+    setShowOwnerLeaveOptionsModal(false);
+    if (authToken) {
+      try {
+        await leaveChatGroup({ authToken, chatGroupId: selectedChatGroupId, disposition: 'makePublic' }).unwrap();
+      } catch (error) {
+      }
+    }
+    setSelectedChatGroupId(null);
+  }, [selectedChatGroupId, authToken, leaveChatGroup]);
+  const handleConfirmDeleteAndLeave = useCallback(async () => {
+    if (!selectedChatGroupId) return;
+    setShowOwnerLeaveOptionsModal(false);
+    if (authToken) {
+      try {
+        await leaveChatGroup({ authToken, chatGroupId: selectedChatGroupId, disposition: 'delete' }).unwrap();
+      } catch (error) {
+      }
+    }
+    setSelectedChatGroupId(null);
+  }, [selectedChatGroupId, authToken, leaveChatGroup]);
+  const handleLeaveChatGroupPress = useCallback((item) => {
     closeAllMenus();
-    setSelectedChatGroupId(id);
-    setShowLeaveChatGroupModal(true);
+    setSelectedChatGroupId(item.id);
+    if (item.owner && (item.memberCount || 0) <= 1) {
+      setShowOwnerLeaveOptionsModal(true);
+    } else {
+      setShowLeaveChatGroupModal(true);
+    }
   }, [closeAllMenus]);
   function handleViewChatGroupPress() {
     closeAllMenus();
     navigation.navigate('ChatGroup')
   }
-  const handleRequestJoinChatGroupPress = useCallback((id) => {
+  const handleRequestJoinChatGroupPress = useCallback(async (id) => {
     closeAllMenus();
-    setChatGroups(prev =>
-      prev.map(g => g.id === id ? { ...g, joinRequest: true } : g)
-    );
-  }, [closeAllMenus]);
+    if (!authToken) return;
+    const result = await requestToJoinChatGroup({ authToken, chatGroupId: id });
+  }, [closeAllMenus, authToken, requestToJoinChatGroup]);
   const handleCancelJoinRequestPress = useCallback((id) => {
     closeAllMenus();
-    setChatGroups(prev =>
-      prev.map(g => g.id === id ? { ...g, joinRequest: false } : g)
-    );
-  }, [closeAllMenus]);
+    if (authToken) cancelJoinRequest({ authToken, chatGroupId: id });
+  }, [closeAllMenus, authToken, cancelJoinRequest]);
   const handleJoinChatGroupPress = useCallback((id) => {
     closeAllMenus();
-    setChatGroups(prev =>
-      prev.map(g => g.id === id ? { ...g, joined: true } : g)
-    );
-  }, [closeAllMenus]);
+    if (authToken) joinPublicChatGroup({ authToken, chatGroupId: id });
+  }, [closeAllMenus, authToken, joinPublicChatGroup]);
   const renderHelper = useCallback(({ item }) => (
     <View style={styles.helperCard}>
       <TouchableOpacity style={styles.helperCardBtn}>
-        <Image source={item.image} style={styles.helperImage} fadeDuration={0} />
-        <CustomText style={styles.helperName}>{item.name}</CustomText>
+        <Avatar
+          uri={item.profilePhotoUrl}
+          color={item.avatarColor}
+          initial={(item.name || '?').charAt(0).toUpperCase()}
+          style={styles.helperImage}
+          initialStyle={{ color: White, fontSize: scaleFont(18), fontWeight: '600' }}
+        />
+        <CustomText style={styles.helperName} numberOfLines={1} ellipsizeMode="tail">{item.name}</CustomText>
       </TouchableOpacity>
     </View>
   ), [styles]);
@@ -1259,17 +1188,27 @@ export default function ChatGroups() {
       return (
         <View style={[styles.chatGroupCard, item.joined && styles.chatGroupCardJoinedBorder, { overflow: 'visible' }]} needsOffscreenAlphaCompositing>
           <View style={styles.chatPhotosHeader}>
-            <HelperStack
-              helpers={item.helpers}
-              spacing={spacing}
-              maxVisible={maxVisible}
-              imageBaseStyle={styles.chatGroupHelperImage}
-              wrapperStyle={styles.chatGroupHelpersWrapper}
-              stackStyle={styles.chatGroupHelpersStack}
-              extraCircleStyle={styles.extraHelpersCircle}
-              extraTextStyle={styles.extraHelpersText}
-              TextComponent={CustomText}
-            />
+            {item.public || item.joined ? (
+              <HelperStack
+                helpers={item.helpers}
+                total={item.memberCount}
+                spacing={spacing}
+                maxVisible={maxVisible}
+                imageBaseStyle={styles.chatGroupHelperImage}
+                initialStyle={{ color: White, fontSize: scaleFont(14), fontWeight: '600' }}
+                wrapperStyle={styles.chatGroupHelpersWrapper}
+                stackStyle={styles.chatGroupHelpersStack}
+                extraCircleStyle={styles.extraHelpersCircle}
+                extraTextStyle={styles.extraHelpersText}
+                TextComponent={CustomText}
+              />
+            ) : (
+              <View style={styles.memberCountWrapper}>
+                <CustomText style={styles.memberCountText}>
+                  {item.memberCount} {item.memberCount === 1 ? 'member' : 'members'}
+                </CustomText>
+              </View>
+            )}
             <View style={styles.joinedEllipsisView}>
               {item.public ? (
                 <View style={styles.publicCircle}>
@@ -1283,7 +1222,7 @@ export default function ChatGroups() {
               <TouchableOpacity
                 ref={(ref) => (ellipsisRefs.current[index] = ref)}
                 style={styles.ellipsisBackground}
-                onPressIn={() => handleEllipsisPress(index)}
+                onPressIn={() => handleEllipsisPress(index, item.id)}
               >
                 <EllipsisIcon {...styles.ellipsis} />
               </TouchableOpacity>
@@ -1291,7 +1230,7 @@ export default function ChatGroups() {
           </View>
 
           <View style={styles.chatGroupTitleView}>
-            <CustomText style={styles.chatGroupTitle} numberOfLines={1} ellipsizeMode="tail">
+            <CustomText style={styles.chatGroupTitle}>
               {item.title}
             </CustomText>
           </View>
@@ -1300,7 +1239,7 @@ export default function ChatGroups() {
             <View style={styles.chatGroupTwoBtnView}>
               <TouchableOpacity 
                 style={styles.groupChatLeaveChatBtn} 
-                onPress={() => handleLeaveChatGroupPress(item.id)}
+                onPress={() => handleLeaveChatGroupPress(item)}
               >
                 <CustomText style={styles.groupChatLeaveChatTxt}>Leave Chat</CustomText>
               </TouchableOpacity>
@@ -1357,15 +1296,17 @@ export default function ChatGroups() {
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity
-                onPressIn={() => handleMembersPressIn(item.id)}
-                onPressOut={closeAllMenus}
-                style={[styles.chatGroupDropdownOptions, styles.chatGroupDropdownOptionsBorderBottom]}
-              >
-                <CustomText style={styles.dropdownBlackTxt}>Members</CustomText>
-                <MembersIcon {...styles.dropdownIcons} />
-                {item.pendingMembers && item.owner && <PendingMembersCircle {...styles.pendingMembersCircle} />}
-              </TouchableOpacity>
+              {(item.public || item.joined) && (
+                <TouchableOpacity
+                  onPressIn={() => handleMembersPressIn(item.id, item.owner)}
+                  onPressOut={closeAllMenus}
+                  style={[styles.chatGroupDropdownOptions, styles.chatGroupDropdownOptionsBorderBottom]}
+                >
+                  <CustomText style={styles.dropdownBlackTxt}>Members</CustomText>
+                  <MembersIcon {...styles.dropdownIcons} />
+                  {item.pendingMembers && item.owner && <PendingMembersCircle {...styles.pendingMembersCircle} />}
+                </TouchableOpacity>
+              )}
 
               {item.owner && item.public && (
                 <TouchableOpacity
@@ -1409,24 +1350,27 @@ export default function ChatGroups() {
           )}
         </View>
       );
-    }, [activeDropdownIndex, isTablet, styles]
+    }, [activeDropdownIndex, isTablet, styles, authToken]
   );
-  const renderEmptyChatGroups = useCallback(() => (
-    <View style={styles.emptyState}>
-      <View style={styles.emptyStateIconCircle}>
-        <HappyEmoji {...styles.emptyStateIcon} />
+  const renderEmptyChatGroups = useCallback(() => {
+    if (isChatGroupsInitialLoading) return null;
+    return (
+      <View style={styles.emptyState}>
+        <View style={styles.emptyStateIconCircle}>
+          <HappyEmoji {...styles.emptyStateIcon} />
+        </View>
+        <CustomText style={styles.emptyStateTitle}>No chats yet</CustomText>
+        <CustomText style={styles.emptyStateSubtitle}>
+          Tap HELP ME to talk to someone, or I CAN HELP to support someone.
+        </CustomText>
       </View>
-      <CustomText style={styles.emptyStateTitle}>No chats yet</CustomText>
-      <CustomText style={styles.emptyStateSubtitle}>
-        Tap HELP ME to talk to someone, or I CAN HELP to support someone.
-      </CustomText>
-    </View>
-  ), [styles]);
+    );
+  }, [styles, isChatGroupsInitialLoading]);
   useEffect(() => {
-    ellipsisRefs.current = Array(chatGroups.length)
+    ellipsisRefs.current = Array(displayedGroups.length)
       .fill(null)
       .map((_, i) => ellipsisRefs.current[i] ?? React.createRef());
-  }, [chatGroups.length]);
+  }, [displayedGroups.length]);
   useEffect(() => {
     if (isSortOpen) {
       requestAnimationFrame(() => {
@@ -1476,36 +1420,14 @@ export default function ChatGroups() {
           <AccountBar closeMenus={closeAllMenus} />
 
           <HelpHub />
-          <View style={styles.searchAndSortRow}>
-            <View style={styles.search}>
-              <CustomTextInput
-                style={styles.searchInput}
-                keyboardType="default"
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="none"
-                autoComplete="off"
-                importantForAutofill="no"
-                returnKeyType="search"
-                value={search}
-                onChangeText={setSearch}
-                onFocus={handleSearchFocusOrTouch}
-                onTouchStart={handleSearchFocusOrTouch}
-              />
-              <SearchIcon {...StyleSheet.flatten([styles.topNavIcons, styles.searchIcon])} />
-            </View>
-            <View style={styles.sort}>
-              <TouchableOpacity
-                style={styles.sortBtn}
-                ref={sortBtnRef}
-                onPressIn={handleSortPressIn}
-              >
-                <SortIcon {...styles.topNavIcons} />
-                <CustomText style={styles.sortTxt}>{sortBy}</CustomText>
-                <DownArrowIcon {...styles.topNavIcons} />
-              </TouchableOpacity>
-            </View>
-          </View>
+          <SearchAndSortChatGroupsBar
+            search={search}
+            onChangeSearch={setSearch}
+            onSearchFocus={handleSearchFocusOrTouch}
+            sortBy={sortBy}
+            onSortPress={handleSortPressIn}
+            sortBtnRef={sortBtnRef}
+          />
         </View>
         <View style={styles.mainContent}>
           {helpersTop.length > 0 && (
@@ -1527,7 +1449,7 @@ export default function ChatGroups() {
             <ActiveIndexContext.Provider value={activeDropdownIndex}>
               <FlatList
                 ref={chatGroupsRef}
-                data={sortedChatGroups}
+                data={displayedGroups}
                 {...listCommonProps}
                 contentContainerStyle={chatGroupsContentContainer}
                 showsVerticalScrollIndicator={false}
@@ -1535,7 +1457,7 @@ export default function ChatGroups() {
                 onScroll={handleChatGroupsScroll}
                 scrollEventThrottle={16}
                 removeClippedSubviews={false}
-                extraData={{ activeDropdownIndex, chatGroups }}
+                extraData={{ activeDropdownIndex, displayedGroups }}
                 renderItem={renderChatGroup}
                 ListEmptyComponent={renderEmptyChatGroups}
                 CellRendererComponent={ActiveListCell}
@@ -1543,29 +1465,14 @@ export default function ChatGroups() {
             </ActiveIndexContext.Provider>
           </View>
           {isSortOpen && (
-            <View
-              ref={sortDropdownRef}
+            <SearchAndSortChatGroupsDropdown
+              sortOptions={sortOptions}
+              sortBy={sortBy}
+              onSelectOption={handleSortOptionPressIn}
+              onClose={closeAllMenus}
+              dropdownRef={sortDropdownRef}
               onLayout={() => measureToRect(sortDropdownRef, 'sortDropdown')}
-              style={styles.sortByDropdown}
-            >
-              {sortOptions.map((opt, idx) => (
-                <TouchableOpacity
-                  key={opt}
-                  onPressIn={() => handleSortOptionPressIn(opt)}
-                  onPressOut={closeAllMenus}
-                  style={[styles.sortByOptions, idx < sortOptions.length - 1 && styles.sortByOptionsBorderBottom]}
-                >
-                  <CustomText
-                    style={[
-                      styles.sortByDropdownTxt,
-                      sortBy === opt ? styles.sortBySelectedTxt : styles.sortByNotSelectedTxt,
-                    ]}
-                  >
-                    {opt}
-                  </CustomText>
-                </TouchableOpacity>
-              ))}
-            </View>
+            />
           )}
         </View>
         <LinearGradient
@@ -1596,6 +1503,12 @@ export default function ChatGroups() {
         visible={showLeaveChatGroupModal}
         onConfirm={handleConfirmLeaveChatGroup}
         onCancel={() => { setShowLeaveChatGroupModal(false); setSelectedChatGroupId(null); }}
+      />
+      <LeaveGroupOwnerOptionsModal
+        visible={showOwnerLeaveOptionsModal}
+        onMakePublic={handleConfirmMakePublicAndLeave}
+        onDelete={handleConfirmDeleteAndLeave}
+        onCancel={() => { setShowOwnerLeaveOptionsModal(false); setSelectedChatGroupId(null); }}
       />
     </>
   );

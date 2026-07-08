@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
-import { View, TouchableOpacity, StyleSheet, Image, FlatList, Pressable, ScrollView } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, FlatList, Pressable, ScrollView } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { 
   HappyColor, 
@@ -15,31 +15,19 @@ import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import CustomText from 'src/components/FontFamilyText';
+import Avatar from 'src/components/Avatar';
+import tokenStorage from 'src/services/tokenStorage';
+import {
+  useListMembersQuery,
+  useApproveMemberMutation,
+  useRejectMemberMutation,
+  useRemoveMemberMutation,
+} from 'src/store/chatGroupsApi';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
 import EllipsisIcon from 'assets/images/global/three-dots-icon.svg';
 import RemoveIcon from 'assets/images/global/leave-and-remove-chat-icon.svg';
 import XIcon from 'assets/images/global/black-x-icon.svg';
 import InviteIcon from 'assets/images/members/invite-white-icon.svg';
-import Image1 from 'assets/images/placeholderProfiles/profile-1.png';
-import Image2 from 'assets/images/placeholderProfiles/profile-2.png';
-import Image3 from 'assets/images/placeholderProfiles/profile-3.png';
-import Image4 from 'assets/images/placeholderProfiles/profile-4.png';
-import Image5 from 'assets/images/placeholderProfiles/profile-5.png';
-import Image6 from 'assets/images/placeholderProfiles/profile-6.png';
-import Image7 from 'assets/images/placeholderProfiles/profile-7.jpg';
-import Image8 from 'assets/images/placeholderProfiles/profile-8.jpg';
-import Image9 from 'assets/images/placeholderProfiles/profile-9.jpg';
-import Image10 from 'assets/images/placeholderProfiles/profile-10.jpg';
-import Image11 from 'assets/images/placeholderProfiles/profile-11.jpg';
-import Image12 from 'assets/images/placeholderProfiles/profile-12.jpg';
-import Image13 from 'assets/images/placeholderProfiles/profile-13.jpg';
-import Image14 from 'assets/images/placeholderProfiles/profile-14.jpg';
-import Image15 from 'assets/images/placeholderProfiles/profile-15.jpg';
-import Image16 from 'assets/images/placeholderProfiles/profile-16.jpg';
-import Image17 from 'assets/images/placeholderProfiles/profile-17.jpg';
-import Image18 from 'assets/images/placeholderProfiles/profile-18.jpg';
-import Image19 from 'assets/images/placeholderProfiles/profile-19.jpg';
-import Image20 from 'assets/images/placeholderProfiles/profile-20.jpg';
 const ActiveIndexContext = React.createContext(-1);
 const stylesActive = StyleSheet.create({
   zLift: { zIndex: 1000, elevation: 1000, overflow: 'visible' },
@@ -476,6 +464,10 @@ export default function Members() {
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
+  const route = useRoute();
+  const chatGroupId = route.params?.chatGroupId;
+  const isOwner = !!route.params?.isOwner;
+  const [authToken, setAuthToken] = useState(null);
   const [activeDropdownIndex, setActiveDropdownIndex] = useState(null);
   const ellipsisRefs = useRef([]);
   const membersRef = useRef(null);
@@ -489,156 +481,27 @@ export default function Members() {
     () => ({ keyboardShouldPersistTaps: 'always' }),
     []
   );
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const token = await tokenStorage.getToken();
+      if (!cancelled && token) setAuthToken(token);
+    })();
+    const unsubscribe = tokenStorage.subscribe((token) => {
+      if (!cancelled) setAuthToken(token);
+    });
+    return () => { cancelled = true; unsubscribe(); };
+  }, []);
+  const { data: membersData } = useListMembersQuery(
+    { authToken, chatGroupId },
+    { skip: !authToken || !chatGroupId, pollingInterval: 3000 }
+  );
+  const [approveMember] = useApproveMemberMutation();
+  const [rejectMember] = useRejectMemberMutation();
+  const [removeMember] = useRemoveMemberMutation();
   const members = {
-    members: [
-        {
-            photo: Image1,
-            name: "Jaydon HerWitzJaydon HerWitzJaydon HerWitz HerWitzJaydon HerWitz",
-            username: "jaydon671jaydon671jaydon671jaydon671jaydon671 HerWitzJaydon HerWitz",
-        },
-        {
-            photo: Image2,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image3,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image4,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image5,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image6,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image7,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image8,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image9,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image10,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image11,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image12,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image1,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image2,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image3,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image4,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image5,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image6,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image7,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image8,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image9,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image10,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image11,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image12,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-    ],
-    pending: [
-        {
-            photo: Image13,
-            name: "Jaydon HerWitz Jaydon HerWitz HerWitzJaydon HerWitz",
-            username: "jaydon671 Jaydon HerWitzJaydon HerWitz HerWitzJaydon HerWitz",
-        },
-        {
-            photo: Image14,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image15,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image16,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image17,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        }
-    ]
+    members: membersData?.members || [],
+    pending: membersData?.pendingMembers || [],
   };
   const closeAllMenus = useCallback(() => {
     setActiveDropdownIndex(null);
@@ -646,6 +509,9 @@ export default function Members() {
   const handleEllipsisPress = useCallback((index) => {
     swallowNextCloseRef.current = true;
     setActiveDropdownIndex((curr) => (curr === index ? null : index));
+  }, []);
+  const pointInRect = useCallback((x, y, r) => {
+    return !!r && x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height;
   }, []);
   const handleRootTouchEndCapture = useCallback((e) => {
     if (swallowNextCloseRef.current) {
@@ -663,9 +529,6 @@ export default function Members() {
     }
     closeAllMenus();
   }, [activeDropdownIndex, closeAllMenus, pointInRect]);
-  const pointInRect = useCallback((x, y, r) => {
-    return !!r && x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height;
-  }, []);
   const measureToRect = useCallback((ref, key) => {
     if (!ref?.current) {
       rectsRef.current[key] = null;
@@ -675,9 +538,16 @@ export default function Members() {
       rectsRef.current[key] = { x, y, width, height };
     });
   }, []);
-  const handleRemovePressIn = useCallback((index) => {
+  const handleRemovePressIn = useCallback((memberUserAccountId) => {
     swallowNextCloseRef.current = true;
-  }, []);
+    if (authToken && chatGroupId) removeMember({ authToken, chatGroupId, memberUserAccountId });
+  }, [authToken, chatGroupId, removeMember]);
+  const handleAcceptPress = useCallback((memberUserAccountId) => {
+    if (authToken && chatGroupId) approveMember({ authToken, chatGroupId, memberUserAccountId });
+  }, [authToken, chatGroupId, approveMember]);
+  const handleRejectPress = useCallback((memberUserAccountId) => {
+    if (authToken && chatGroupId) rejectMember({ authToken, chatGroupId, memberUserAccountId });
+  }, [authToken, chatGroupId, rejectMember]);
   const scrollableMembersListContent = useMemo(() => ({
     paddingBottom: bottomSafeHeight
   }), [bottomSafeHeight]);
@@ -707,39 +577,45 @@ export default function Members() {
   }, [activeDropdownIndex, measureToRect]);
   const renderMember = useCallback(({ item, index }) => {
     const isActive = activeDropdownIndex === index;
+    const canRemove = isOwner && !item.isOwner;
     return (
       <View style={styles.memberCard}>
         <View style={styles.memberImageAndName}>
           <View style={styles.memberImage}>
-            <Image
-              source={item.photo}
+            <Avatar
+              uri={item.profilePhotoUrl}
+              color={item.avatarColor}
+              initial={(item.name || '?').charAt(0).toUpperCase()}
               style={styles.memberPhoto}
-              accessible={true}
-              accessibilityLabel="Member photo"
+              initialStyle={{ color: White, fontWeight: '600', fontSize: scaleFont(16) }}
             />
           </View>
           <View>
             <CustomText style={styles.memberFullName} numberOfLines={1} ellipsizeMode="tail">{item.name}</CustomText>
-            <CustomText style={styles.memberUsername} numberOfLines={1} ellipsizeMode="tail">@{item.username}</CustomText>
+            {item.username ? (
+              <CustomText style={styles.memberUsername} numberOfLines={1} ellipsizeMode="tail">@{item.username}</CustomText>
+            ) : null}
           </View>
         </View>
-        <View>
-          <TouchableOpacity
-            ref={(ref) => (ellipsisRefs.current[index] = ref)}
-            style={styles.ellipsisBackground}
-            onPressIn={() => handleEllipsisPress(index)}
-          >
-            <EllipsisIcon {...styles.ellipsis} />
-          </TouchableOpacity>
-        </View>
-        {isActive && (
+        {canRemove && (
+          <View>
+            <TouchableOpacity
+              ref={(ref) => (ellipsisRefs.current[index] = ref)}
+              style={styles.ellipsisBackground}
+              onPressIn={() => handleEllipsisPress(index)}
+            >
+              <EllipsisIcon {...styles.ellipsis} />
+            </TouchableOpacity>
+          </View>
+        )}
+        {canRemove && isActive && (
           <Pressable
             ref={memberDropdownRef}
             onLayout={() => measureToRect(memberDropdownRef, 'membersDropdown')}
             style={styles.memberDropdown}
           >
             <TouchableOpacity
-                onPressIn={() => handleRemovePressIn(index)}
+                onPressIn={() => handleRemovePressIn(item.userAccountId)}
                 onPressOut={closeAllMenus}
                 style={styles.memberDropdownOption}
             >
@@ -750,35 +626,38 @@ export default function Members() {
         )}
       </View>
     );
-  }, [activeDropdownIndex, styles, closeAllMenus]);
+  }, [activeDropdownIndex, styles, closeAllMenus, isOwner, handleEllipsisPress, handleRemovePressIn, measureToRect]);
   const renderPending = useCallback(({ item, index }) => {
     return (
       <View style={styles.memberCard}>
         <View style={styles.memberImageAndName}>
           <View style={styles.memberImage}>
-            <Image
-              source={item.photo}
+            <Avatar
+              uri={item.profilePhotoUrl}
+              color={item.avatarColor}
+              initial={(item.name || '?').charAt(0).toUpperCase()}
               style={styles.memberPhoto}
-              accessible={true}
-              accessibilityLabel="Pending photo"
+              initialStyle={{ color: White, fontWeight: '600', fontSize: scaleFont(16) }}
             />
           </View>
           <View>
             <CustomText style={styles.memberFullName} numberOfLines={1} ellipsizeMode="tail">{item.name}</CustomText>
-            <CustomText style={styles.memberUsername} numberOfLines={1} ellipsizeMode="tail">@{item.username}</CustomText>
+            {item.username ? (
+              <CustomText style={styles.memberUsername} numberOfLines={1} ellipsizeMode="tail">@{item.username}</CustomText>
+            ) : null}
           </View>
         </View>
         <View style={styles.pendingOptions}>
-            <TouchableOpacity style={styles.acceptBtn}>
+            <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAcceptPress(item.userAccountId)}>
                 <CustomText style={styles.acceptTxt}>Accept</CustomText>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.xBtn}>
+            <TouchableOpacity style={styles.xBtn} onPress={() => handleRejectPress(item.userAccountId)}>
                 <XIcon {...styles.xIcon}/>
             </TouchableOpacity>
         </View>
       </View>
     );
-  }, [styles]);
+  }, [styles, handleAcceptPress, handleRejectPress]);
   const rootStyle = {
     ...styles.root,
     paddingTop: statusBarHeight + styles.root.paddingTop
@@ -814,37 +693,45 @@ export default function Members() {
           onScrollBeginDrag={closeAllMenus}
           showsVerticalScrollIndicator={false}
         >
-            <View style={styles.sectionHeader}>
-    <CustomText style={styles.sectionHeaderTxt}>Pending</CustomText>
-            </View>
-          <FlatList
-            data={members.pending}
-            contentContainerStyle={styles.pendingMembersListContent}
-            showsVerticalScrollIndicator={false}
-            keyExtractor={(item, index) => `pending-${index}`}
-            removeClippedSubviews={false}
-            renderItem={renderPending}
-            scrollEnabled={false}
-            {...listCommonProps}
-          />
-          <View style={styles.sectionHeader}>
-            <CustomText style={styles.sectionHeaderTxt}>Current</CustomText>
-          </View>
-          <ActiveIndexContext.Provider value={activeDropdownIndex}>
-            <FlatList
-              ref={membersRef}
-              data={members.members}
-              contentContainerStyle={styles.currentMembersListContent}
-              showsVerticalScrollIndicator={false}
-              keyExtractor={(item, index) => `member-${index}`}
-              removeClippedSubviews={false}
-              extraData={activeDropdownIndex}
-              renderItem={renderMember}
-              CellRendererComponent={ActiveListCell}
-              scrollEnabled={false}
-              {...listCommonProps}
-            />
-          </ActiveIndexContext.Provider>
+            {members.pending.length > 0 && (
+              <>
+                <View style={styles.sectionHeader}>
+                  <CustomText style={styles.sectionHeaderTxt}>Pending</CustomText>
+                </View>
+                <FlatList
+                  data={members.pending}
+                  contentContainerStyle={styles.pendingMembersListContent}
+                  showsVerticalScrollIndicator={false}
+                  keyExtractor={(item) => `pending-${item.userAccountId}`}
+                  removeClippedSubviews={false}
+                  renderItem={renderPending}
+                  scrollEnabled={false}
+                  {...listCommonProps}
+                />
+              </>
+            )}
+            {members.members.length > 0 && (
+              <>
+                <View style={styles.sectionHeader}>
+                  <CustomText style={styles.sectionHeaderTxt}>Current</CustomText>
+                </View>
+                <ActiveIndexContext.Provider value={activeDropdownIndex}>
+                  <FlatList
+                    ref={membersRef}
+                    data={members.members}
+                    contentContainerStyle={styles.currentMembersListContent}
+                    showsVerticalScrollIndicator={false}
+                    keyExtractor={(item) => `member-${item.userAccountId}`}
+                    removeClippedSubviews={false}
+                    extraData={activeDropdownIndex}
+                    renderItem={renderMember}
+                    CellRendererComponent={ActiveListCell}
+                    scrollEnabled={false}
+                    {...listCommonProps}
+                  />
+                </ActiveIndexContext.Provider>
+              </>
+            )}
         </ScrollView>
         <LinearGradient
             pointerEvents="none"
