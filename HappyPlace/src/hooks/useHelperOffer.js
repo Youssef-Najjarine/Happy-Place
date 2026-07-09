@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import tokenStorage from 'src/services/tokenStorage';
-import authenticationService from 'src/services/authenticationService';
 import { useOpenRequestsQuery, usePollOfferQuery, useCreateOfferMutation, useWithdrawOfferMutation, useDeclineOfferMutation, useJoinMutation, useDeclineInviteMutation } from 'src/store/helpApi';
 
 const BROWSE_INTERVAL_MS = 3000;
@@ -34,11 +33,7 @@ export default function useHelperOffer() {
     const resolveToken = useCallback(async () => {
         const existing = await tokenStorage.getToken();
         if (existing) return existing;
-        const response = await authenticationService.createGuest();
-        if (!response.ok) return null;
-        const data = await response.json();
-        await tokenStorage.saveToken(data.authToken);
-        return data.authToken;
+        return tokenStorage.ensureGuestToken();
     }, []);
 
     const handleAuthFailure = useCallback(async () => {
@@ -131,7 +126,12 @@ export default function useHelperOffer() {
     useEffect(() => {
         let cancelled = false;
         const start = async () => {
-            const token = await resolveToken();
+            let token = null;
+            try {
+                token = await resolveToken();
+            } catch (error) {
+                token = null;
+            }
             if (cancelled) return;
             if (!token) {
                 setPhase('idle');

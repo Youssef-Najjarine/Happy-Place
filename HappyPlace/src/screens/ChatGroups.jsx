@@ -28,6 +28,7 @@ import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import { tabletBreakpoint } from 'src/constants/breakpoints';
 import CustomText from 'src/components/FontFamilyText';
 import HappyEmoji from 'assets/images/global/happy-emoji.svg';
+import SadEmoji from 'assets/images/global/sad-emoji.svg';
 import LinkIcon from 'assets/images/chatGroups/share-chat-link-icon.svg';
 import EllipsisIcon from 'assets/images/global/three-dots-icon.svg';
 import EditIcon from 'assets/images/global/edit-icon.svg';
@@ -39,6 +40,7 @@ import TrashIcon from 'assets/images/global/trash-outline-icon.svg';
 import Avatar from 'src/components/Avatar';
 import tokenStorage from 'src/services/tokenStorage';
 import authenticationService from 'src/services/authenticationService';
+import { showToast } from 'src/components/Toast';
 import {
   useListChatGroupsQuery,
   useAvailableHelpersQuery,
@@ -230,6 +232,22 @@ const phoneStyles = StyleSheet.create({
     color: Black,
     textAlign: 'center',
     opacity: 0.6
+  },
+  emptyStateRetryBtn: {
+    width: scaleWidth(140),
+    height: scaleHeight(41),
+    borderRadius: scaleWidth(99),
+    marginTop: scaleHeight(4),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: HappyColor
+  },
+  emptyStateRetryTxt: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    fontWeight: 600,
+    color: White
   },
   chatGroupCard: {
     minHeight: scaleHeight(163),
@@ -503,7 +521,7 @@ const phoneStyles = StyleSheet.create({
     fontWeight: 600, 
     color: White 
   },
- activeListCell: {
+  activeListCell: {
     zIndex: 1000,
     elevation: 1000,
     overflow: 'visible'
@@ -620,6 +638,22 @@ const tabletStyles = StyleSheet.create({
     color: Black,
     textAlign: 'center',
     opacity: 0.6
+  },
+  emptyStateRetryBtn: {
+    width: scaleWidth(200),
+    height: scaleHeight(50.82),
+    borderRadius: scaleWidth(132.792),
+    marginTop: scaleHeight(6),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: HappyColor
+  },
+  emptyStateRetryTxt: {
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    fontWeight: 600,
+    color: White
   },
   chatGroupCard: {
     minHeight: scaleHeight(212.11467),
@@ -861,7 +895,7 @@ const tabletStyles = StyleSheet.create({
     fontWeight: 600, 
     color: HappyColor 
   },
-   groupChatCancelRequestBtn: {
+  groupChatCancelRequestBtn: {
     borderRadius: scaleWidth(132.792), 
     width: '100%', 
     height: '100%', 
@@ -892,7 +926,7 @@ const tabletStyles = StyleSheet.create({
     fontWeight: 600, 
     color: White 
   },
- activeListCell: {
+  activeListCell: {
     zIndex: 1000,
     elevation: 1000,
     overflow: 'visible'
@@ -901,23 +935,35 @@ const tabletStyles = StyleSheet.create({
 
 export default function ChatGroups() {
   const route = useRoute();
+  const navigation = useNavigation();
   const dispatch = useDispatch();
+  const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= tabletBreakpoint;
+  const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const [authToken, setAuthToken] = useState(null);
+  const [bootstrapFailed, setBootstrapFailed] = useState(false);
+  const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
   useEffect(() => {
     let cancelled = false;
     (async () => {
       let token = await tokenStorage.getToken();
-      while (!cancelled && !token) {
+      if (token && !cancelled) {
         try {
-          const response = await authenticationService.createGuest();
-          if (response.ok) {
-            const data = await response.json();
-            await tokenStorage.saveToken(data.authToken);
-            token = data.authToken;
+          const validation = await authenticationService.validateToken(token);
+          if (validation.status === 401) {
+            await tokenStorage.clearToken();
+            token = null;
           }
         } catch {}
+      }
+      while (!cancelled && !token) {
+        try {
+          token = await tokenStorage.ensureGuestToken();
+        } catch {}
         if (!token && !cancelled) {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          setBootstrapFailed(true);
+          await new Promise((resolve) => setTimeout(resolve, 5000));
           token = await tokenStorage.getToken();
         }
       }
@@ -927,7 +973,7 @@ export default function ChatGroups() {
       if (!cancelled) setAuthToken(token);
     });
     return () => { cancelled = true; unsubscribe(); };
-  }, []);
+  }, [bootstrapAttempt]);
   const [sortBy, setSortBy] = useState('Latest');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -943,14 +989,15 @@ export default function ChatGroups() {
     if (chatGroupsData !== undefined) setDisplayedGroups(chatGroupsData);
   }, [chatGroupsData]);
   useEffect(() => {
-    if ((chatGroupsQuerySucceeded || chatGroupsQueryErrored) && !hasLoadedChatGroups) setHasLoadedChatGroups(true);
-  }, [chatGroupsQuerySucceeded, chatGroupsQueryErrored, hasLoadedChatGroups]);
+    if ((chatGroupsQuerySucceeded || chatGroupsQueryErrored || bootstrapFailed) && !hasLoadedChatGroups) setHasLoadedChatGroups(true);
+  }, [chatGroupsQuerySucceeded, chatGroupsQueryErrored, bootstrapFailed, hasLoadedChatGroups]);
   const isChatGroupsInitialLoading = !hasLoadedChatGroups;
   useEffect(() => {
     if (!isChatGroupsInitialLoading) return;
     dispatch(showLoading());
     return () => dispatch(hideLoading());
   }, [isChatGroupsInitialLoading, dispatch]);
+  const connectionFailed = displayedGroups.length === 0 && (chatGroupsQueryErrored || (bootstrapFailed && !authToken));
   useFocusEffect(
     useCallback(() => {
       if (!authToken) return;
@@ -958,6 +1005,24 @@ export default function ChatGroups() {
       refetchAvailableHelpers();
     }, [authToken, refetchChatGroups, refetchAvailableHelpers])
   );
+  const handleRetryConnection = useCallback(() => {
+    if (authToken) {
+      refetchChatGroups();
+      refetchAvailableHelpers();
+      return;
+    }
+    setBootstrapAttempt((attempt) => attempt + 1);
+  }, [authToken, refetchChatGroups, refetchAvailableHelpers]);
+  const hasShownConnectionToastRef = useRef(false);
+  useEffect(() => {
+    if (connectionFailed && !hasShownConnectionToastRef.current) {
+      hasShownConnectionToastRef.current = true;
+      showToast('Couldn\u2019t reach the server \u2014 tap to try again', 'info', { label: 'Retry', onPress: handleRetryConnection }, 'chat-groups-connection');
+    }
+    if (!connectionFailed) {
+      hasShownConnectionToastRef.current = false;
+    }
+  }, [connectionFailed, handleRetryConnection]);
   const helpersTop = availableHelpersData || [];
   const [renameChatGroup] = useRenameChatGroupMutation();
   const [setChatGroupVisibility] = useSetChatGroupVisibilityMutation();
@@ -987,14 +1052,11 @@ export default function ChatGroups() {
     chatDropdown: null,
     ellipsisBtn: null,
   });
-  const listCommonProps = useMemo(
-    () => ({ keyboardShouldPersistTaps: 'always', onScrollBeginDrag: closeAllMenus }),
-    [closeAllMenus]
-  );
-  const selectedChat = useMemo(
-   () => displayedGroups.find(g => g.id === selectedChatGroupId) ?? null,
-   [displayedGroups, selectedChatGroupId]
-  );
+  const closeAllMenus = useCallback(() => {
+    setIsSortOpen(false);
+    setActiveDropdownIndex(null);
+    activeDropdownGroupIdRef.current = null;
+  }, []);
   const measureToRect = useCallback((ref, key) => {
     if (!ref?.current) {
       rectsRef.current[key] = null;
@@ -1027,11 +1089,14 @@ export default function ChatGroups() {
     }
     closeAllMenus();
   }, [isSortOpen, activeDropdownIndex, closeAllMenus, pointInRect]);
-  const closeAllMenus = useCallback(() => {
-    setIsSortOpen(false);
-    setActiveDropdownIndex(null);
-    activeDropdownGroupIdRef.current = null;
-  }, []);
+  const listCommonProps = useMemo(
+    () => ({ keyboardShouldPersistTaps: 'always', onScrollBeginDrag: closeAllMenus }),
+    [closeAllMenus]
+  );
+  const selectedChat = useMemo(
+   () => displayedGroups.find(g => g.id === selectedChatGroupId) ?? null,
+   [displayedGroups, selectedChatGroupId]
+  );
   const handleHelpersScroll = useCallback(() => {
     if (isSortOpen) setIsSortOpen(false);
   }, [isSortOpen]);
@@ -1078,7 +1143,7 @@ export default function ChatGroups() {
   const handleMembersPressIn = useCallback((id, isOwner) => {
     swallowNextCloseRef.current = true;
     navigation.navigate('Members', { chatGroupId: id, isOwner });
-  }, []);
+  }, [navigation]);
   const handleMakeChatPrivatePressIn = useCallback((id) => {
     closeAllMenus();
     swallowNextCloseRef.current = true;
@@ -1148,14 +1213,14 @@ export default function ChatGroups() {
       setShowLeaveChatGroupModal(true);
     }
   }, [closeAllMenus]);
-  function handleViewChatGroupPress() {
+  const handleViewChatGroupPress = useCallback((id) => {
     closeAllMenus();
-    navigation.navigate('ChatGroup')
-  }
+    navigation.navigate('ChatGroup', { chatGroupId: id });
+  }, [closeAllMenus, navigation]);
   const handleRequestJoinChatGroupPress = useCallback(async (id) => {
     closeAllMenus();
     if (!authToken) return;
-    const result = await requestToJoinChatGroup({ authToken, chatGroupId: id });
+    await requestToJoinChatGroup({ authToken, chatGroupId: id });
   }, [closeAllMenus, authToken, requestToJoinChatGroup]);
   const handleCancelJoinRequestPress = useCallback((id) => {
     closeAllMenus();
@@ -1245,7 +1310,7 @@ export default function ChatGroups() {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.groupChatViewChatBtn} 
-                onPress={() => { handleViewChatGroupPress();}}
+                onPress={() => handleViewChatGroupPress(item.id)}
               >
                 <CustomText style={styles.groupChatViewChatTxt}>View Chat</CustomText>
               </TouchableOpacity>
@@ -1354,6 +1419,22 @@ export default function ChatGroups() {
   );
   const renderEmptyChatGroups = useCallback(() => {
     if (isChatGroupsInitialLoading) return null;
+    if (connectionFailed) {
+      return (
+        <View style={styles.emptyState}>
+          <View style={styles.emptyStateIconCircle}>
+            <SadEmoji {...styles.emptyStateIcon} />
+          </View>
+          <CustomText style={styles.emptyStateTitle}>Can't connect right now</CustomText>
+          <CustomText style={styles.emptyStateSubtitle}>
+            Check your internet connection. We'll keep retrying automatically.
+          </CustomText>
+          <TouchableOpacity style={styles.emptyStateRetryBtn} onPress={handleRetryConnection}>
+            <CustomText style={styles.emptyStateRetryTxt}>Retry</CustomText>
+          </TouchableOpacity>
+        </View>
+      );
+    }
     return (
       <View style={styles.emptyState}>
         <View style={styles.emptyStateIconCircle}>
@@ -1365,7 +1446,7 @@ export default function ChatGroups() {
         </CustomText>
       </View>
     );
-  }, [styles, isChatGroupsInitialLoading]);
+  }, [styles, isChatGroupsInitialLoading, connectionFailed, handleRetryConnection]);
   useEffect(() => {
     ellipsisRefs.current = Array(displayedGroups.length)
       .fill(null)
@@ -1399,12 +1480,6 @@ export default function ChatGroups() {
       rectsRef.current.chatDropdown = null;
     }
   }, [activeDropdownIndex, measureToRect]);
-  const navigation = useNavigation();
-  const cameFromLogin = route.params?.from === 'login';
-  const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
-  const { width } = useWindowDimensions();
-  const isTablet = width >= tabletBreakpoint;
-  const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const topNavStyle = useMemo(
     () => ({ ...styles.topNav, paddingTop: statusBarHeight }),
     [styles.topNav, statusBarHeight]

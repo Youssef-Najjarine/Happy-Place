@@ -1,8 +1,10 @@
 import EncryptedStorage from 'react-native-encrypted-storage';
 import pushNotificationService from './pushNotificationService';
+import authenticationService from './authenticationService';
 
 const TOKEN_KEY = 'auth_token';
 let sessionToken = null;
+let pendingGuestCreation = null;
 const listeners = new Set();
 
 function notifyListeners(authToken) {
@@ -22,6 +24,7 @@ const tokenStorage = {
     setSessionToken: function(authToken) {
         sessionToken = authToken;
         notifyListeners(authToken);
+        Promise.resolve(pushNotificationService.registerDevice(authToken)).catch(() => {});
     },
 
     getToken: async function() {
@@ -29,6 +32,27 @@ const tokenStorage = {
         const storedToken = await EncryptedStorage.getItem(TOKEN_KEY);
         if (storedToken) sessionToken = storedToken;
         return storedToken || null;
+    },
+
+    ensureGuestToken: async function() {
+        const existingToken = await tokenStorage.getToken();
+        if (existingToken) return existingToken;
+        if (!pendingGuestCreation) {
+            pendingGuestCreation = (async () => {
+                try {
+                    const recheckedToken = await tokenStorage.getToken();
+                    if (recheckedToken) return recheckedToken;
+                    const response = await authenticationService.createGuest();
+                    if (!response.ok) return null;
+                    const data = await response.json();
+                    await tokenStorage.saveToken(data.authToken);
+                    return data.authToken;
+                } finally {
+                    pendingGuestCreation = null;
+                }
+            })();
+        }
+        return pendingGuestCreation;
     },
 
     clearToken: async function() {

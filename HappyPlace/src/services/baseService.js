@@ -12,7 +12,7 @@ function getMediaUrl(photoUrl) {
     return baseUrl + photoUrl;
 }
 
-export default baseService = {
+const baseService = {
     postJson: async function(relativePath, body) {
         const url = getUrl(relativePath);
         const bodyString = typeof body === "string" ? body : JSON.stringify(body);
@@ -49,3 +49,5 @@ export default baseService = {
     },
     getMediaUrl: getMediaUrl
 };
+
+export default baseService;

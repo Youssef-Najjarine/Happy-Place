@@ -5,24 +5,19 @@ import tokenStorage from 'services/tokenStorage';
 import authenticationService from 'services/authenticationService';
 import pendingInvite from 'services/pendingInvite';
 import pendingNotificationRoute from 'services/pendingNotificationRoute';
-
 const VALIDATION_TIMEOUT_MS = 8000;
-
 export default function useAutoSignIn(navigation) {
     const dispatch = useDispatch();
     const [isCheckingToken, setIsCheckingToken] = useState(true);
-
     useEffect(() => {
         let settled = false;
         let timeoutId = null;
-
         const finishToHome = () => {
             if (settled) return;
             settled = true;
             if (timeoutId) clearTimeout(timeoutId);
             setIsCheckingToken(false);
         };
-
         const checkStoredToken = async () => {
             try {
                 const storedToken = await tokenStorage.getToken();
@@ -47,23 +42,21 @@ export default function useAutoSignIn(navigation) {
                     setIsCheckingToken(false);
                     return;
                 }
-                await tokenStorage.clearToken();
+                if (response.status === 401) {
+                    await tokenStorage.clearToken();
+                }
                 finishToHome();
             } catch {
                 if (settled) return;
-                await tokenStorage.clearToken();
                 finishToHome();
             }
         };
-
         timeoutId = setTimeout(finishToHome, VALIDATION_TIMEOUT_MS);
         checkStoredToken();
-
         return () => {
             settled = true;
             if (timeoutId) clearTimeout(timeoutId);
         };
     }, [navigation, dispatch]);
-
     return isCheckingToken;
 }

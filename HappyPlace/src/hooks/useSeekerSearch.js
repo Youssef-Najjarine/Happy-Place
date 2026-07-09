@@ -50,14 +50,10 @@ export default function useSeekerSearch() {
         const existing = await tokenStorage.getToken();
         if (existing) {
             const validation = await authenticationService.validateToken(existing);
-            if (validation.ok) return existing;
+            if (validation.status !== 401) return existing;
             await tokenStorage.clearToken();
         }
-        const response = await authenticationService.createGuest();
-        if (!response.ok) return null;
-        const data = await response.json();
-        await tokenStorage.saveToken(data.authToken);
-        return data.authToken;
+        return tokenStorage.ensureGuestToken();
     }, []);
 
     const handleAuthFailure = useCallback(async () => {
@@ -160,7 +156,12 @@ export default function useSeekerSearch() {
             if (cancelled || !token) return;
             const session = await helpSessionStorage.get();
             if (!cancelled && session && session.mode === 'seeking' && session.chatGroupId) {
-                const validation = await authenticationService.validateToken(token);
+                let validation = null;
+                try {
+                    validation = await authenticationService.validateToken(token);
+                } catch (error) {
+                    return;
+                }
                 if (cancelled || !validation.ok) return;
                 navigatedRef.current = false;
                 setAuthToken(token);
