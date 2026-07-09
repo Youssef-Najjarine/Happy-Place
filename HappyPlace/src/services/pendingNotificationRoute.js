@@ -1,22 +1,22 @@
-let pendingRouteName = null;
+let pendingRoute = null;
 let handled = false;
 
 const pendingNotificationRoute = {
-    set: function(routeName) {
-        if (routeName) pendingRouteName = routeName;
+    set: function(routeName, params = null) {
+        if (routeName) pendingRoute = { name: routeName, params };
     },
     peek: function() {
-        return pendingRouteName;
+        return pendingRoute;
     },
     markHandled: function() {
         handled = true;
-        pendingRouteName = null;
+        pendingRoute = null;
     },
     wasHandled: function() {
         return handled;
     },
     clear: function() {
-        pendingRouteName = null;
+        pendingRoute = null;
     }
 };
 

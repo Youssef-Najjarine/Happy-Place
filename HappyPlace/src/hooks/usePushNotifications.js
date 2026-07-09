@@ -59,13 +59,13 @@ export default function usePushNotifications() {
             });
         };
 
-        const resetToNotificationRoute = (routeName) => {
+        const resetToNotificationRoute = (routeName, routeParams) => {
             runWhenSettled(() => {
                 if (active && navigationRef.isReady()) {
                     if (routeName === 'ChatGroups') {
                         navigationRef.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
                     } else {
-                        navigationRef.reset({ index: 1, routes: [{ name: 'ChatGroups' }, { name: routeName }] });
+                        navigationRef.reset({ index: 1, routes: [{ name: 'ChatGroups' }, { name: routeName, params: routeParams }] });
                     }
                 }
             });
@@ -75,6 +75,14 @@ export default function usePushNotifications() {
             runWhenSettled(() => {
                 if (active && navigationRef.isReady()) {
                     navigationRef.navigate(routeName);
+                }
+            });
+        };
+
+        const navigateToMembers = (chatGroupId) => {
+            runWhenSettled(() => {
+                if (active && navigationRef.isReady()) {
+                    navigationRef.navigate('Members', { chatGroupId, isOwner: true });
                 }
             });
         };
@@ -119,6 +127,20 @@ export default function usePushNotifications() {
                 }
                 return;
             }
+            if (data.type === 'joinRequests') {
+                if (!data.chatGroupId) return;
+                await waitForNavigationReady();
+                if (!active) return;
+                navigateToMembers(data.chatGroupId);
+                return;
+            }
+            if (data.type === 'joinApproved') {
+                if (!data.chatGroupId) return;
+                await waitForNavigationReady();
+                if (!active) return;
+                resetToChatGroup(data.chatGroupId);
+                return;
+            }
             if (data.type === 'helpWaiting') {
                 await waitForNavigationReady();
                 if (!active) return;
@@ -157,6 +179,30 @@ export default function usePushNotifications() {
                 }, `invite-${inviteChatGroupId}`);
                 return;
             }
+            if (data.type === 'joinRequests') {
+                if (!data.chatGroupId) return;
+                const notification = remoteMessage.notification;
+                const body = notification && notification.body ? notification.body : null;
+                if (!body) return;
+                const joinRequestsChatGroupId = data.chatGroupId;
+                const joinRequestsKey = `join-requests-${joinRequestsChatGroupId}`;
+                const joinRequestsAction = { label: 'View', onPress: () => navigateToMembers(joinRequestsChatGroupId) };
+                if (data.alerting === 'true') {
+                    showToast(body, 'info', joinRequestsAction, joinRequestsKey);
+                } else {
+                    updateToastIfVisible(body, 'info', joinRequestsAction, joinRequestsKey);
+                }
+                return;
+            }
+            if (data.type === 'joinApproved') {
+                if (!data.chatGroupId) return;
+                const notification = remoteMessage.notification;
+                const body = notification && notification.body ? notification.body : null;
+                if (!body) return;
+                const approvedChatGroupId = data.chatGroupId;
+                showToast(body, 'success', { label: 'Open', onPress: () => resetToChatGroup(approvedChatGroupId) }, `join-approved-${approvedChatGroupId}`);
+                return;
+            }
             if (data.type === 'helpWaiting' || data.type === 'helpOffers') {
                 const notification = remoteMessage.notification;
                 const body = notification && notification.body ? notification.body : null;
@@ -189,6 +235,26 @@ export default function usePushNotifications() {
                 await waitForNavigationReady();
                 if (active) {
                     resetToNotificationRoute(notificationRouteName);
+                    pendingNotificationRoute.markHandled();
+                }
+                return;
+            }
+            if (active && initialData && initialData.type === 'joinRequests' && initialData.chatGroupId) {
+                const joinRequestsParams = { chatGroupId: initialData.chatGroupId, isOwner: true };
+                pendingNotificationRoute.set('Members', joinRequestsParams);
+                await waitForNavigationReady();
+                if (active) {
+                    resetToNotificationRoute('Members', joinRequestsParams);
+                    pendingNotificationRoute.markHandled();
+                }
+                return;
+            }
+            if (active && initialData && initialData.type === 'joinApproved' && initialData.chatGroupId) {
+                const approvedParams = { chatGroupId: initialData.chatGroupId };
+                pendingNotificationRoute.set('ChatGroup', approvedParams);
+                await waitForNavigationReady();
+                if (active) {
+                    resetToNotificationRoute('ChatGroup', approvedParams);
                     pendingNotificationRoute.markHandled();
                 }
                 return;

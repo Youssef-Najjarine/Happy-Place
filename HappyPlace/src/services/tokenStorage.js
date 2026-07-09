@@ -34,6 +34,10 @@ const tokenStorage = {
         return storedToken || null;
     },
 
+    peekToken: function() {
+        return sessionToken;
+    },
+
     ensureGuestToken: async function() {
         const existingToken = await tokenStorage.getToken();
         if (existingToken) return existingToken;

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { HappyColor, White, Black, LightGray, VeryLightGray, SoftGray, SemiTransparentCharcoal, VeryLightLavenderTint, VividBlueViolet } from 'src/constants/colors';
@@ -231,14 +231,38 @@ const tabletStyles = StyleSheet.create({
     color: White,
   }
 });
+const PRESENTATION_CONFIRM_TIMEOUT_MS = 1000;
+
 const HelpTopicModal = ({
   visible,
   maxLen = 100,
   onConfirm,
   onCancel,
+  onPresentationFailed,
 }) => {
   const [topic, setTopic] = useState('');
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
+  const presentationConfirmedRef = useRef(false);
+  const onPresentationFailedRef = useRef(onPresentationFailed);
+
+  useEffect(() => {
+    onPresentationFailedRef.current = onPresentationFailed;
+  }, [onPresentationFailed]);
+
+  useEffect(() => {
+    if (!visible) return;
+    presentationConfirmedRef.current = false;
+    const presentationTimer = setTimeout(() => {
+      if (!presentationConfirmedRef.current && onPresentationFailedRef.current) {
+        onPresentationFailedRef.current();
+      }
+    }, PRESENTATION_CONFIRM_TIMEOUT_MS);
+    return () => clearTimeout(presentationTimer);
+  }, [visible]);
+
+  const handleModalShow = () => {
+    presentationConfirmedRef.current = true;
+  };
 
   useEffect(() => {
     if (visible) setTopic('');
@@ -254,7 +278,7 @@ const HelpTopicModal = ({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+    <Modal visible={visible} transparent animationType="fade" onShow={handleModalShow} onRequestClose={onCancel}>
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <View style={styles.headerView}>

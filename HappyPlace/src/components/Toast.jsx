@@ -10,6 +10,9 @@ import CustomText from 'src/components/FontFamilyText';
 const SuccessGreen = '#27AE60';
 const DefaultDurationMs = 2500;
 const StickyDurationMs = 10000;
+const ShowAnimationMs = 200;
+const HideAnimationMs = 200;
+const UnmountFallbackMs = 350;
 
 let showToastFn = null;
 let hideToastFn = null;
@@ -153,42 +156,75 @@ export default function ToastHost() {
     const [type, setType] = useState('success');
     const [action, setAction] = useState(null);
     const [visible, setVisible] = useState(false);
+    const [dismissing, setDismissing] = useState(false);
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(-30)).current;
     const hideTimerRef = useRef(null);
+    const unmountTimerRef = useRef(null);
+    const dismissalSeqRef = useRef(0);
     const currentKeyRef = useRef(null);
     const visibleRef = useRef(false);
+    const dismissingRef = useRef(false);
 
     useEffect(() => {
         visibleRef.current = visible;
     }, [visible]);
 
-    const hide = useCallback(() => {
+    useEffect(() => {
+        dismissingRef.current = dismissing;
+    }, [dismissing]);
+
+    const clearTimers = useCallback(() => {
         if (hideTimerRef.current) {
             clearTimeout(hideTimerRef.current);
             hideTimerRef.current = null;
         }
+        if (unmountTimerRef.current) {
+            clearTimeout(unmountTimerRef.current);
+            unmountTimerRef.current = null;
+        }
+    }, []);
+
+    const finishHide = useCallback((dismissalSeq) => {
+        if (dismissalSeq !== dismissalSeqRef.current) return;
+        if (unmountTimerRef.current) {
+            clearTimeout(unmountTimerRef.current);
+            unmountTimerRef.current = null;
+        }
+        setVisible(false);
+        setDismissing(false);
+        setAction(null);
+    }, []);
+
+    const beginHide = useCallback(() => {
+        dismissalSeqRef.current += 1;
+        const dismissalSeq = dismissalSeqRef.current;
+        clearTimers();
         currentKeyRef.current = null;
+        setDismissing(true);
+        unmountTimerRef.current = setTimeout(() => finishHide(dismissalSeq), UnmountFallbackMs);
         Animated.parallel([
-            Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-            Animated.timing(translateY, { toValue: -30, duration: 200, useNativeDriver: true })
-        ]).start(() => {
-            setVisible(false);
-            setAction(null);
+            Animated.timing(opacity, { toValue: 0, duration: HideAnimationMs, useNativeDriver: true }),
+            Animated.timing(translateY, { toValue: -30, duration: HideAnimationMs, useNativeDriver: true })
+        ]).start(({ finished }) => {
+            if (finished) finishHide(dismissalSeq);
         });
-    }, [opacity, translateY]);
+    }, [clearTimers, finishHide, opacity, translateY]);
 
     useEffect(() => {
         showToastFn = (newMessage, newType, newAction, newKey, updateOnly) => {
             const normalizedKey = newKey != null ? newKey : null;
-            const isSameKeyUpdate = normalizedKey != null && normalizedKey === currentKeyRef.current && visibleRef.current;
+            const isSameKeyUpdate = normalizedKey != null && normalizedKey === currentKeyRef.current && visibleRef.current && !dismissingRef.current;
             if (updateOnly && !isSameKeyUpdate) {
                 return;
             }
+            dismissalSeqRef.current += 1;
+            clearTimers();
             currentKeyRef.current = normalizedKey;
             setMessage(newMessage);
             setType(newType);
             setAction(newAction || null);
+            setDismissing(false);
             setVisible(true);
             if (isSameKeyUpdate) {
                 opacity.setValue(1);
@@ -197,34 +233,24 @@ export default function ToastHost() {
                 opacity.setValue(0);
                 translateY.setValue(-30);
                 Animated.parallel([
-                    Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-                    Animated.timing(translateY, { toValue: 0, duration: 200, useNativeDriver: true })
+                    Animated.timing(opacity, { toValue: 1, duration: ShowAnimationMs, useNativeDriver: true }),
+                    Animated.timing(translateY, { toValue: 0, duration: ShowAnimationMs, useNativeDriver: true })
                 ]).start();
             }
-            if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
             const duration = newAction && newAction.label ? StickyDurationMs : DefaultDurationMs;
-            hideTimerRef.current = setTimeout(() => {
-                currentKeyRef.current = null;
-                Animated.parallel([
-                    Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-                    Animated.timing(translateY, { toValue: -30, duration: 200, useNativeDriver: true })
-                ]).start(() => {
-                    setVisible(false);
-                    setAction(null);
-                });
-            }, duration);
+            hideTimerRef.current = setTimeout(beginHide, duration);
         };
         hideToastFn = (key) => {
             if (key != null && key === currentKeyRef.current) {
-                hide();
+                beginHide();
             }
         };
         return () => {
             showToastFn = null;
             hideToastFn = null;
-            if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+            clearTimers();
         };
-    }, [opacity, translateY, hide]);
+    }, [beginHide, clearTimers, opacity, translateY]);
 
     if (!visible) return null;
 
@@ -233,14 +259,14 @@ export default function ToastHost() {
 
     const handleActionPress = () => {
         const onPress = action && action.onPress;
-        hide();
+        beginHide();
         if (onPress) onPress();
     };
 
     return (
         <View style={[styles.container, { paddingTop: statusBarHeight }]} pointerEvents="box-none">
             {hasAction ? (
-                <Animated.View style={[styles.actionToast, { backgroundColor, opacity, transform: [{ translateY }] }]}>
+                <Animated.View style={[styles.actionToast, { backgroundColor, opacity, transform: [{ translateY }] }]} pointerEvents={dismissing ? 'none' : 'auto'}>
                     <CustomText style={styles.actionText} numberOfLines={2}>{message}</CustomText>
                     <TouchableOpacity style={styles.actionBtn} onPress={handleActionPress} activeOpacity={0.85}>
                         <CustomText style={[styles.actionBtnTxt, { color: backgroundColor }]}>{action.label}</CustomText>

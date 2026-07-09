@@ -941,7 +941,7 @@ export default function ChatGroups() {
   const { width } = useWindowDimensions();
   const isTablet = width >= tabletBreakpoint;
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
-  const [authToken, setAuthToken] = useState(null);
+  const [authToken, setAuthToken] = useState(tokenStorage.peekToken());
   const [bootstrapFailed, setBootstrapFailed] = useState(false);
   const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
   useEffect(() => {
@@ -985,18 +985,19 @@ export default function ChatGroups() {
   const { data: availableHelpersData, refetch: refetchAvailableHelpers } = useAvailableHelpersQuery(authToken, { skip: !authToken, pollingInterval: 5000 });
   const [displayedGroups, setDisplayedGroups] = useState([]);
   const [hasLoadedChatGroups, setHasLoadedChatGroups] = useState(false);
+  const chatGroupsResolved = chatGroupsQuerySucceeded || chatGroupsQueryErrored || bootstrapFailed;
   useEffect(() => {
     if (chatGroupsData !== undefined) setDisplayedGroups(chatGroupsData);
   }, [chatGroupsData]);
   useEffect(() => {
-    if ((chatGroupsQuerySucceeded || chatGroupsQueryErrored || bootstrapFailed) && !hasLoadedChatGroups) setHasLoadedChatGroups(true);
-  }, [chatGroupsQuerySucceeded, chatGroupsQueryErrored, bootstrapFailed, hasLoadedChatGroups]);
+    if (chatGroupsResolved && !hasLoadedChatGroups) setHasLoadedChatGroups(true);
+  }, [chatGroupsResolved, hasLoadedChatGroups]);
   const isChatGroupsInitialLoading = !hasLoadedChatGroups;
   useEffect(() => {
-    if (!isChatGroupsInitialLoading) return;
+    if (!isChatGroupsInitialLoading || chatGroupsResolved) return;
     dispatch(showLoading());
     return () => dispatch(hideLoading());
-  }, [isChatGroupsInitialLoading, dispatch]);
+  }, [isChatGroupsInitialLoading, chatGroupsResolved, dispatch]);
   const connectionFailed = displayedGroups.length === 0 && (chatGroupsQueryErrored || (bootstrapFailed && !authToken));
   useFocusEffect(
     useCallback(() => {

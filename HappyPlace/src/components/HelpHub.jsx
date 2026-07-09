@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
@@ -11,7 +12,10 @@ import HelpTopicModal from 'src/components/HelpTopicModal';
 import StopHelpingModal from 'src/components/StopHelpingModal';
 import useSeekerSearch from 'src/hooks/useSeekerSearch';
 import useHelperListen from 'src/hooks/useHelperListen';
+import { showToast } from 'src/components/Toast';
 import { HappyColor, White, Black, VeryLightGray, SoftRosePink } from 'src/constants/colors';
+
+const HELP_TOPIC_PRESENT_DELAY_MS = 400;
 
 const phoneStyles = StyleSheet.create({
   helpView: {
@@ -300,8 +304,8 @@ const tabletStyles = StyleSheet.create({
     fontSize: scaleFont(20),
     lineHeight: scaleLineHeight(30),
     letterSpacing: scaleLetterSpacing(-0.2),
-    color: Black,
-    fontWeight: 600
+    fontWeight: 600,
+    color: Black
   }
 });
 
@@ -309,9 +313,11 @@ export default function HelpHub() {
   const navigation = useNavigation();
   const route = useRoute();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
+  const isGlobalLoading = useSelector((state) => state.loading.isLoading);
   const { phase, readyHelperCount, beginSearch, connect, cancelSearch } = useSeekerSearch();
   const { listening, pendingCount, readyCount, offeredCount, startListening, stopListening, openPicker } = useHelperListen();
   const [showHelpTopic, setShowHelpTopic] = useState(false);
+  const [pendingHelpTopic, setPendingHelpTopic] = useState(false);
   const [showStopHelping, setShowStopHelping] = useState(false);
   const [dotCount, setDotCount] = useState(0);
 
@@ -326,12 +332,26 @@ export default function HelpHub() {
   useEffect(() => {
     if (route.params?.startSearching && route.params?.searchRole === 'Seeker') {
       navigation.setParams({ startSearching: false, searchRole: null });
-      setShowHelpTopic(true);
+      setPendingHelpTopic(true);
     } else if (route.params?.startHelping) {
       navigation.setParams({ startHelping: false });
       startListening();
     }
   }, [route.params, startListening]);
+
+  useEffect(() => {
+    if (!pendingHelpTopic) return;
+    if (phase !== 'idle') {
+      setPendingHelpTopic(false);
+      return;
+    }
+    if (isGlobalLoading) return;
+    const presentTimer = setTimeout(() => {
+      setPendingHelpTopic(false);
+      setShowHelpTopic(true);
+    }, HELP_TOPIC_PRESENT_DELAY_MS);
+    return () => clearTimeout(presentTimer);
+  }, [pendingHelpTopic, isGlobalLoading, phase]);
 
   const handleHelpMe = useCallback(() => {
     setShowHelpTopic(true);
@@ -354,6 +374,11 @@ export default function HelpHub() {
     setShowHelpTopic(false);
     cancelSearch();
   }, [cancelSearch]);
+
+  const handleTopicPresentationFailed = useCallback(() => {
+    setShowHelpTopic(false);
+    showToast('Couldn\u2019t open that just now \u2014 tap HELP ME to try again', 'info');
+  }, []);
 
   const handleHelperCancel = useCallback(() => {
     if (offeredCount > 0) {
@@ -383,7 +408,7 @@ export default function HelpHub() {
             {readyHelperCount > 0 ? (
               <View style={styles.connectView}>
                 <TouchableOpacity style={styles.connectBtn} onPressIn={connect} disabled={phase === 'connecting'}>
-                  <CustomText style={styles.connectTxt}>{phase === 'connecting' ? 'Connecting…' : 'Connect'}</CustomText>
+                  <CustomText style={styles.connectTxt}>{phase === 'connecting' ? 'Connecting\u2026' : 'Connect'}</CustomText>
                 </TouchableOpacity>
               </View>
             ) : null}
@@ -446,6 +471,7 @@ export default function HelpHub() {
         maxLen={100}
         onConfirm={handleConfirmTopic}
         onCancel={handleCancelTopic}
+        onPresentationFailed={handleTopicPresentationFailed}
       />
       <StopHelpingModal
         visible={showStopHelping}
