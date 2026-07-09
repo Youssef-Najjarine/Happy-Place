@@ -67,12 +67,13 @@ public static class HelpOfferManager {
                 return HelpJoinResult.Unavailable();
         }
         bool alreadyMember = dbContext.ChatGroupMembers.Any(field => field.ChatGroupId == chatGroupId && field.UserAccountId == userAccountId.Value);
-        if (alreadyMember)
+        if (alreadyMember) {
+            ClaimOwnershipIfUnowned(dbContext, chatGroupId, userAccountId.Value);
             return HelpJoinResult.Joined(chatGroup.Id, chatGroup.Name);
+        }
         dbContext.ChatGroupMembers.Add(new() { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, UserAccountId = userAccountId.Value, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = now });
         TrySaveChanges(dbContext);
-        if (chatGroup.OwnerUserAccountId == null)
-            ClaimOwnershipIfUnowned(dbContext, chatGroupId, userAccountId.Value);
+        ClaimOwnershipIfUnowned(dbContext, chatGroupId, userAccountId.Value);
         return HelpJoinResult.Joined(chatGroup.Id, chatGroup.Name);
     }
 

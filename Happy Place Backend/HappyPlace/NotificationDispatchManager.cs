@@ -88,6 +88,67 @@ public static class NotificationDispatchManager {
         }
     }
 
+    // Methods - Event Hooks (Join Requests / group owner)
+
+    public static void MarkJoinRequestsDirty(Guid chatGroupId) {
+        try {
+            using var dbContext = HappyPlaceDbContext.Create();
+            ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId);
+            if (chatGroup == null || chatGroup.OwnerUserAccountId == null)
+                return;
+            EnsureJoinRequestsChannel(chatGroupId, chatGroup.OwnerUserAccountId.Value);
+            MarkDirty(dbContext.NotificationChannels.Where(field => field.Kind == NotificationChannelKind.JoinRequests && field.ScopeChatGroupId == chatGroupId));
+        }
+        catch (Exception) {
+        }
+    }
+
+    public static void RemoveJoinRequestsChannel(Guid chatGroupId) {
+        try {
+            TeardownChannels(field => field.Kind == NotificationChannelKind.JoinRequests && field.ScopeChatGroupId == chatGroupId);
+        }
+        catch (Exception) {
+        }
+    }
+
+    public static void SyncJoinRequestsOwner(Guid chatGroupId) {
+        try {
+            Guid? currentOwnerUserAccountId;
+            bool ownerMatchesChannel;
+            bool hasPendingRequests;
+            using (var dbContext = HappyPlaceDbContext.Create()) {
+                ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId);
+                currentOwnerUserAccountId = chatGroup != null && chatGroup.Status == ChatGroupStatus.Active ? chatGroup.OwnerUserAccountId : null;
+                NotificationChannel existingChannel = dbContext.NotificationChannels.SingleOrDefault(field => field.Kind == NotificationChannelKind.JoinRequests && field.ScopeChatGroupId == chatGroupId);
+                ownerMatchesChannel = existingChannel == null || existingChannel.RecipientUserAccountId == currentOwnerUserAccountId;
+                hasPendingRequests = dbContext.ChatGroupMembers.Any(field => field.ChatGroupId == chatGroupId && field.Status == ChatGroupMemberStatus.Pending);
+            }
+            if (!ownerMatchesChannel)
+                TeardownChannels(field => field.Kind == NotificationChannelKind.JoinRequests && field.ScopeChatGroupId == chatGroupId);
+            if (currentOwnerUserAccountId != null && hasPendingRequests)
+                MarkJoinRequestsDirty(chatGroupId);
+        }
+        catch (Exception) {
+        }
+    }
+
+    // Methods - Event Pushes
+
+    public static void SendJoinApprovedPush(Guid recipientUserAccountId, Guid chatGroupId, string chatGroupName) {
+        try {
+            SendToRecipientDevices(recipientUserAccountId, deviceToken => new PushMessage {
+                Token = deviceToken,
+                Title = "You're in!",
+                Body = $"You were accepted into {chatGroupName}.",
+                Data = new() { ["type"] = "joinApproved", ["chatGroupId"] = chatGroupId.ToString(), ["alerting"] = "true" },
+                CollapseId = $"join-approved-{chatGroupId}",
+                Alerting = true
+            });
+        }
+        catch (Exception) {
+        }
+    }
+
     // Methods - Sweep
 
     public static void Sweep() {
@@ -167,7 +228,15 @@ public static class NotificationDispatchManager {
         using var dbContext = HappyPlaceDbContext.Create();
         if (channel.Kind == NotificationChannelKind.Waiting)
             return CountWaitingForHelper(dbContext, channel.RecipientUserAccountId);
+        if (channel.Kind == NotificationChannelKind.JoinRequests)
+            return CountPendingJoinRequests(dbContext, channel.ScopeChatGroupId);
         return CountOffersForGroup(dbContext, channel.ScopeChatGroupId);
+    }
+
+    private static int CountPendingJoinRequests(HappyPlaceDbContext dbContext, Guid? chatGroupId) {
+        if (chatGroupId == null)
+            return 0;
+        return dbContext.ChatGroupMembers.Count(field => field.ChatGroupId == chatGroupId.Value && field.Status == ChatGroupMemberStatus.Pending);
     }
 
     private static int CountWaitingForHelper(HappyPlaceDbContext dbContext, Guid helperUserAccountId) {
@@ -234,6 +303,8 @@ public static class NotificationDispatchManager {
     private static string BuildCollapseId(NotificationChannel channel) {
         if (channel.Kind == NotificationChannelKind.Waiting)
             return "help-waiting";
+        if (channel.Kind == NotificationChannelKind.JoinRequests)
+            return $"join-requests-{channel.ScopeChatGroupId}";
         return $"help-offers-{channel.ScopeChatGroupId}";
     }
 
@@ -245,12 +316,31 @@ public static class NotificationDispatchManager {
                 ["count"] = count.ToString()
             });
         }
+        if (channel.Kind == NotificationChannelKind.JoinRequests) {
+            string chatGroupName = LoadChatGroupName(channel.ScopeChatGroupId);
+            string joinBody = count == 1 ? $"1 person wants to join {chatGroupName}." : $"{count} people want to join {chatGroupName}.";
+            return new NotificationContent("Join requests", joinBody, new() {
+                ["type"] = "joinRequests",
+                ["count"] = count.ToString(),
+                ["chatGroupId"] = channel.ScopeChatGroupId == null ? "" : channel.ScopeChatGroupId.Value.ToString()
+            });
+        }
         string offersBody = count == 1 ? "1 person wants to help with your request." : $"{count} people want to help with your request.";
         return new NotificationContent("Help is on the way", offersBody, new() {
             ["type"] = "helpOffers",
             ["count"] = count.ToString(),
             ["chatGroupId"] = channel.ScopeChatGroupId == null ? "" : channel.ScopeChatGroupId.Value.ToString()
         });
+    }
+
+    private static string LoadChatGroupName(Guid? chatGroupId) {
+        if (chatGroupId == null)
+            return "your group";
+        using var dbContext = HappyPlaceDbContext.Create();
+        ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId.Value);
+        if (chatGroup == null || string.IsNullOrWhiteSpace(chatGroup.Name))
+            return "your group";
+        return chatGroup.Name;
     }
 
     // Methods - Channel Lifecycle
@@ -280,6 +370,22 @@ public static class NotificationDispatchManager {
             Id = Guid.NewGuid(),
             RecipientUserAccountId = seekerUserAccountId,
             Kind = NotificationChannelKind.Offers,
+            ScopeChatGroupId = chatGroupId,
+            LastSentCount = 0,
+            IsLive = false
+        });
+        TrySaveChanges(dbContext);
+    }
+
+    private static void EnsureJoinRequestsChannel(Guid chatGroupId, Guid ownerUserAccountId) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        bool exists = dbContext.NotificationChannels.Any(field => field.Kind == NotificationChannelKind.JoinRequests && field.ScopeChatGroupId == chatGroupId);
+        if (exists)
+            return;
+        dbContext.NotificationChannels.Add(new() {
+            Id = Guid.NewGuid(),
+            RecipientUserAccountId = ownerUserAccountId,
+            Kind = NotificationChannelKind.JoinRequests,
             ScopeChatGroupId = chatGroupId,
             LastSentCount = 0,
             IsLive = false

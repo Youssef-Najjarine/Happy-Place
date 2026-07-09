@@ -169,6 +169,7 @@ public static class ChatGroupManager {
         ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId);
         if (!IsOwnedActiveGroup(chatGroup, userAccountId.Value))
             return ChatGroupDeleteResult.None();
+        NotificationDispatchManager.RemoveJoinRequestsChannel(chatGroupId);
         dbContext.ChatGroups.Where(field => field.Id == chatGroupId).ExecuteDelete();
         return ChatGroupDeleteResult.Deleted();
     }
@@ -212,6 +213,7 @@ public static class ChatGroupManager {
         }
         dbContext.ChatGroupMembers.Add(new ChatGroupMember { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, UserAccountId = userAccountId.Value, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Pending, JoinedAtUtc = DateTime.UtcNow });
         TrySaveChanges(dbContext);
+        NotificationDispatchManager.MarkJoinRequestsDirty(chatGroupId);
         return ChatGroupJoinRequestResult.Requested();
     }
 
@@ -225,6 +227,7 @@ public static class ChatGroupManager {
             .ExecuteDelete();
         if (deletedCount == 0)
             return ChatGroupCancelRequestResult.NotRequested();
+        NotificationDispatchManager.MarkJoinRequestsDirty(chatGroupId);
         return ChatGroupCancelRequestResult.Cancelled();
     }
 
@@ -241,8 +244,11 @@ public static class ChatGroupManager {
         int approvedCount = dbContext.ChatGroupMembers
             .Where(field => field.ChatGroupId == chatGroupId && field.UserAccountId == memberUserAccountId && field.Status == ChatGroupMemberStatus.Pending)
             .ExecuteUpdate(setters => setters.SetProperty(field => field.Status, ChatGroupMemberStatus.Active));
-        if (approvedCount > 0)
+        if (approvedCount > 0) {
+            NotificationDispatchManager.MarkJoinRequestsDirty(chatGroupId);
+            NotificationDispatchManager.SendJoinApprovedPush(memberUserAccountId, chatGroupId, chatGroup.Name);
             return ChatGroupApproveResult.Approved();
+        }
         bool alreadyActiveMember = dbContext.ChatGroupMembers.Any(field => field.ChatGroupId == chatGroupId && field.UserAccountId == memberUserAccountId && field.Status == ChatGroupMemberStatus.Active);
         if (alreadyActiveMember)
             return ChatGroupApproveResult.AlreadyMember();
@@ -262,6 +268,7 @@ public static class ChatGroupManager {
             .ExecuteDelete();
         if (rejectedCount == 0)
             return ChatGroupRejectResult.NotPending();
+        NotificationDispatchManager.MarkJoinRequestsDirty(chatGroupId);
         return ChatGroupRejectResult.Rejected();
     }
 
@@ -316,9 +323,11 @@ public static class ChatGroupManager {
                     .Where(field => field.Id == chatGroupId)
                     .ExecuteUpdate(setters => setters.SetProperty(field => field.OwnerUserAccountId, (Guid?)successor.UserAccountId));
                 transaction.Commit();
+                NotificationDispatchManager.SyncJoinRequestsOwner(chatGroupId);
                 return ChatGroupLeaveResult.Transferred();
             }
             if (disposition == ChatGroupLeaveDisposition.Delete) {
+                NotificationDispatchManager.RemoveJoinRequestsChannel(chatGroupId);
                 int deleted = dbContext.ChatGroups
                     .Where(field => field.Id == chatGroupId && !dbContext.ChatGroupMembers.Any(member => member.ChatGroupId == chatGroupId && member.Status == ChatGroupMemberStatus.Active))
                     .ExecuteDelete();
@@ -343,6 +352,7 @@ public static class ChatGroupManager {
                     .Where(field => field.ChatGroupId == chatGroupId && field.Status == ChatGroupMemberStatus.Pending)
                     .ExecuteDelete();
                 transaction.Commit();
+                NotificationDispatchManager.RemoveJoinRequestsChannel(chatGroupId);
                 return ChatGroupLeaveResult.MadePublic();
             }
             transaction.Rollback();
