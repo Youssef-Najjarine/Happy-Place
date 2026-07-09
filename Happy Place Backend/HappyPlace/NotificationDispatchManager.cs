@@ -69,6 +69,25 @@ public static class NotificationDispatchManager {
         }
     }
 
+    // Methods - Event Hooks (Device registration)
+
+    public static void ResetChannelsForRecipient(Guid recipientUserAccountId) {
+        try {
+            using var dbContext = HappyPlaceDbContext.Create();
+            DateTime now = DateTime.UtcNow;
+            DateTime quietDue = now.AddMilliseconds(QuietWindowMs);
+            dbContext.NotificationChannels
+                .Where(field => field.RecipientUserAccountId == recipientUserAccountId)
+                .ExecuteUpdate(setters => setters
+                    .SetProperty(field => field.LastSentCount, 0)
+                    .SetProperty(field => field.LastEventAtUtc, now)
+                    .SetProperty(field => field.FirstDirtyAtUtc, field => field.FirstDirtyAtUtc == null ? now : field.FirstDirtyAtUtc)
+                    .SetProperty(field => field.DueAtUtc, quietDue));
+        }
+        catch (Exception) {
+        }
+    }
+
     // Methods - Sweep
 
     public static void Sweep() {
@@ -107,15 +126,12 @@ public static class NotificationDispatchManager {
         bool wasLive = channel.IsLive;
         bool sent = false;
         if (count <= 0) {
-            if (wasLive) {
-                SendDismissal(channel);
-                sent = true;
-            }
+            if (wasLive)
+                sent = SendDismissal(channel) > 0;
         }
         else if (count != channel.LastSentCount || !wasLive) {
             bool alerting = count > channel.LastSentCount;
-            SendCountUpdate(channel, count, alerting);
-            sent = true;
+            sent = SendCountUpdate(channel, count, alerting) > 0;
         }
         FinalizeChannel(channel, count, sent);
     }
@@ -171,13 +187,13 @@ public static class NotificationDispatchManager {
 
     // Methods - Sending
 
-    private static void SendCountUpdate(NotificationChannel channel, int count, bool alerting) {
+    private static int SendCountUpdate(NotificationChannel channel, int count, bool alerting) {
         string collapseId = BuildCollapseId(channel);
         NotificationContent content = BuildCountContent(channel, count);
         Dictionary<string, string> data = new(content.Data) {
             ["alerting"] = alerting ? "true" : "false"
         };
-        SendToRecipientDevices(channel.RecipientUserAccountId, deviceToken => new PushMessage {
+        return SendToRecipientDevices(channel.RecipientUserAccountId, deviceToken => new PushMessage {
             Token = deviceToken,
             Title = content.Title,
             Body = content.Body,
@@ -187,9 +203,9 @@ public static class NotificationDispatchManager {
         });
     }
 
-    private static void SendDismissal(NotificationChannel channel) {
+    private static int SendDismissal(NotificationChannel channel) {
         string collapseId = BuildCollapseId(channel);
-        SendToRecipientDevices(channel.RecipientUserAccountId, deviceToken => new PushMessage {
+        return SendToRecipientDevices(channel.RecipientUserAccountId, deviceToken => new PushMessage {
             Token = deviceToken,
             Data = new() { ["type"] = "dismiss", ["collapseId"] = collapseId },
             CollapseId = collapseId,
@@ -197,12 +213,14 @@ public static class NotificationDispatchManager {
         });
     }
 
-    private static void SendToRecipientDevices(Guid recipientUserAccountId, Func<string, PushMessage> buildMessage) {
+    private static int SendToRecipientDevices(Guid recipientUserAccountId, Func<string, PushMessage> buildMessage) {
         using var dbContext = HappyPlaceDbContext.Create();
         List<DeviceToken> deviceTokens = [.. dbContext.DeviceTokens.Where(field => field.UserAccountId == recipientUserAccountId)];
+        int deliveredCount = 0;
         foreach (DeviceToken deviceToken in deviceTokens) {
             try {
                 PushSender.Create().Send(buildMessage(deviceToken.Token));
+                deliveredCount++;
             }
             catch (PushTokenInvalidException) {
                 dbContext.DeviceTokens.Where(field => field.Id == deviceToken.Id).ExecuteDelete();
@@ -210,6 +228,7 @@ public static class NotificationDispatchManager {
             catch (Exception) {
             }
         }
+        return deliveredCount;
     }
 
     private static string BuildCollapseId(NotificationChannel channel) {

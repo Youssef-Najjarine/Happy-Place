@@ -34,12 +34,16 @@ public static class DeviceTokenManager {
         if (existingToken == null) {
             dbContext.DeviceTokens.Add(new() { Id = Guid.NewGuid(), UserAccountId = userAccountId, Token = token, Platform = platform, CreatedAtUtc = now, LastSeenAtUtc = now });
             TrySaveChanges(dbContext);
+            NotificationDispatchManager.ResetChannelsForRecipient(userAccountId);
             return;
         }
+        bool reassignedToNewAccount = existingToken.UserAccountId != userAccountId;
         existingToken.UserAccountId = userAccountId;
         existingToken.Platform = platform;
         existingToken.LastSeenAtUtc = now;
         TrySaveChanges(dbContext);
+        if (reassignedToNewAccount)
+            NotificationDispatchManager.ResetChannelsForRecipient(userAccountId);
     }
 
     private static void TrySaveChanges(HappyPlaceDbContext dbContext) {
