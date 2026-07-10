@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -318,6 +318,7 @@ export default function HelpHub() {
   const { listening, pendingCount, readyCount, offeredCount, startListening, stopListening, openPicker } = useHelperListen();
   const [showHelpTopic, setShowHelpTopic] = useState(false);
   const [pendingHelpTopic, setPendingHelpTopic] = useState(false);
+  const topicRetryUsedRef = useRef(false);
   const [showStopHelping, setShowStopHelping] = useState(false);
   const [dotCount, setDotCount] = useState(0);
 
@@ -348,12 +349,14 @@ export default function HelpHub() {
     if (isGlobalLoading) return;
     const presentTimer = setTimeout(() => {
       setPendingHelpTopic(false);
+      topicRetryUsedRef.current = false;
       setShowHelpTopic(true);
     }, HELP_TOPIC_PRESENT_DELAY_MS);
     return () => clearTimeout(presentTimer);
   }, [pendingHelpTopic, isGlobalLoading, phase]);
 
   const handleHelpMe = useCallback(() => {
+    topicRetryUsedRef.current = false;
     setShowHelpTopic(true);
   }, []);
 
@@ -377,7 +380,12 @@ export default function HelpHub() {
 
   const handleTopicPresentationFailed = useCallback(() => {
     setShowHelpTopic(false);
-    showToast('Couldn\u2019t open that just now \u2014 tap HELP ME to try again', 'info');
+    if (!topicRetryUsedRef.current) {
+      topicRetryUsedRef.current = true;
+      setTimeout(() => setShowHelpTopic(true), HELP_TOPIC_PRESENT_DELAY_MS);
+      return;
+    }
+    showToast('Couldn\u2019t open that. Tap HELP ME to try again', 'info');
   }, []);
 
   const handleHelperCancel = useCallback(() => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, TouchableOpacity, StyleSheet, Image, FlatList, useWindowDimensions, Pressable } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image, FlatList, useWindowDimensions, Pressable, ActivityIndicator } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import HelpHub from 'src/components/HelpHub';
 import AccountBar from 'src/components/AccountBar';
@@ -42,7 +42,8 @@ import tokenStorage from 'src/services/tokenStorage';
 import authenticationService from 'src/services/authenticationService';
 import { showToast } from 'src/components/Toast';
 import {
-  useListChatGroupsQuery,
+  useListChatGroupsPageQuery,
+  useLazyListChatGroupsPageQuery,
   useAvailableHelpersQuery,
   useRenameChatGroupMutation,
   useSetChatGroupVisibilityMutation,
@@ -193,6 +194,10 @@ const phoneStyles = StyleSheet.create({
     paddingBottom: scaleHeight(100),
     width: '100%',
     flexGrow: 1
+  },
+  pageLoadingFooter: {
+    paddingVertical: scaleHeight(16),
+    alignItems: 'center'
   },
   emptyState: {
     flex: 1,
@@ -600,6 +605,10 @@ const tabletStyles = StyleSheet.create({
     width: '100%',
     flexGrow: 1
   },
+  pageLoadingFooter: {
+    paddingVertical: scaleHeight(16),
+    alignItems: 'center'
+  },
   emptyState: {
     flex: 1,
     alignItems: 'center',
@@ -981,14 +990,17 @@ export default function ChatGroups() {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(timer);
   }, [search]);
-  const { data: chatGroupsData, isSuccess: chatGroupsQuerySucceeded, isError: chatGroupsQueryErrored, refetch: refetchChatGroups } = useListChatGroupsQuery({ authToken, sortBy, search: debouncedSearch }, { skip: !authToken, pollingInterval: 5000 });
-  const { data: availableHelpersData, refetch: refetchAvailableHelpers } = useAvailableHelpersQuery(authToken, { skip: !authToken, pollingInterval: 5000 });
+  const isFocused = useIsFocused();
+  const listPollingInterval = isFocused ? 5000 : 0;
+  const { data: chatGroupsPage, isSuccess: chatGroupsQuerySucceeded, isError: chatGroupsQueryErrored, refetch: refetchChatGroups } = useListChatGroupsPageQuery({ authToken, sortBy, search: debouncedSearch, cursor: null }, { skip: !authToken, pollingInterval: listPollingInterval });
+  const [fetchNextChatGroupsPage, { isFetching: isFetchingNextChatGroupsPage }] = useLazyListChatGroupsPageQuery();
+  const { data: availableHelpersData, refetch: refetchAvailableHelpers } = useAvailableHelpersQuery(authToken, { skip: !authToken, pollingInterval: listPollingInterval });
   const [displayedGroups, setDisplayedGroups] = useState([]);
   const [hasLoadedChatGroups, setHasLoadedChatGroups] = useState(false);
   const chatGroupsResolved = chatGroupsQuerySucceeded || chatGroupsQueryErrored || bootstrapFailed;
   useEffect(() => {
-    if (chatGroupsData !== undefined) setDisplayedGroups(chatGroupsData);
-  }, [chatGroupsData]);
+    if (chatGroupsPage?.items !== undefined) setDisplayedGroups(chatGroupsPage.items);
+  }, [chatGroupsPage]);
   useEffect(() => {
     if (chatGroupsResolved && !hasLoadedChatGroups) setHasLoadedChatGroups(true);
   }, [chatGroupsResolved, hasLoadedChatGroups]);
@@ -1448,6 +1460,37 @@ export default function ChatGroups() {
       </View>
     );
   }, [styles, isChatGroupsInitialLoading, connectionFailed, handleRetryConnection]);
+  const handleEndReached = useCallback(() => {
+    const nextCursor = chatGroupsPage?.nextCursor;
+    if (!authToken || !nextCursor || isFetchingNextChatGroupsPage) return;
+    fetchNextChatGroupsPage({ authToken, sortBy, search: debouncedSearch, cursor: nextCursor });
+  }, [authToken, sortBy, debouncedSearch, chatGroupsPage?.nextCursor, isFetchingNextChatGroupsPage, fetchNextChatGroupsPage]);
+  const renderFeedHeader = useCallback(() => {
+    if (helpersTop.length === 0) return null;
+    return (
+      <View style={styles.helpers}>
+        <CustomText style={styles.availableHelpersTxt}>Available Helpers</CustomText>
+        <FlatList
+          data={helpersTop}
+          {...listCommonProps}
+          onScroll={handleHelpersScroll}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.helpersListContent}
+          keyExtractor={(item) => item.id}
+          renderItem={renderHelper}
+          horizontal
+        />
+      </View>
+    );
+  }, [helpersTop, styles, listCommonProps, handleHelpersScroll, renderHelper]);
+  const renderPageLoadingFooter = useCallback(() => {
+    if (!isFetchingNextChatGroupsPage) return null;
+    return (
+      <View style={styles.pageLoadingFooter}>
+        <ActivityIndicator color={HappyColor} />
+      </View>
+    );
+  }, [isFetchingNextChatGroupsPage, styles]);
   useEffect(() => {
     ellipsisRefs.current = Array(displayedGroups.length)
       .fill(null)
@@ -1506,21 +1549,6 @@ export default function ChatGroups() {
           />
         </View>
         <View style={styles.mainContent}>
-          {helpersTop.length > 0 && (
-            <View style={styles.helpers}>
-              <CustomText style={styles.availableHelpersTxt}>Available Helpers</CustomText>
-              <FlatList
-                data={helpersTop}
-                {...listCommonProps}
-                onScroll={handleHelpersScroll}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.helpersListContent}
-                keyExtractor={(item) => item.id}
-                renderItem={renderHelper}
-                horizontal
-              />
-            </View>
-          )}
           <View style={styles.ChatGroups}>
             <ActiveIndexContext.Provider value={activeDropdownIndex}>
               <FlatList
@@ -1535,6 +1563,10 @@ export default function ChatGroups() {
                 removeClippedSubviews={false}
                 extraData={{ activeDropdownIndex, displayedGroups }}
                 renderItem={renderChatGroup}
+                ListHeaderComponent={renderFeedHeader}
+                onEndReached={handleEndReached}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={renderPageLoadingFooter}
                 ListEmptyComponent={renderEmptyChatGroups}
                 CellRendererComponent={ActiveListCell}
               />

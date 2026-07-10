@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { StyleSheet, Animated, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Animated, View, TouchableOpacity, PanResponder } from 'react-native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
@@ -159,6 +159,8 @@ export default function ToastHost() {
     const [dismissing, setDismissing] = useState(false);
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(-30)).current;
+    const dragY = useRef(new Animated.Value(0)).current;
+    const combinedTranslateY = useRef(Animated.add(translateY, dragY)).current;
     const hideTimerRef = useRef(null);
     const unmountTimerRef = useRef(null);
     const dismissalSeqRef = useRef(0);
@@ -211,6 +213,31 @@ export default function ToastHost() {
         });
     }, [clearTimers, finishHide, opacity, translateY]);
 
+    const beginHideRef = useRef(beginHide);
+
+    useEffect(() => {
+        beginHideRef.current = beginHide;
+    }, [beginHide]);
+
+    const swipePanResponder = useRef(PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy < -6 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+        onPanResponderMove: (_, gestureState) => {
+            dragY.setValue(Math.min(0, gestureState.dy));
+        },
+        onPanResponderRelease: (_, gestureState) => {
+            if (gestureState.dy < -30 || gestureState.vy < -0.5) {
+                beginHideRef.current();
+                Animated.timing(dragY, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+                return;
+            }
+            Animated.spring(dragY, { toValue: 0, useNativeDriver: true }).start();
+        },
+        onPanResponderTerminate: () => {
+            Animated.spring(dragY, { toValue: 0, useNativeDriver: true }).start();
+        }
+    })).current;
+
     useEffect(() => {
         showToastFn = (newMessage, newType, newAction, newKey, updateOnly) => {
             const normalizedKey = newKey != null ? newKey : null;
@@ -229,9 +256,11 @@ export default function ToastHost() {
             if (isSameKeyUpdate) {
                 opacity.setValue(1);
                 translateY.setValue(0);
+                dragY.setValue(0);
             } else {
                 opacity.setValue(0);
                 translateY.setValue(-30);
+                dragY.setValue(0);
                 Animated.parallel([
                     Animated.timing(opacity, { toValue: 1, duration: ShowAnimationMs, useNativeDriver: true }),
                     Animated.timing(translateY, { toValue: 0, duration: ShowAnimationMs, useNativeDriver: true })
@@ -266,14 +295,14 @@ export default function ToastHost() {
     return (
         <View style={[styles.container, { paddingTop: statusBarHeight }]} pointerEvents="box-none">
             {hasAction ? (
-                <Animated.View style={[styles.actionToast, { backgroundColor, opacity, transform: [{ translateY }] }]} pointerEvents={dismissing ? 'none' : 'auto'}>
+                <Animated.View {...swipePanResponder.panHandlers} style={[styles.actionToast, { backgroundColor, opacity, transform: [{ translateY: combinedTranslateY }] }]} pointerEvents={dismissing ? 'none' : 'auto'}>
                     <CustomText style={styles.actionText} numberOfLines={2}>{message}</CustomText>
                     <TouchableOpacity style={styles.actionBtn} onPress={handleActionPress} activeOpacity={0.85}>
                         <CustomText style={[styles.actionBtnTxt, { color: backgroundColor }]}>{action.label}</CustomText>
                     </TouchableOpacity>
                 </Animated.View>
             ) : (
-                <Animated.View style={[styles.toast, { backgroundColor, opacity, transform: [{ translateY }] }]} pointerEvents="none">
+                <Animated.View {...swipePanResponder.panHandlers} style={[styles.toast, { backgroundColor, opacity, transform: [{ translateY: combinedTranslateY }] }]} pointerEvents={dismissing ? 'none' : 'auto'}>
                     <CustomText style={styles.text}>{message}</CustomText>
                 </Animated.View>
             )}

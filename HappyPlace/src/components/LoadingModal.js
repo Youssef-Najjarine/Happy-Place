@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { Modal, View, StyleSheet, Platform, Animated, Easing } from 'react-native';
+import React, { useRef, useEffect, useState } from 'react';
+import { View, StyleSheet, Platform, Animated, Easing } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
@@ -8,12 +8,21 @@ import InnerArc from 'assets/images/loading/inner-arc.svg';
 import MiddleArc from 'assets/images/loading/middle-arc.svg';
 import OuterArc from 'assets/images/loading/outer-arc.svg';
 
+const FadeMs = 150;
+const UnmountFallbackMs = 300;
+
 const phoneStyles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: SemiTransparentCharcoal,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 9000,
+    elevation: 9000,
   },
   spinnerContainer: {
     width: scaleWidth(136),
@@ -56,9 +65,34 @@ const tabletStyles = StyleSheet.create({});
 const LoadingModal = () => {
   const isLoading = useSelector((state) => state.loading.isLoading);
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
+  const [mounted, setMounted] = useState(false);
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const unmountTimerRef = useRef(null);
   const outerRotate = useRef(new Animated.Value(0)).current;
   const middleRotate = useRef(new Animated.Value(0)).current;
   const innerRotate = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isLoading) {
+      if (unmountTimerRef.current) {
+        clearTimeout(unmountTimerRef.current);
+        unmountTimerRef.current = null;
+      }
+      setMounted(true);
+      Animated.timing(overlayOpacity, { toValue: 1, duration: FadeMs, useNativeDriver: true }).start();
+      return;
+    }
+    unmountTimerRef.current = setTimeout(() => setMounted(false), UnmountFallbackMs);
+    Animated.timing(overlayOpacity, { toValue: 0, duration: FadeMs, useNativeDriver: true }).start(({ finished }) => {
+      if (finished) setMounted(false);
+    });
+    return () => {
+      if (unmountTimerRef.current) {
+        clearTimeout(unmountTimerRef.current);
+        unmountTimerRef.current = null;
+      }
+    };
+  }, [isLoading, overlayOpacity]);
 
   const outerDeg = outerRotate.interpolate({
     inputRange: [0, 1],
@@ -120,22 +154,22 @@ const LoadingModal = () => {
     };
   }, [isLoading, outerRotate, middleRotate, innerRotate]);
 
+  if (!mounted) return null;
+
   return (
-    <Modal transparent visible={isLoading} animationType="fade" onRequestClose={() => {}}>
-      <View style={styles.overlay}>
-        <View style={styles.spinnerContainer}>
-          <Animated.View style={{ ...styles.arcOuter, transform: [{ rotate: outerDeg }] }}>
-            <OuterArc />
-          </Animated.View>
-          <Animated.View style={{ ...styles.arcMiddle, transform: [{ rotate: middleDeg }] }}>
-            <MiddleArc />
-          </Animated.View>
-          <Animated.View style={{ ...styles.arcInner, transform: [{ rotate: innerDeg }] }}>
-            <InnerArc />
-          </Animated.View>
-        </View>
+    <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]} pointerEvents={isLoading ? 'auto' : 'none'}>
+      <View style={styles.spinnerContainer}>
+        <Animated.View style={{ ...styles.arcOuter, transform: [{ rotate: outerDeg }] }}>
+          <OuterArc />
+        </Animated.View>
+        <Animated.View style={{ ...styles.arcMiddle, transform: [{ rotate: middleDeg }] }}>
+          <MiddleArc />
+        </Animated.View>
+        <Animated.View style={{ ...styles.arcInner, transform: [{ rotate: innerDeg }] }}>
+          <InnerArc />
+        </Animated.View>
       </View>
-    </Modal>
+    </Animated.View>
   );
 };
 

@@ -21,8 +21,11 @@ function patchAllFeeds(dispatch, getState, mutate) {
     const patches = [];
     for (const cacheKey in queries) {
         const entry = queries[cacheKey];
-        if (entry && entry.endpointName === 'listChatGroups' && entry.status === 'fulfilled') {
+        if (!entry || entry.status !== 'fulfilled') continue;
+        if (entry.endpointName === 'listChatGroups') {
             patches.push(dispatch(chatGroupsApi.util.updateQueryData('listChatGroups', entry.originalArgs, mutate)));
+        } else if (entry.endpointName === 'listChatGroupsPage') {
+            patches.push(dispatch(chatGroupsApi.util.updateQueryData('listChatGroupsPage', entry.originalArgs, (draft) => mutate(draft.items))));
         }
     }
     return patches;
@@ -46,6 +49,33 @@ export const chatGroupsApi = createApi({
             transformResponse: (response) => (response || []).map((chatGroup) => ({ ...chatGroup, public: chatGroup.isPublic })),
             providesTags: ['ChatGroupList'],
         }),
+        listChatGroupsPage: builder.query({
+            query: (args) => ({ path: 'chatGroup/listPage', body: { AuthToken: args.authToken, SortBy: args.sortBy, Search: args.search, Cursor: args.cursor } }),
+            transformResponse: (page) => ({
+                items: (page.items || []).map((chatGroup) => ({ ...chatGroup, public: chatGroup.isPublic })),
+                nextCursor: page.nextCursor == null ? null : page.nextCursor
+            }),
+            serializeQueryArgs: ({ queryArgs }) => ({
+                authToken: queryArgs.authToken,
+                sortBy: queryArgs.sortBy,
+                search: queryArgs.search
+            }),
+            merge: (currentCache, newPage, { arg }) => {
+                if (!arg.cursor) {
+                    const freshIds = new Set(newPage.items.map((item) => item.id));
+                    const survivingTail = currentCache.items.filter((item) => !freshIds.has(item.id) && currentCache.items.indexOf(item) >= newPage.items.length);
+                    const hasPagedDeeper = currentCache.items.length > newPage.items.length;
+                    currentCache.items = [...newPage.items, ...survivingTail];
+                    currentCache.nextCursor = hasPagedDeeper ? currentCache.nextCursor : newPage.nextCursor;
+                    return;
+                }
+                const existingIds = new Set(currentCache.items.map((item) => item.id));
+                currentCache.items.push(...newPage.items.filter((item) => !existingIds.has(item.id)));
+                currentCache.nextCursor = newPage.nextCursor;
+            },
+            forceRefetch: ({ currentArg, previousArg }) => currentArg?.cursor !== previousArg?.cursor,
+            providesTags: ['ChatGroupList'],
+        }),
         availableHelpers: builder.query({
             query: (authToken) => ({ path: 'chatGroup/availableHelpers', body: { AuthToken: authToken } }),
             providesTags: ['AvailableHelpers'],
@@ -63,7 +93,6 @@ export const chatGroupsApi = createApi({
                 });
                 await runOptimistic(patches, queryFulfilled);
             },
-            invalidatesTags: ['ChatGroupList'],
         }),
         setChatGroupVisibility: builder.mutation({
             query: (args) => ({ path: 'chatGroup/setVisibility', body: { AuthToken: args.authToken, ChatGroupId: args.chatGroupId, IsPublic: args.isPublic } }),
@@ -77,7 +106,6 @@ export const chatGroupsApi = createApi({
                 });
                 await runOptimistic(patches, queryFulfilled);
             },
-            invalidatesTags: ['ChatGroupList'],
         }),
         deleteChatGroup: builder.mutation({
             query: (args) => ({ path: 'chatGroup/delete', body: { AuthToken: args.authToken, ChatGroupId: args.chatGroupId } }),
@@ -88,7 +116,6 @@ export const chatGroupsApi = createApi({
                 });
                 await runOptimistic(patches, queryFulfilled);
             },
-            invalidatesTags: ['ChatGroupList'],
         }),
         leaveChatGroup: builder.mutation({
             query: (args) => {
@@ -125,7 +152,6 @@ export const chatGroupsApi = createApi({
                 });
                 await runOptimistic(patches, queryFulfilled);
             },
-            invalidatesTags: ['ChatGroupList'],
         }),
         cancelJoinRequest: builder.mutation({
             query: (args) => ({ path: 'chatGroup/cancelJoinRequest', body: { AuthToken: args.authToken, ChatGroupId: args.chatGroupId } }),
@@ -136,7 +162,6 @@ export const chatGroupsApi = createApi({
                 });
                 await runOptimistic(patches, queryFulfilled);
             },
-            invalidatesTags: ['ChatGroupList'],
         }),
         joinPublicChatGroup: builder.mutation({
             query: (args) => ({ path: 'helpOffer/join', body: { AuthToken: args.authToken, ChatGroupId: args.chatGroupId } }),
@@ -166,6 +191,8 @@ export const chatGroupsApi = createApi({
 
 export const {
     useListChatGroupsQuery,
+    useListChatGroupsPageQuery,
+    useLazyListChatGroupsPageQuery,
     useAvailableHelpersQuery,
     useListMembersQuery,
     useRenameChatGroupMutation,

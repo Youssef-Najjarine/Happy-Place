@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { View, TouchableOpacity, StyleSheet, FlatList, Pressable, ScrollView } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { 
   HappyColor, 
@@ -45,34 +45,32 @@ const phoneStyles = StyleSheet.create({
   root: {
     paddingTop: scaleHeight(12),
     paddingHorizontal: scaleWidth(20),
-    backgroundColor: White,
-    height: '100%',
-    width: '100%',
+    flex: 1,
+    backgroundColor: White
   },
   topNav: {
-    paddingBottom: scaleHeight(16),
-    marginBottom: scaleHeight(20)
+    paddingBottom: scaleHeight(16)
   },
   membersHeaderRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
-  backArrowAndMembersRow: {
-    gap: scaleWidth(12),
-    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center'
   },
-  BackArrow: {
-    width: scaleWidth(42),
-    height: scaleHeight(42),
-    borderRadius: scaleWidth(99),
-    justifyContent: 'center',
+  backArrowAndMembersRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: VeryLightGray
+    gap: scaleWidth(12)
+  },
+  BackArrow: {
+    width: scaleWidth(24),
+    height: scaleHeight(24),
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   backArrowIcon: {
-    width: scaleWidth(28),
-    height: scaleHeight(28),
+    width: scaleWidth(24),
+    height: scaleHeight(24),
+    resizeMode: 'contain'
   },
   membersTxt: {
     fontSize: scaleFont(20),
@@ -82,28 +80,28 @@ const phoneStyles = StyleSheet.create({
     color: Black
   },
   invite: {
-    width: scaleWidth(93),
-    height: scaleHeight(42),
-    borderRadius: scaleWidth(99)
+    width: scaleWidth(95),
+    height: scaleHeight(40)
   },
   inviteBtn: {
-    borderRadius: scaleWidth(99),
-    gap: scaleWidth(6),
     width: '100%',
     height: '100%',
+    borderRadius: scaleWidth(99),
     flexDirection: 'row',
+    gap: scaleWidth(6),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: HappyColor
   },
   inviteIcon: {
-    width: scaleWidth(20),
-    height: scaleHeight(20)
+    width: scaleWidth(16),
+    height: scaleHeight(16),
+    resizeMode: 'contain'
   },
   inviteTxt: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
     fontWeight: 600,
     color: White
   },
@@ -111,23 +109,21 @@ const phoneStyles = StyleSheet.create({
     flex: 1
   },
   sectionHeader: {
-    marginBottom: scaleHeight(16)
+    paddingVertical: scaleHeight(8)
   },
   sectionHeaderTxt: {
     fontSize: scaleFont(16),
     lineHeight: scaleLineHeight(24),
     letterSpacing: scaleLetterSpacing(-0.16),
     fontWeight: 600,
-    opacity: 0.6,
-    color: Black
+    color: Black,
+    opacity: 0.6
   },
   pendingMembersListContent: {
-    gap: scaleHeight(12),
-    paddingBottom: scaleHeight(20)
+    gap: scaleHeight(12)
   },
   currentMembersListContent: {
-    gap: scaleHeight(12),
-    paddingBottom: scaleHeight(40)
+    gap: scaleHeight(12)
   },
   memberCard: {
     flexDirection: 'row',
@@ -135,23 +131,21 @@ const phoneStyles = StyleSheet.create({
     alignItems: 'center'
   },
   memberImageAndName: {
-    gap: scaleWidth(8),
     flexDirection: 'row',
-    alignItems: 'center'
+    alignItems: 'center',
+    gap: scaleWidth(12),
+    flexShrink: 1
   },
   memberImage: {
-    width: scaleWidth(42),
-    height: scaleHeight(42),
-    borderRadius: scaleWidth(50)
+    width: scaleWidth(44),
+    height: scaleHeight(44)
   },
   memberPhoto: {
-    borderRadius: scaleWidth(50),
     width: '100%',
     height: '100%',
-    resizeMode: 'contain'
+    borderRadius: scaleWidth(99)
   },
   memberFullName: {
-    width: scaleWidth(153),
     fontSize: scaleFont(16),
     lineHeight: scaleLineHeight(24),
     letterSpacing: scaleLetterSpacing(-0.16),
@@ -159,41 +153,40 @@ const phoneStyles = StyleSheet.create({
     color: Black
   },
   memberUsername: {
-    width: scaleWidth(153),
-    fontSize: scaleFont(12),
-    lineHeight: scaleLineHeight(18),
-    letterSpacing: scaleLetterSpacing(-0.12),
-    fontWeight: 600,
-    fontStyle: 'italic',
-    opacity: 0.6,
-    color: Black
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    fontWeight: 500,
+    color: Black,
+    opacity: 0.6
   },
   ellipsisBackground: {
-    width: scaleWidth(42),
-    height: scaleHeight(42),
+    width: scaleWidth(40),
+    height: scaleHeight(40),
     borderRadius: scaleWidth(99),
-    backgroundColor: VeryLightGray,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    backgroundColor: VeryLightGray
   },
   ellipsis: {
-    width: scaleWidth(28),
-    height: scaleHeight(28)
+    width: scaleWidth(20),
+    height: scaleHeight(20),
+    resizeMode: 'contain'
   },
   memberDropdown: {
-    top: scaleHeight(21),
-    right: scaleWidth(20),
-    width: scaleWidth(180),
+    top: scaleHeight(44),
+    right: 0,
+    width: scaleWidth(160),
     borderRadius: scaleWidth(16),
     borderWidth: scaleWidth(1),
-    shadowRadius: scaleWidth(15),
+    shadowRadius: scaleWidth(30),
     shadowOffset: {
-      width: scaleWidth(8),
-      height: scaleHeight(8)
+        width: scaleWidth(8),
+        height: scaleHeight(8)
     },
-    shadowOpacity: 1,
+    shadowOpacity: 0.1,
+    elevation: 16,
     shadowColor: VeryLightLavenderTint,
-    elevation: 12,
     position: 'absolute',
     borderColor: SoftGray,
     backgroundColor: White,
@@ -205,16 +198,17 @@ const phoneStyles = StyleSheet.create({
     resizeMode: 'contain'
   },
   memberDropdownOption: {
-    paddingHorizontal: scaleWidth(16),
-    paddingVertical: scaleHeight(10.5),
+      paddingVertical: scaleHeight(10.5),
+    paddingLeft: scaleWidth(15),
+    paddingRight: scaleWidth(12),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
   },
   dropdownRedTxt: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
     fontWeight: 500,
     color: HappyColor
   },
@@ -223,24 +217,24 @@ const phoneStyles = StyleSheet.create({
     gap: scaleWidth(8)
   },
   acceptBtn: {
-    width: scaleWidth(74),
-    height: scaleHeight(42),
+    width: scaleWidth(71),
+    height: scaleHeight(40.5),
     borderRadius: scaleWidth(99),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: HappyColor
   },
   acceptTxt: {
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
+    fontSize: scaleFont(15),
+    lineHeight: scaleLineHeight(22.5),
+    letterSpacing: scaleLetterSpacing(-0.15),
     fontWeight: 600,
     color: White
   },
   xBtn: {
-    width: scaleWidth(42),
-    height: scaleHeight(42),
     borderRadius: scaleWidth(99),
+    width: 58.5,
+    height: 58.5,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: VeryLightGray
@@ -252,67 +246,65 @@ const phoneStyles = StyleSheet.create({
 });
 const tabletStyles = StyleSheet.create({
   root: {
-    paddingTop: scaleHeight(16.1),
-    paddingHorizontal: scaleWidth(26.83),
-    backgroundColor: White,
-    height: '100%',
-    width: '100%',
+    paddingTop: scaleHeight(16),
+    paddingHorizontal: scaleWidth(24),
+    flex: 1,
+    backgroundColor: White
   },
   topNav: {
-    paddingBottom: scaleHeight(21.46),
-    marginBottom: scaleHeight(26.83)
+    paddingBottom: scaleHeight(20)
   },
   membersHeaderRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
-  backArrowAndMembersRow: {
-    gap: scaleWidth(16.1),
-    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center'
   },
-  BackArrow: {
-    borderRadius: scaleWidth(132.792),
-    width: 78.14,
-    height: 78.14,
-    justifyContent: 'center',
+  backArrowAndMembersRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: VeryLightGray
+    gap: scaleWidth(16)
+  },
+  BackArrow: {
+    width: scaleWidth(32),
+    height: scaleHeight(32),
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   backArrowIcon: {
-    width: scaleWidth(37.557),
-    height: scaleHeight(37.557),
+    width: scaleWidth(32),
+    height: scaleHeight(32),
+    resizeMode: 'contain'
   },
   membersTxt: {
-    fontSize: scaleFont(22),
-    lineHeight: scaleLineHeight(33),
-    letterSpacing: scaleLetterSpacing(-0.22),
+    fontSize: scaleFont(26),
+    lineHeight: scaleLineHeight(39),
+    letterSpacing: scaleLetterSpacing(-0.26),
     fontWeight: 600,
     color: Black
   },
   invite: {
-    width: scaleWidth(121.432),
-    height: scaleHeight(56.336),
-    borderRadius: scaleWidth(132.792)
+    width: scaleWidth(127),
+    height: scaleHeight(53)
   },
   inviteBtn: {
-    borderRadius: scaleWidth(132.792),
-    gap: scaleWidth(8.05),
     width: '100%',
     height: '100%',
+    borderRadius: scaleWidth(132.792),
     flexDirection: 'row',
+    gap: scaleWidth(8),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: HappyColor
   },
   inviteIcon: {
-    width: scaleWidth(26.83),
-    height: scaleHeight(26.83)
+    width: scaleWidth(21.5),
+    height: scaleHeight(21.5),
+    resizeMode: 'contain'
   },
   inviteTxt: {
-    fontSize: scaleFont(20),
-    lineHeight: scaleLineHeight(30),
-    letterSpacing: scaleLetterSpacing(-0.2),
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
     fontWeight: 600,
     color: White
   },
@@ -320,23 +312,21 @@ const tabletStyles = StyleSheet.create({
     flex: 1
   },
   sectionHeader: {
-    marginBottom: scaleHeight(21.46)
+    paddingVertical: scaleHeight(10.5)
   },
   sectionHeaderTxt: {
-    fontSize: scaleFont(20),
-    lineHeight: scaleLineHeight(30),
-    letterSpacing: scaleLetterSpacing(-0.2),
+    fontSize: scaleFont(21.5),
+    lineHeight: scaleLineHeight(32),
+    letterSpacing: scaleLetterSpacing(-0.215),
     fontWeight: 600,
-    opacity: 0.6,
-    color: Black
+    color: Black,
+    opacity: 0.6
   },
   pendingMembersListContent: {
-    gap: scaleHeight(16.1),
-    paddingBottom: scaleHeight(26.83)
+    gap: scaleHeight(16)
   },
   currentMembersListContent: {
-    gap: scaleHeight(16.1),
-    paddingBottom: scaleHeight(40)
+    gap: scaleHeight(16)
   },
   memberCard: {
     flexDirection: 'row',
@@ -344,55 +334,52 @@ const tabletStyles = StyleSheet.create({
     alignItems: 'center'
   },
   memberImageAndName: {
-    gap: scaleWidth(10.73),
     flexDirection: 'row',
-    alignItems: 'center'
+    alignItems: 'center',
+    gap: scaleWidth(16),
+    flexShrink: 1
   },
   memberImage: {
-      borderRadius: scaleWidth(67.067),
-    width: 78.14,
-    height: 78.14
+    width: scaleWidth(59),
+    height: scaleHeight(59)
   },
   memberPhoto: {
-    borderRadius: scaleWidth(67.067),
     width: '100%',
     height: '100%',
-    resizeMode: 'contain'
+    borderRadius: scaleWidth(132.792)
   },
   memberFullName: {
-    width: scaleWidth(450.291),
-    fontSize: scaleFont(20),
-    lineHeight: scaleLineHeight(30),
-    letterSpacing: scaleLetterSpacing(-0.2),
+    fontSize: scaleFont(21.5),
+    lineHeight: scaleLineHeight(32),
+    letterSpacing: scaleLetterSpacing(-0.215),
     fontWeight: 600,
     color: Black
   },
   memberUsername: {
-    width: scaleWidth(450.291),
-    fontSize: scaleFont(16),
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16),
-    fontWeight: 600,
-    fontStyle: 'italic',
-    opacity: 0.6,
-    color: Black
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    fontWeight: 500,
+    color: Black,
+    opacity: 0.6
   },
   ellipsisBackground: {
-      borderRadius: scaleWidth(132.792),
-      width: 78.14,
-      height: 78.14,
-    backgroundColor: VeryLightGray,
+    width: scaleWidth(53.5),
+    height: scaleHeight(53.5),
+    borderRadius: scaleWidth(132.792),
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    backgroundColor: VeryLightGray
   },
   ellipsis: {
-    width: scaleWidth(37.557),
-    height: scaleHeight(37.557)
+    width: scaleWidth(27),
+    height: scaleHeight(27),
+    resizeMode: 'contain'
   },
   memberDropdown: {
-    top: scaleHeight(28.17),
-    right: scaleWidth(26.83),
-    width: scaleWidth(241.44),
+    top: scaleHeight(59),
+    right: 0,
+    width: scaleWidth(214.5),
     borderRadius: scaleWidth(21.461),
     borderWidth: scaleWidth(1.341),
     shadowRadius: scaleWidth(40.24),
@@ -492,9 +479,10 @@ export default function Members() {
     });
     return () => { cancelled = true; unsubscribe(); };
   }, []);
+  const isFocused = useIsFocused();
   const { data: membersData } = useListMembersQuery(
     { authToken, chatGroupId },
-    { skip: !authToken || !chatGroupId, pollingInterval: 3000 }
+    { skip: !authToken || !chatGroupId, pollingInterval: isFocused ? 3000 : 0 }
   );
   const [approveMember] = useApproveMemberMutation();
   const [rejectMember] = useRejectMemberMutation();
