@@ -37,3 +37,8 @@ CREATE NONCLUSTERED INDEX [IX-ChatGroup-Provisional-LastSeenAtUtc]
 	ON [dbo].[ChatGroup]([LastSeenAtUtc])
 	WHERE [Status] = 1;
 GO
+
+CREATE NONCLUSTERED INDEX [IX-ChatGroup-Status-CreatedAtUtc]
+	ON [dbo].[ChatGroup]([Status], [CreatedAtUtc])
+	INCLUDE ([Name], [OwnerUserAccountId], [IsPublic], [LastSeenAtUtc]);
+GO

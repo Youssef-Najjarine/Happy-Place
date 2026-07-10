@@ -8,6 +8,7 @@ namespace HappyWorld.HappyPlace;
 public static class NotificationDispatchManager {
     // Fields
 
+    private static readonly int DeviceRetentionDays = 30;
     private static readonly int QuietWindowMs = 500;
     private static readonly int MaxWaitMs = 2000;
     private static readonly int MinIntervalMs = 1000;
@@ -144,6 +145,25 @@ public static class NotificationDispatchManager {
                 CollapseId = $"join-approved-{chatGroupId}",
                 Alerting = true
             });
+        }
+        catch (Exception) {
+        }
+    }
+
+    // Methods - Retention
+
+    public static void RunRetentionSweep() {
+        try {
+            using var dbContext = HappyPlaceDbContext.Create();
+            DateTime retentionCutoffUtc = DateTime.UtcNow.AddDays(-DeviceRetentionDays);
+            dbContext.DeviceTokens
+                .Where(field => field.LastSeenAtUtc < retentionCutoffUtc)
+                .ExecuteDelete();
+            dbContext.NotificationChannels
+                .Where(field => field.Kind == NotificationChannelKind.Waiting
+                    && !dbContext.DeviceTokens.Any(device => device.UserAccountId == field.RecipientUserAccountId)
+                    && (field.LastEventAtUtc == null || field.LastEventAtUtc < retentionCutoffUtc))
+                .ExecuteDelete();
         }
         catch (Exception) {
         }

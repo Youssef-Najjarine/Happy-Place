@@ -15,6 +15,12 @@ public class ChatGroupController : ControllerBase {
     }
 
     [HttpPost]
+    public IActionResult ListPage(ChatGroupListPageModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        return this.Ok(model.Load());
+    }
+
+    [HttpPost]
     public IActionResult AvailableHelpers(ChatGroupAvailableHelpersModel model) {
         if (!model.IsAuthenticated()) return this.Unauthorized();
         return this.Ok(model.Load());

@@ -1,3 +1,4 @@
+using System.Text;
 using HappyWorld.HappyPlace.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,10 @@ public static class ChatGroupManager {
     private static readonly int MaxAvailableHelpers = 50;
     private static readonly int MaxChatGroupNameLength = 100;
     private static readonly int MaxOwnerLeaveAttempts = 5;
+    private static readonly int FeedPageSize = 50;
+    private static readonly byte DefaultFeedCursorMarker = 1;
+    private static readonly byte PopularFeedCursorMarker = 2;
+    private static readonly byte MostActiveFeedCursorMarker = 3;
 
     // Methods - Reads
 
@@ -96,6 +101,45 @@ public static class ChatGroupManager {
             results.Add(new AvailableHelperResult(user.Id.ToString(), user.DisplayName, user.ProfilePhotoUrl, UserAccountRegistrar.GetAvatarColor(user.Id)));
         }
         return results;
+    }
+
+
+    // Methods - Reads (Paged)
+
+    public static ChatGroupPageResult ListPageForUser(string authToken, string sortBy, string search, string cursor) {
+        Guid? userAccountId = HelpParticipant.ResolveUserAccountId(authToken);
+        if (userAccountId == null)
+            return new ChatGroupPageResult([], null);
+        using var dbContext = HappyPlaceDbContext.Create();
+
+        List<ChatGroupMember> myMemberships = [.. dbContext.ChatGroupMembers
+            .Where(field => field.UserAccountId == userAccountId.Value)];
+        HashSet<Guid> activeGroupIds = [.. myMemberships.Where(field => field.Status == ChatGroupMemberStatus.Active).Select(field => field.ChatGroupId)];
+        HashSet<Guid> pendingGroupIds = [.. myMemberships.Where(field => field.Status == ChatGroupMemberStatus.Pending).Select(field => field.ChatGroupId)];
+        Dictionary<Guid, DateTime> myJoinedAtByGroup = myMemberships.ToDictionary(field => field.ChatGroupId, field => field.JoinedAtUtc);
+
+        ChatGroupSortMode sortMode = ParseSortMode(sortBy);
+        string searchPattern = BuildSearchPattern(search);
+        IQueryable<ChatGroup> matchingQuery = dbContext.ChatGroups
+            .Where(field => field.Status == ChatGroupStatus.Active);
+        if (sortMode == ChatGroupSortMode.Public)
+            matchingQuery = matchingQuery.Where(field => field.IsPublic);
+        else if (sortMode == ChatGroupSortMode.Private)
+            matchingQuery = matchingQuery.Where(field => !field.IsPublic);
+        if (searchPattern != null)
+            matchingQuery = matchingQuery.Where(field => EF.Functions.Like(field.Name, searchPattern));
+
+        List<ChatGroup> pageGroups;
+        string nextCursor;
+        if (sortMode == ChatGroupSortMode.Popular)
+            (pageGroups, nextCursor) = LoadPopularFeedPage(dbContext, matchingQuery, cursor);
+        else if (sortMode == ChatGroupSortMode.MostActive)
+            (pageGroups, nextCursor) = LoadMostActiveFeedPage(matchingQuery, cursor);
+        else
+            (pageGroups, nextCursor) = LoadDefaultFeedPage(matchingQuery, userAccountId.Value, activeGroupIds, pendingGroupIds, myJoinedAtByGroup, cursor);
+
+        List<ChatGroupSummaryResult> items = BuildSummariesForPage(dbContext, pageGroups, userAccountId.Value, activeGroupIds, pendingGroupIds);
+        return new ChatGroupPageResult(items, nextCursor);
     }
 
     public static ChatGroupMembersResult ListMembers(string authToken, Guid chatGroupId) {
@@ -502,6 +546,140 @@ public static class ChatGroupManager {
         MostActive = 2,
         Public = 3,
         Private = 4
+    }
+
+
+    // Helpers - Feed Paging
+
+    private static (List<ChatGroup> Groups, string NextCursor) LoadDefaultFeedPage(IQueryable<ChatGroup> matchingQuery, Guid userAccountId, HashSet<Guid> activeGroupIds, HashSet<Guid> pendingGroupIds, Dictionary<Guid, DateTime> myJoinedAtByGroup, string cursor) {
+        List<ChatGroup> mineGroups = [];
+        bool hasCursor = TryDecodeFeedCursor(cursor, DefaultFeedCursorMarker, out long afterCreatedTicks, out _, out Guid afterId);
+        if (!hasCursor) {
+            mineGroups = [.. matchingQuery.Where(field => field.OwnerUserAccountId == userAccountId || activeGroupIds.Contains(field.Id) || pendingGroupIds.Contains(field.Id))];
+            mineGroups = [.. mineGroups
+                .OrderBy(group => FeedBucketRank(group, userAccountId, activeGroupIds, pendingGroupIds))
+                .ThenByDescending(group => FeedSortTimestamp(group, userAccountId, activeGroupIds, pendingGroupIds, myJoinedAtByGroup))];
+        }
+        IQueryable<ChatGroup> discoveryQuery = matchingQuery
+            .Where(field => (field.OwnerUserAccountId == null || field.OwnerUserAccountId != userAccountId) && !activeGroupIds.Contains(field.Id) && !pendingGroupIds.Contains(field.Id));
+        if (hasCursor) {
+            DateTime afterCreatedAtUtc = new(afterCreatedTicks, DateTimeKind.Utc);
+            discoveryQuery = discoveryQuery.Where(field => field.CreatedAtUtc < afterCreatedAtUtc || (field.CreatedAtUtc == afterCreatedAtUtc && field.Id.CompareTo(afterId) < 0));
+        }
+        int discoveryWanted = Math.Max(1, FeedPageSize - mineGroups.Count);
+        List<ChatGroup> discoveryGroups = [.. discoveryQuery
+            .OrderByDescending(field => field.CreatedAtUtc)
+            .ThenByDescending(field => field.Id)
+            .Take(discoveryWanted + 1)];
+        bool hasMore = discoveryGroups.Count > discoveryWanted;
+        if (hasMore)
+            discoveryGroups.RemoveAt(discoveryGroups.Count - 1);
+        string nextCursor = hasMore ? EncodeFeedCursor(DefaultFeedCursorMarker, discoveryGroups[^1].CreatedAtUtc.Ticks, 0, discoveryGroups[^1].Id) : null;
+        mineGroups.AddRange(discoveryGroups);
+        return (mineGroups, nextCursor);
+    }
+
+    private static (List<ChatGroup> Groups, string NextCursor) LoadMostActiveFeedPage(IQueryable<ChatGroup> matchingQuery, string cursor) {
+        if (TryDecodeFeedCursor(cursor, MostActiveFeedCursorMarker, out long afterLastSeenTicks, out long afterCreatedTicks, out Guid afterId)) {
+            DateTime afterLastSeenAtUtc = new(afterLastSeenTicks, DateTimeKind.Utc);
+            DateTime afterCreatedAtUtc = new(afterCreatedTicks, DateTimeKind.Utc);
+            matchingQuery = matchingQuery.Where(field => field.LastSeenAtUtc < afterLastSeenAtUtc
+                || (field.LastSeenAtUtc == afterLastSeenAtUtc && (field.CreatedAtUtc < afterCreatedAtUtc
+                || (field.CreatedAtUtc == afterCreatedAtUtc && field.Id.CompareTo(afterId) < 0))));
+        }
+        List<ChatGroup> pageGroups = [.. matchingQuery
+            .OrderByDescending(field => field.LastSeenAtUtc)
+            .ThenByDescending(field => field.CreatedAtUtc)
+            .ThenByDescending(field => field.Id)
+            .Take(FeedPageSize + 1)];
+        bool hasMore = pageGroups.Count > FeedPageSize;
+        if (hasMore)
+            pageGroups.RemoveAt(pageGroups.Count - 1);
+        string nextCursor = hasMore ? EncodeFeedCursor(MostActiveFeedCursorMarker, pageGroups[^1].LastSeenAtUtc.Ticks, pageGroups[^1].CreatedAtUtc.Ticks, pageGroups[^1].Id) : null;
+        return (pageGroups, nextCursor);
+    }
+
+    private static (List<ChatGroup> Groups, string NextCursor) LoadPopularFeedPage(HappyPlaceDbContext dbContext, IQueryable<ChatGroup> matchingQuery, string cursor) {
+        var rankedQuery = matchingQuery.Select(group => new {
+            Group = group,
+            MemberCount = dbContext.ChatGroupMembers.Count(member => member.ChatGroupId == group.Id && member.Status == ChatGroupMemberStatus.Active)
+        });
+        if (TryDecodeFeedCursor(cursor, PopularFeedCursorMarker, out long afterMemberCount, out long afterCreatedTicks, out Guid afterId)) {
+            int afterCount = (int)afterMemberCount;
+            DateTime afterCreatedAtUtc = new(afterCreatedTicks, DateTimeKind.Utc);
+            rankedQuery = rankedQuery.Where(entry => entry.MemberCount < afterCount
+                || (entry.MemberCount == afterCount && (entry.Group.CreatedAtUtc < afterCreatedAtUtc
+                || (entry.Group.CreatedAtUtc == afterCreatedAtUtc && entry.Group.Id.CompareTo(afterId) < 0))));
+        }
+        var rankedPage = rankedQuery
+            .OrderByDescending(entry => entry.MemberCount)
+            .ThenByDescending(entry => entry.Group.CreatedAtUtc)
+            .ThenByDescending(entry => entry.Group.Id)
+            .Take(FeedPageSize + 1)
+            .ToList();
+        bool hasMore = rankedPage.Count > FeedPageSize;
+        if (hasMore)
+            rankedPage.RemoveAt(rankedPage.Count - 1);
+        string nextCursor = hasMore ? EncodeFeedCursor(PopularFeedCursorMarker, rankedPage[^1].MemberCount, rankedPage[^1].Group.CreatedAtUtc.Ticks, rankedPage[^1].Group.Id) : null;
+        return ([.. rankedPage.Select(entry => entry.Group)], nextCursor);
+    }
+
+    private static List<ChatGroupSummaryResult> BuildSummariesForPage(HappyPlaceDbContext dbContext, List<ChatGroup> pageGroups, Guid userAccountId, HashSet<Guid> activeGroupIds, HashSet<Guid> pendingGroupIds) {
+        if (pageGroups.Count == 0)
+            return [];
+        List<Guid> pageGroupIdList = [.. pageGroups.Select(field => field.Id)];
+        Dictionary<Guid, int> memberCounts = dbContext.ChatGroupMembers
+            .Where(field => pageGroupIdList.Contains(field.ChatGroupId) && field.Status == ChatGroupMemberStatus.Active)
+            .GroupBy(field => field.ChatGroupId)
+            .Select(group => new { ChatGroupId = group.Key, Count = group.Count() })
+            .ToDictionary(row => row.ChatGroupId, row => row.Count);
+        HashSet<Guid> groupIdsWithPendingMembers = [.. dbContext.ChatGroupMembers
+            .Where(field => pageGroupIdList.Contains(field.ChatGroupId) && field.Status == ChatGroupMemberStatus.Pending)
+            .Select(field => field.ChatGroupId)
+            .Distinct()];
+        List<Guid> avatarGroupIds = [.. pageGroups.Where(field => field.IsPublic || activeGroupIds.Contains(field.Id)).Select(field => field.Id)];
+        Dictionary<Guid, List<ChatGroupHelperAvatar>> helpersByGroup = LoadHelperAvatars(dbContext, avatarGroupIds);
+        List<ChatGroupSummaryResult> results = [];
+        foreach (ChatGroup group in pageGroups) {
+            bool owner = group.OwnerUserAccountId == userAccountId;
+            bool joined = activeGroupIds.Contains(group.Id);
+            bool joinRequest = pendingGroupIds.Contains(group.Id);
+            bool pendingMembers = owner && groupIdsWithPendingMembers.Contains(group.Id);
+            int memberCount = memberCounts.TryGetValue(group.Id, out int count) ? count : 0;
+            List<ChatGroupHelperAvatar> helpers = helpersByGroup.TryGetValue(group.Id, out List<ChatGroupHelperAvatar> avatars) ? avatars : [];
+            results.Add(new ChatGroupSummaryResult(group.Id.ToString(), group.Name, group.IsPublic, owner, joined, joinRequest, pendingMembers, memberCount, helpers));
+        }
+        return results;
+    }
+
+    private static string EncodeFeedCursor(byte marker, long primaryKey, long secondaryKey, Guid anchorId) {
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes($"v1|{marker}|{primaryKey}|{secondaryKey}|{anchorId}"));
+    }
+
+    private static bool TryDecodeFeedCursor(string cursor, byte expectedMarker, out long primaryKey, out long secondaryKey, out Guid anchorId) {
+        primaryKey = 0;
+        secondaryKey = 0;
+        anchorId = Guid.Empty;
+        if (string.IsNullOrWhiteSpace(cursor))
+            return false;
+        try {
+            string decoded = Encoding.UTF8.GetString(Convert.FromBase64String(cursor));
+            string[] parts = decoded.Split('|');
+            if (parts.Length != 5 || parts[0] != "v1")
+                return false;
+            if (!byte.TryParse(parts[1], out byte marker) || marker != expectedMarker)
+                return false;
+            if (!long.TryParse(parts[2], out primaryKey) || primaryKey < 0 || primaryKey > DateTime.MaxValue.Ticks)
+                return false;
+            if (!long.TryParse(parts[3], out secondaryKey) || secondaryKey < 0 || secondaryKey > DateTime.MaxValue.Ticks)
+                return false;
+            if (!Guid.TryParse(parts[4], out anchorId))
+                return false;
+            return true;
+        }
+        catch (Exception) {
+            return false;
+        }
     }
 
     private static void TrySaveChanges(HappyPlaceDbContext dbContext) {
