@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { View, StyleSheet, Platform, Animated, Easing } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
-import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
+import { scaleWidth } from 'src/utils/scaleLayout';
 import { White, SemiTransparentCharcoal, SoftGray, VeryLightLavenderTint } from 'src/constants/colors';
 import InnerArc from 'assets/images/loading/inner-arc.svg';
 import MiddleArc from 'assets/images/loading/middle-arc.svg';
@@ -10,6 +10,8 @@ import OuterArc from 'assets/images/loading/outer-arc.svg';
 
 const FadeMs = 150;
 const UnmountFallbackMs = 300;
+const PhoneSpinnerScale = scaleWidth(136) / 136;
+const TabletSpinnerScale = 1.3415;
 
 const phoneStyles = StyleSheet.create({
   overlay: {
@@ -25,42 +27,91 @@ const phoneStyles = StyleSheet.create({
     elevation: 9000,
   },
   spinnerContainer: {
-    width: scaleWidth(136),
-    height: scaleHeight(136),
-    borderRadius: scaleWidth(21.461),
-    borderWidth: scaleWidth(1.341),
+    width: 136,
+    height: 136,
+    borderRadius: 21.461,
+    borderWidth: 1.341,
     borderColor: SoftGray,
     backgroundColor: White,
     shadowColor: VeryLightLavenderTint,
     shadowOffset: { width: 10.731, height: 10.731 },
     shadowOpacity: 1,
     shadowRadius: 20.12,
+    transform: [{ scale: PhoneSpinnerScale }],
     ...(Platform.OS === 'android' && { elevation: 10 }),
   },
   arcInner: {
-    width: scaleWidth(22),
-    height: scaleHeight(22),
+    width: 22,
+    height: 22,
     position: 'absolute',
-    top: (scaleHeight(136 - 22)) / 2,
-    left: (scaleWidth(136 - 22)) / 2
+    top: (136 - 22) / 2,
+    left: (136 - 22) / 2
   },
   arcMiddle: {
-    width: scaleWidth(51.333),
-    height: scaleHeight(51.333),
+    width: 51.333,
+    height: 51.333,
     position: 'absolute',
-    top: (scaleHeight(136 - 51.333)) / 2,
-    left: (scaleWidth(136 - 51.333)) / 2
+    top: (136 - 51.333) / 2,
+    left: (136 - 51.333) / 2
   },
   arcOuter: {
-    width: scaleWidth(77),
-    height: scaleHeight(77),
+    width: 77,
+    height: 77,
     position: 'absolute',
-    top: (scaleHeight(136 - 77)) / 2,
-    left: (scaleWidth(136 - 77)) / 2
+    top: (136 - 77) / 2,
+    left: (136 - 77) / 2
   }
 });
 
-const tabletStyles = StyleSheet.create({});
+const tabletStyles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: SemiTransparentCharcoal,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9000,
+    elevation: 9000,
+  },
+  spinnerContainer: {
+    width: 136,
+    height: 136,
+    borderRadius: 21.461,
+    borderWidth: 1.341,
+    borderColor: SoftGray,
+    backgroundColor: White,
+    shadowColor: VeryLightLavenderTint,
+    shadowOffset: { width: 10.731, height: 10.731 },
+    shadowOpacity: 1,
+    shadowRadius: 20.12,
+    transform: [{ scale: TabletSpinnerScale }],
+    ...(Platform.OS === 'android' && { elevation: 10 }),
+  },
+  arcInner: {
+    width: 22,
+    height: 22,
+    position: 'absolute',
+    top: (136 - 22) / 2,
+    left: (136 - 22) / 2
+  },
+  arcMiddle: {
+    width: 51.333,
+    height: 51.333,
+    position: 'absolute',
+    top: (136 - 51.333) / 2,
+    left: (136 - 51.333) / 2
+  },
+  arcOuter: {
+    width: 77,
+    height: 77,
+    position: 'absolute',
+    top: (136 - 77) / 2,
+    left: (136 - 77) / 2
+  }
+});
 
 const LoadingModal = () => {
   const isLoading = useSelector((state) => state.loading.isLoading);
