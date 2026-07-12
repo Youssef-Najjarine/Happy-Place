@@ -22,10 +22,14 @@
     "react-native-image-crop-picker": "^0.50.1",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-mask-text": "^0.15.0",
+    "react-native-nitro-modules": "^0.36.1",
+    "react-native-nitro-sound": "^0.2.15",
     "react-native-safe-area-context": "^5.7.0",
     "react-native-screens": "^4.24.0",
     "react-native-svg": "^15.15.4",
-    "react-redux": "^9.2.0"
+    "react-native-video": "^6.19.2",
+    "react-redux": "^9.2.0",
+    "rn-emoji-keyboard": "^1.7.0"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",

@@ -530,7 +530,26 @@ const phoneStyles = StyleSheet.create({
     zIndex: 1000,
     elevation: 1000,
     overflow: 'visible'
-  }
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: scaleHeight(-6),
+    right: scaleWidth(-6),
+    minWidth: scaleWidth(22),
+    height: scaleWidth(22),
+    borderRadius: scaleWidth(99),
+    paddingHorizontal: scaleWidth(6),
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1100,
+    elevation: 1100,
+    backgroundColor: HappyColor
+  },
+  unreadBadgeTxt: {
+    fontSize: scaleFont(12),
+    fontWeight: 700,
+    color: White
+  },
 });
 
 const tabletStyles = StyleSheet.create({
@@ -939,7 +958,26 @@ const tabletStyles = StyleSheet.create({
     zIndex: 1000,
     elevation: 1000,
     overflow: 'visible'
-  }
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: scaleHeight(-6),
+    right: scaleWidth(-6),
+    minWidth: scaleWidth(22),
+    height: scaleWidth(22),
+    borderRadius: scaleWidth(99),
+    paddingHorizontal: scaleWidth(6),
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1100,
+    elevation: 1100,
+    backgroundColor: HappyColor
+  },
+  unreadBadgeTxt: {
+    fontSize: scaleFont(12),
+    fontWeight: 700,
+    color: White
+  },
 });
 
 export default function ChatGroups() {
@@ -1265,6 +1303,11 @@ export default function ChatGroups() {
 
       return (
         <View style={[styles.chatGroupCard, item.joined && styles.chatGroupCardJoinedBorder, { overflow: 'visible' }]} needsOffscreenAlphaCompositing>
+          {item.joined && (item.unreadCount || 0) > 0 && (
+            <View style={styles.unreadBadge}>
+              <CustomText style={styles.unreadBadgeTxt}>{item.unreadCount > 99 ? '99+' : item.unreadCount}</CustomText>
+            </View>
+          )}
           <View style={styles.chatPhotosHeader}>
             {item.public || item.joined ? (
               <HelperStack

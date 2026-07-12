@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, TouchableOpacity, StyleSheet, Image, FlatList, SectionList, useWindowDimensions, KeyboardAvoidingView, Platform, Pressable, ScrollView, Keyboard } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image, FlatList, SectionList, useWindowDimensions, KeyboardAvoidingView, Platform, Pressable, ScrollView, Keyboard, Modal, PermissionsAndroid } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { 
     HappyColor, 
@@ -26,6 +26,30 @@ import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import { tabletBreakpoint } from 'src/constants/breakpoints';
 import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
+import { useSelector } from 'react-redux';
+import tokenStorage from 'src/services/tokenStorage';
+import { showToast } from 'src/components/Toast';
+import Avatar from 'src/components/Avatar';
+import RemoteImage from 'src/components/RemoteImage';
+import ReportMessageModal from 'src/components/ReportMessageModal';
+import ImagePicker from 'react-native-image-crop-picker';
+import baseService from 'src/services/baseService';
+
+function loadOptionalModule(loader) {
+    try {
+        const loadedModule = loader();
+        return loadedModule && loadedModule.default ? loadedModule.default : loadedModule;
+    } catch (error) {
+        return null;
+    }
+}
+
+const Video = loadOptionalModule(() => require('react-native-video'));
+const Sound = loadOptionalModule(() => require('react-native-nitro-sound'));
+const EmojiPicker = loadOptionalModule(() => require('rn-emoji-keyboard'));
+import useChatMessages from 'src/hooks/useChatMessages';
+import { selectCachedChatGroup } from 'src/store/chatMessagesApi';
+import { useListMembersQuery, useRenameChatGroupMutation, useSetChatGroupVisibilityMutation, useDeleteChatGroupMutation, useLeaveChatGroupMutation, useApproveMemberMutation, useRejectMemberMutation } from 'src/store/chatGroupsApi';
 import MicrophoneIcon from 'assets/images/chatGroup/microphone-icon.svg';
 import PlusIcon from 'assets/images/chatGroup/plus-black-icon.svg';
 import SendMessageIcon from 'assets/images/chatGroup/send-message-icon.svg';
@@ -41,27 +65,7 @@ import PrivateIcon from 'assets/images/global/private-chat-icon.svg';
 import LeaveGroupIcon from 'assets/images/global/leave-and-remove-chat-icon.svg';
 import TrashIcon from 'assets/images/global/trash-outline-icon.svg';
 import XIcon from 'assets/images/global/black-x-icon.svg';
-import ChatGroupPhoto from 'assets/images/placeholderProfiles/chatGroup-photo.png';
 import Image1 from 'assets/images/placeholderProfiles/profile-1.png';
-import Image2 from 'assets/images/placeholderProfiles/profile-2.png';
-import Image3 from 'assets/images/placeholderProfiles/profile-3.png';
-import Image4 from 'assets/images/placeholderProfiles/profile-4.png';
-import Image5 from 'assets/images/placeholderProfiles/profile-5.png';
-import Image6 from 'assets/images/placeholderProfiles/profile-6.png';
-import Image7 from 'assets/images/placeholderProfiles/profile-7.jpg';
-import Image8 from 'assets/images/placeholderProfiles/profile-8.jpg';
-import Image9 from 'assets/images/placeholderProfiles/profile-9.jpg';
-import Image10 from 'assets/images/placeholderProfiles/profile-10.jpg';
-import Image11 from 'assets/images/placeholderProfiles/profile-11.jpg';
-import Image12 from 'assets/images/placeholderProfiles/profile-12.jpg';
-import Image13 from 'assets/images/placeholderProfiles/profile-13.jpg';
-import Image14 from 'assets/images/placeholderProfiles/profile-14.jpg';
-import Image15 from 'assets/images/placeholderProfiles/profile-15.jpg';
-import Image16 from 'assets/images/placeholderProfiles/profile-16.jpg';
-import Image17 from 'assets/images/placeholderProfiles/profile-17.jpg';
-import Image18 from 'assets/images/placeholderProfiles/profile-18.jpg';
-import Image19 from 'assets/images/placeholderProfiles/profile-19.jpg';
-import Image20 from 'assets/images/placeholderProfiles/profile-20.jpg';
 
 const phoneStyles = StyleSheet.create({
     root: { 
@@ -600,7 +604,258 @@ const phoneStyles = StyleSheet.create({
         top: scaleHeight(6),
         right: scaleWidth(6),
         backgroundColor: HappyColor
-    }
+    },
+    helperSenderNameTxt: {
+        fontSize: scaleFont(12),
+        lineHeight: scaleLineHeight(16),
+        letterSpacing: scaleLetterSpacing(-0.12),
+        fontWeight: 600,
+        marginBottom: scaleHeight(2),
+        color: VividBlueViolet
+    },
+    tombstoneTxt: {
+        fontStyle: 'italic',
+        opacity: 0.55
+    },
+    chatSingleImageView: {
+        borderRadius: scaleWidth(12),
+        overflow: 'hidden'
+    },
+    chatSingleImage: {
+        width: scaleWidth(220),
+        borderRadius: scaleWidth(12)
+    },
+    mediaPlaceholderTxt: {
+        fontStyle: 'italic',
+        opacity: 0.7
+    },
+    reactionsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: scaleWidth(6),
+        marginTop: scaleHeight(4)
+    },
+    reactionsRowMine: {
+        justifyContent: 'flex-end'
+    },
+    reactionChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: scaleWidth(4),
+        paddingHorizontal: scaleWidth(8),
+        paddingVertical: scaleHeight(2),
+        borderRadius: scaleWidth(99),
+        borderWidth: scaleWidth(1),
+        borderColor: SoftGray,
+        backgroundColor: White
+    },
+    reactionChipMine: {
+        borderColor: HappyColor,
+        backgroundColor: SoftRosePink
+    },
+    reactionChipTxt: {
+        fontSize: scaleFont(12),
+        lineHeight: scaleLineHeight(16),
+        fontWeight: 600,
+        color: Black
+    },
+    avatarInitialTxt: {
+        fontSize: scaleFont(14),
+        fontWeight: 700,
+        color: White
+    },
+    loadingOlderTxt: {
+        fontSize: scaleFont(12),
+        lineHeight: scaleLineHeight(16),
+        textAlign: 'center',
+        opacity: 0.6,
+        paddingVertical: scaleHeight(6),
+        color: Black
+    },
+    emptyStateView: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: scaleHeight(12),
+        paddingHorizontal: scaleWidth(24)
+    },
+    emptyStateTxt: {
+        fontSize: scaleFont(14),
+        lineHeight: scaleLineHeight(21),
+        letterSpacing: scaleLetterSpacing(-0.14),
+        fontWeight: 500,
+        textAlign: 'center',
+        opacity: 0.7,
+        color: Black
+    },
+    retryBtn: {
+        borderRadius: scaleWidth(99),
+        paddingHorizontal: scaleWidth(24),
+        height: scaleHeight(40),
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: HappyColor
+    },
+    retryBtnTxt: {
+        fontSize: scaleFont(14),
+        fontWeight: 600,
+        color: White
+    },
+    actionSheetOverlay: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        backgroundColor: TranslucentBlack
+    },
+    actionSheetCard: {
+        borderTopLeftRadius: scaleWidth(24),
+        borderTopRightRadius: scaleWidth(24),
+        paddingTop: scaleHeight(16),
+        paddingBottom: scaleHeight(28),
+        paddingHorizontal: scaleWidth(16),
+        gap: scaleHeight(12),
+        backgroundColor: White
+    },
+    reactionBarRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: scaleWidth(4)
+    },
+    reactionBarBtn: {
+        width: scaleWidth(48),
+        height: scaleWidth(48),
+        borderRadius: scaleWidth(99),
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: VeryLightGray
+    },
+    reactionBarBtnActive: {
+        backgroundColor: SoftRosePink,
+        borderWidth: scaleWidth(1),
+        borderColor: HappyColor
+    },
+    reactionBarEmojiTxt: {
+        fontSize: scaleFont(22)
+    },
+    actionSheetOption: {
+        height: scaleHeight(48),
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    actionSheetOptionBorderTop: {
+        borderTopWidth: scaleWidth(1),
+        borderTopColor: VeryLightGray
+    },
+    actionSheetBlackTxt: {
+        fontSize: scaleFont(16),
+        fontWeight: 600,
+        color: Black
+    },
+    actionSheetRedTxt: {
+        fontSize: scaleFont(16),
+        fontWeight: 600,
+        color: HappyColor
+    },
+    recordingBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        height: scaleHeight(48),
+        paddingHorizontal: scaleWidth(8)
+    },
+    recordingTimerView: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: scaleWidth(8)
+    },
+    recordingDot: {
+        width: scaleWidth(10),
+        height: scaleWidth(10),
+        borderRadius: scaleWidth(99),
+        backgroundColor: HappyColor
+    },
+    recordingTimerTxt: {
+        fontSize: scaleFont(16),
+        fontWeight: 600,
+        color: Black
+    },
+    recordingCancelBtn: {
+        paddingHorizontal: scaleWidth(12),
+        height: '100%',
+        justifyContent: 'center'
+    },
+    recordingCancelTxt: {
+        fontSize: scaleFont(14),
+        fontWeight: 600,
+        opacity: 0.7,
+        color: Black
+    },
+    recordingSendBtn: {
+        borderRadius: scaleWidth(99),
+        paddingHorizontal: scaleWidth(20),
+        height: scaleHeight(36),
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: HappyColor
+    },
+    recordingSendTxt: {
+        fontSize: scaleFont(14),
+        fontWeight: 600,
+        color: White
+    },
+    videoBubbleBox: {
+        width: scaleWidth(220),
+        height: scaleHeight(140),
+        borderRadius: scaleWidth(12),
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: scaleHeight(6),
+        backgroundColor: Charcoal
+    },
+    videoPlayGlyphTxt: {
+        fontSize: scaleFont(28),
+        color: White
+    },
+    videoDurationTxt: {
+        fontSize: scaleFont(12),
+        fontWeight: 600,
+        color: White
+    },
+    videoPlayer: {
+        width: scaleWidth(220),
+        height: scaleHeight(160),
+        borderRadius: scaleWidth(12),
+        backgroundColor: Charcoal
+    },
+    voiceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: scaleWidth(10),
+        paddingVertical: scaleHeight(2)
+    },
+    voicePlayBtn: {
+        width: scaleWidth(36),
+        height: scaleWidth(36),
+        borderRadius: scaleWidth(99),
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: VeryLightGray
+    },
+    voicePlayGlyphTxt: {
+        fontSize: scaleFont(16),
+        color: Black
+    },
+    attachSheetOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'flex-end',
+        zIndex: 3000,
+        elevation: 3000,
+        backgroundColor: TranslucentBlack
+    },
 });
 
 const tabletStyles = StyleSheet.create({
@@ -1140,20 +1395,278 @@ const tabletStyles = StyleSheet.create({
         top: scaleHeight(8.05),
         right: scaleWidth(8.05),
         backgroundColor: HappyColor
-    }
+    },
+    helperSenderNameTxt: {
+        fontSize: scaleFont(12),
+        lineHeight: scaleLineHeight(16),
+        letterSpacing: scaleLetterSpacing(-0.12),
+        fontWeight: 600,
+        marginBottom: scaleHeight(2),
+        color: VividBlueViolet
+    },
+    tombstoneTxt: {
+        fontStyle: 'italic',
+        opacity: 0.55
+    },
+    chatSingleImageView: {
+        borderRadius: scaleWidth(12),
+        overflow: 'hidden'
+    },
+    chatSingleImage: {
+        width: scaleWidth(220),
+        borderRadius: scaleWidth(12)
+    },
+    mediaPlaceholderTxt: {
+        fontStyle: 'italic',
+        opacity: 0.7
+    },
+    reactionsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: scaleWidth(6),
+        marginTop: scaleHeight(4)
+    },
+    reactionsRowMine: {
+        justifyContent: 'flex-end'
+    },
+    reactionChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: scaleWidth(4),
+        paddingHorizontal: scaleWidth(8),
+        paddingVertical: scaleHeight(2),
+        borderRadius: scaleWidth(99),
+        borderWidth: scaleWidth(1),
+        borderColor: SoftGray,
+        backgroundColor: White
+    },
+    reactionChipMine: {
+        borderColor: HappyColor,
+        backgroundColor: SoftRosePink
+    },
+    reactionChipTxt: {
+        fontSize: scaleFont(12),
+        lineHeight: scaleLineHeight(16),
+        fontWeight: 600,
+        color: Black
+    },
+    avatarInitialTxt: {
+        fontSize: scaleFont(14),
+        fontWeight: 700,
+        color: White
+    },
+    loadingOlderTxt: {
+        fontSize: scaleFont(12),
+        lineHeight: scaleLineHeight(16),
+        textAlign: 'center',
+        opacity: 0.6,
+        paddingVertical: scaleHeight(6),
+        color: Black
+    },
+    emptyStateView: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: scaleHeight(12),
+        paddingHorizontal: scaleWidth(24)
+    },
+    emptyStateTxt: {
+        fontSize: scaleFont(14),
+        lineHeight: scaleLineHeight(21),
+        letterSpacing: scaleLetterSpacing(-0.14),
+        fontWeight: 500,
+        textAlign: 'center',
+        opacity: 0.7,
+        color: Black
+    },
+    retryBtn: {
+        borderRadius: scaleWidth(99),
+        paddingHorizontal: scaleWidth(24),
+        height: scaleHeight(40),
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: HappyColor
+    },
+    retryBtnTxt: {
+        fontSize: scaleFont(14),
+        fontWeight: 600,
+        color: White
+    },
+    actionSheetOverlay: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        backgroundColor: TranslucentBlack
+    },
+    actionSheetCard: {
+        borderTopLeftRadius: scaleWidth(24),
+        borderTopRightRadius: scaleWidth(24),
+        paddingTop: scaleHeight(16),
+        paddingBottom: scaleHeight(28),
+        paddingHorizontal: scaleWidth(16),
+        gap: scaleHeight(12),
+        backgroundColor: White
+    },
+    reactionBarRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: scaleWidth(4)
+    },
+    reactionBarBtn: {
+        width: scaleWidth(48),
+        height: scaleWidth(48),
+        borderRadius: scaleWidth(99),
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: VeryLightGray
+    },
+    reactionBarBtnActive: {
+        backgroundColor: SoftRosePink,
+        borderWidth: scaleWidth(1),
+        borderColor: HappyColor
+    },
+    reactionBarEmojiTxt: {
+        fontSize: scaleFont(22)
+    },
+    actionSheetOption: {
+        height: scaleHeight(48),
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    actionSheetOptionBorderTop: {
+        borderTopWidth: scaleWidth(1),
+        borderTopColor: VeryLightGray
+    },
+    actionSheetBlackTxt: {
+        fontSize: scaleFont(16),
+        fontWeight: 600,
+        color: Black
+    },
+    actionSheetRedTxt: {
+        fontSize: scaleFont(16),
+        fontWeight: 600,
+        color: HappyColor
+    },
+    recordingBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        height: scaleHeight(48),
+        paddingHorizontal: scaleWidth(8)
+    },
+    recordingTimerView: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: scaleWidth(8)
+    },
+    recordingDot: {
+        width: scaleWidth(10),
+        height: scaleWidth(10),
+        borderRadius: scaleWidth(99),
+        backgroundColor: HappyColor
+    },
+    recordingTimerTxt: {
+        fontSize: scaleFont(16),
+        fontWeight: 600,
+        color: Black
+    },
+    recordingCancelBtn: {
+        paddingHorizontal: scaleWidth(12),
+        height: '100%',
+        justifyContent: 'center'
+    },
+    recordingCancelTxt: {
+        fontSize: scaleFont(14),
+        fontWeight: 600,
+        opacity: 0.7,
+        color: Black
+    },
+    recordingSendBtn: {
+        borderRadius: scaleWidth(99),
+        paddingHorizontal: scaleWidth(20),
+        height: scaleHeight(36),
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: HappyColor
+    },
+    recordingSendTxt: {
+        fontSize: scaleFont(14),
+        fontWeight: 600,
+        color: White
+    },
+    videoBubbleBox: {
+        width: scaleWidth(220),
+        height: scaleHeight(140),
+        borderRadius: scaleWidth(12),
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: scaleHeight(6),
+        backgroundColor: Charcoal
+    },
+    videoPlayGlyphTxt: {
+        fontSize: scaleFont(28),
+        color: White
+    },
+    videoDurationTxt: {
+        fontSize: scaleFont(12),
+        fontWeight: 600,
+        color: White
+    },
+    videoPlayer: {
+        width: scaleWidth(220),
+        height: scaleHeight(160),
+        borderRadius: scaleWidth(12),
+        backgroundColor: Charcoal
+    },
+    voiceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: scaleWidth(10),
+        paddingVertical: scaleHeight(2)
+    },
+    voicePlayBtn: {
+        width: scaleWidth(36),
+        height: scaleWidth(36),
+        borderRadius: scaleWidth(99),
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: VeryLightGray
+    },
+    voicePlayGlyphTxt: {
+        fontSize: scaleFont(16),
+        color: Black
+    },
+    attachSheetOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'flex-end',
+        zIndex: 3000,
+        elevation: 3000,
+        backgroundColor: TranslucentBlack
+    },
 });
 
-function parseTime(timeStr) {
-  const match = typeof timeStr === 'string' ? timeStr.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i) : null;
-  if (!match) {
-    return 0;
-  }
-  let hour = Number(match[1]);
-  const min = Number(match[2]);
-  const ampm = match[3].toLowerCase();
-  if (ampm === 'pm' && hour !== 12) hour += 12;
-  if (ampm === 'am' && hour === 12) hour = 0;
-  return hour * 60 + min;
+const QUICK_REACTIONS = ['\u2764\uFE0F', '\uD83D\uDC4D', '\uD83D\uDE0A', '\uD83D\uDE22', '\u203C\uFE0F', '\u2753'];
+const CHAR_LIMIT = 400;
+const MAX_MESSAGE_LENGTH = 4096;
+
+function formatTimeStamp(createdAtUtc) {
+    const date = new Date(createdAtUtc);
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+}
+
+const VOICE_MAX_SECONDS = 300;
+const VIDEO_MAX_SECONDS = 180;
+const VIDEO_MAX_BYTES = 100 * 1024 * 1024;
+
+function formatDuration(totalSeconds) {
+    const seconds = Math.max(0, Math.round(totalSeconds || 0));
+    const minutes = Math.floor(seconds / 60);
+    const remainder = seconds % 60;
+    return minutes + ':' + String(remainder).padStart(2, '0');
 }
 
 export default function ChatGroup() {
@@ -1162,22 +1675,30 @@ export default function ChatGroup() {
   const [showLeaveChatGroupModal, setShowLeaveChatGroupModal] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const [chatText, setChatText] = useState('');
-  const [showRequestToJoin, setShowRequestToJoin] = useState(false);
   const inputRef = useRef(null);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [dotCount, setDotCount] = useState(1);
+  const [authToken, setAuthToken] = useState(null);
+  const [actionTarget, setActionTarget] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [emojiPickerTarget, setEmojiPickerTarget] = useState(null);
+  const [showAttachSheet, setShowAttachSheet] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recorderBusy, setRecorderBusy] = useState(false);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const [playingVoiceId, setPlayingVoiceId] = useState(null);
+  const [voicePositionMs, setVoicePositionMs] = useState(0);
+  const [playingVideoId, setPlayingVideoId] = useState(null);
+  const recordSecondsRef = useRef(0);
+  const isRecordingRef = useRef(false);
+  const finishRecordingRef = useRef(null);
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
   const route = useRoute();
+  const focused = useIsFocused();
   const cameFromLogin = route.params?.from === 'login';
-  const [chat, setChat] = useState(() => ({
-    isPublic: true,
-    owner: true,
-    pendingMembers: true,
-    chatName: "I'm depressed!",
-    members: ["JaydonJaydonJaydonJaydon", "Mary", "Yulia", "Youssef", "Abe", "Omar", "Ed"],
-  }));
+  const chatGroupId = route.params?.chatGroupId ?? null;
   const chatDropdownRef = useRef(null);
   const ellipsisRef = useRef(null);
   const swallowNextCloseRef = useRef(false);
@@ -1186,214 +1707,117 @@ export default function ChatGroup() {
     ellipsisBtn: null,
   });
   const sectionListRef = useRef(null);
+  const lastScrolledMessageIdRef = useRef(null);
+  const exitHandledRef = useRef(false);
 
   const [expanded, setExpanded] = useState({});
 
-  // Animation for typing dots
+  const cachedGroup = useSelector((state) => selectCachedChatGroup(state, chatGroupId));
+  const chatName = cachedGroup?.title ?? '';
+  const isPublic = cachedGroup ? !!cachedGroup.isPublic : true;
+  const owner = !!cachedGroup?.owner;
+
   useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const token = await tokenStorage.getToken();
+      if (cancelled) return;
+      if (!token) {
+        showToast('Please log in to view this chat', 'info');
+        navigation.goBack();
+        return;
+      }
+      setAuthToken(token);
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigation]);
+
+  const {
+    status,
+    orderedMessages,
+    sendersById,
+    callerUserAccountId,
+    typingUserIds,
+    hasOlder,
+    loadingOlder,
+    loadOlder,
+    send,
+    sendImage,
+    sendVideo,
+    sendVoice,
+    reactTo,
+    deleteOwn,
+    report,
+    notifyTyping,
+    isViewedByEveryoneElse,
+    reload,
+  } = useChatMessages({ authToken, chatGroupId, focused });
+
+  const membersQuery = useListMembersQuery(
+    { authToken, chatGroupId },
+    { skip: !authToken || !chatGroupId }
+  );
+  const activeMemberEntries = membersQuery.data?.members ?? [];
+  const pendingMemberEntries = owner ? (membersQuery.data?.pendingMembers ?? []) : [];
+  const firstPendingMember = pendingMemberEntries.length > 0 ? pendingMemberEntries[0] : null;
+
+  const memberNamesById = useMemo(() => {
+    const names = {};
+    activeMemberEntries.forEach((member) => {
+      names[member.userAccountId] = member.name || member.username;
+    });
+    return names;
+  }, [activeMemberEntries]);
+
+  const [renameChatGroup] = useRenameChatGroupMutation();
+  const [setChatGroupVisibility] = useSetChatGroupVisibilityMutation();
+  const [deleteChatGroup] = useDeleteChatGroupMutation();
+  const [leaveChatGroup] = useLeaveChatGroupMutation();
+  const [approveMember] = useApproveMemberMutation();
+  const [rejectMember] = useRejectMemberMutation();
+
+  useEffect(() => {
+    if (exitHandledRef.current) return;
+    if (status === 'notMember') {
+      exitHandledRef.current = true;
+      showToast('You are no longer a member of this group', 'info');
+      navigation.navigate('ChatGroups');
+    } else if (status === 'groupGone') {
+      exitHandledRef.current = true;
+      showToast('This group is no longer available', 'info');
+      navigation.navigate('ChatGroups');
+    }
+  }, [status, navigation]);
+
+  useEffect(() => {
+    if (typingUserIds.length === 0) return undefined;
     const interval = setInterval(() => {
       setDotCount(prev => (prev % 3) + 1);
-    }, 500); // Update every 500ms
+    }, 500);
     return () => clearInterval(interval);
-  }, []);
+  }, [typingUserIds.length]);
 
   const toggleExpanded = useCallback((id) => {
     setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
-  const CHAR_LIMIT = 400;
-  const requestToJoin = {
-    profilePicture: Image11,
-    name: "Jaydon Najjarine Smith",
-    username: "jaydon671"
-  };
-  const [chatMessages, setChatMessages] = useState(() => [
-    {
-      id: '1',
-      helperChat: true,
-      chatImages: [],
-      message: "Good morning everyone! Let's have a productive day.",
-      profilePicture: Image1,
-      timeStamp: "8:30 am",
-      createdAt: new Date(2025, 8, 5, 8, 30),
-    },
-    {
-      id: '2',
-      helperChat: false,
-      chatImages: [],
-      message: "Morning!",
-      timeStamp: "8:32 am",
-      createdAt: new Date(2025, 8, 5, 8, 32),
-    },
-    {
-      id: '3',
-      helperChat: true,
-      profilePicture: Image2,
-      chatImages: [
-        {
-          image: ChatGroupPhoto,
-          imageTimeStamp: "10:00 am"
-        }
-      ],
-      message: "",
-      timeStamp: "10:00 am",
-      createdAt: new Date(2025, 8, 5, 10, 0),
-    },
-    {
-      id: '4',
-      helperChat: true,
-      chatImages: [],
-      profilePicture: Image3,
-      message: "Hey, does anyone have the report from last meeting?",
-      timeStamp: "2:00 pm",
-      createdAt: new Date(2025, 8, 12, 14, 0),
-    },
-    {
-      id: '5',
-      helperChat: false,
-      chatImages: [
-        {
-          image: ChatGroupPhoto,
-          imageTimeStamp: "2:05 pm"
-        },
-        {
-          image: ChatGroupPhoto,
-          imageTimeStamp: "2:05 pm"
-        }
-      ],
-      message: "",
-      timeStamp: "2:05 pm",
-      createdAt: new Date(2025, 8, 12, 14, 5),
-    },
-    {
-      id: '6',
-      helperChat: true,
-      chatImages: [],
-      profilePicture: Image4,
-      message: "I can send it over.",
-      timeStamp: "2:10 pm",
-      createdAt: new Date(2025, 8, 12, 14, 10),
-    },
-    {
-      id: '7',
-      helperChat: false,
-      chatImages: [],
-      message: "Thanks a lot!",
-      timeStamp: "2:15 pm",
-      createdAt: new Date(2025, 8, 12, 14, 15),
-    },
-    {
-      id: '8',
-      helperChat: false,
-      chatImages: [
-        {
-          image: ChatGroupPhoto,
-          imageTimeStamp: "11:10 am"
-        },
-        {
-          image: ChatGroupPhoto,
-          imageTimeStamp: "11:10 am"
-        }
-      ],      
-      message: "Hi Mary",    
-      timeStamp: "11:10 am",
-      createdAt: new Date(2025, 8, 13, 11, 10),
-    },    
-    {
-      id: '9',
-      chatImages: [],        
-      helperChat: false,
-      message: "Design your day with intention. Chip away at the hard parts first, then let easy wins refill your energy. Ask better questions, capture notes, and revisit them. Debug with curiosity, not blame. Ship something small, gather feedback, and improve. Protect your focus; silence noise, batch tasks, and take mindful breaks. Progress compounds when you return tomorrow; set a tiny next step before you stop I hope the weather will be nice. Who's going paddleboarding tomorrow? Design your day with intention. Chip away at the hard parts first, then let easy wins refill your energy. Ask better questions, capture notes, and revisit them. Debug with curiosity, not blame. Ship something small, gather feedback, and improve. Protect your focus; silence noise, batch tasks, and take mindful breaks. Progress compounds when you return tomorrow; set a tiny next step before you stop",
-      timeStamp: "11:15 am",
-      createdAt: new Date(2025, 8, 13, 11, 15),
-    },
-    {
-      id: '10',
-      helperChat: true,
-      profilePicture: Image5,
-      message: "I hope the weather will be nice. Who's going paddleboarding tomorrow? Design your day with intention. Chip away at the hard parts first, then let easy wins refill your energy. Ask better questions, capture notes, and revisit them. Debug with curiosity, not blame. Ship something small, gather feedback, and improve. Protect your focus; silence noise, batch tasks, and take mindful breaks. Progress compounds when you return tomorrow; set a tiny next step before you stopI hope the weather will be nice. Who's going paddleboarding tomorrow? Design your day with intention. Chip away at the hard parts first, then let easy wins refill your energy. Ask better questions, capture notes, and revisit them. Debug with curiosity, not blame. Ship something small, gather feedback, and improve. Protect your focus; silence noise, batch tasks, and take mindful breaks. Progress compounds when you return tomorrow; set a tiny next step before you stop",
-      chatImages: [
-        {
-          image: ChatGroupPhoto,
-          imageTimeStamp: "11:18 am"
-        },
-        {
-          image: ChatGroupPhoto,
-          imageTimeStamp: "11:18 am"
-        }        
-      ],
-      timeStamp: "11:18 am",
-      createdAt: new Date(2025, 8, 13, 11, 18),
-    },
-    {
-      id: '11',
-      helperChat: false,
-      chatImages: [
-        {
-          image: ChatGroupPhoto,
-          imageTimeStamp: "1:10 pm"
-        },
-        {
-          image: ChatGroupPhoto,
-          imageTimeStamp: "1:10 pm"
-        }        
-      ],      
-      message: "",    
-      timeStamp: "1:10 pm",
-      createdAt: new Date(2025, 8, 13, 13, 10),
-    },
-    {
-      id: '12',
-      helperChat: true,
-      profilePicture: Image1,
-      chatImages: [
-        {
-          image: ChatGroupPhoto,
-          imageTimeStamp: "2:26 pm"
-        },
-        {
-          image: ChatGroupPhoto,
-          imageTimeStamp: "2:26 pm"
-        }        
-      ],      
-      message: "",    
-      timeStamp: "2:26 pm",
-      createdAt: new Date(2025, 8, 13, 14, 26),
-    },    
-    {
-      id: '13',
-      helperChat: true,
-      profilePicture: Image1,
-      chatImages: [
-        {
-          image: ChatGroupPhoto,
-          imageTimeStamp: "2:28 pm"
-        },
-        {
-          image: ChatGroupPhoto,
-          imageTimeStamp: "2:28 pm"
-        }        
-      ],      
-      message: "Hey Mary, let me know if you need anything",    
-      timeStamp: "2:28 pm",
-      createdAt: new Date(2025, 8, 13, 14, 28),
-    }          
-  ]);
-
   const groupedMessages = useMemo(() => {
-    const now = new Date(2025, 8, 15);
+    const now = new Date();
     const todayKey = now.toISOString().split('T')[0];
     const yesterday = new Date(now.getTime() - 86400000);
     const yesterdayKey = yesterday.toISOString().split('T')[0];
 
-    const sorted = [...chatMessages].sort((a, b) => a.createdAt - b.createdAt);
     const groups = {};
-    sorted.forEach((msg) => {
-      const dateKey = msg.createdAt.toISOString().split('T')[0];
+    orderedMessages.forEach((entry) => {
+      const createdAt = new Date(entry.createdAtUtc);
+      const dateKey = createdAt.toISOString().split('T')[0];
       if (!groups[dateKey]) {
         groups[dateKey] = [];
       }
-      groups[dateKey].push(msg);
+      groups[dateKey].push(entry);
     });
 
     const keys = Object.keys(groups).sort();
@@ -1407,31 +1831,291 @@ export default function ChatGroup() {
         const date = new Date(key);
         title = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
       }
-      const sectionMessages = groups[key].sort((a, b) => parseTime(a.timeStamp) - parseTime(b.timeStamp));
       return {
         title,
-        data: sectionMessages,
+        data: groups[key],
       };
     });
-  }, [chatMessages]);
+  }, [orderedMessages]);
 
-useEffect(() => {
-    if (chatMessages.length === 0 || groupedMessages.length === 0) return;
+  const newestMessageId = orderedMessages.length > 0 ? orderedMessages[orderedMessages.length - 1].id : null;
+
+  useEffect(() => {
+    if (!newestMessageId || groupedMessages.length === 0) return undefined;
+    if (lastScrolledMessageIdRef.current === newestMessageId) return undefined;
+    lastScrolledMessageIdRef.current = newestMessageId;
     const timer = setTimeout(() => {
-    const lastSection = groupedMessages[groupedMessages.length - 1];
-    const lastItemIndex = lastSection.data.length > 0 ? lastSection.data.length - 1 : 0;
-    try {
+      const lastSection = groupedMessages[groupedMessages.length - 1];
+      const lastItemIndex = lastSection.data.length > 0 ? lastSection.data.length - 1 : 0;
+      try {
         sectionListRef.current?.scrollToLocation({
-        animated: false,
-        sectionIndex: groupedMessages.length - 1,
-        itemIndex: lastItemIndex,
-        viewPosition: 1,
+          animated: false,
+          sectionIndex: groupedMessages.length - 1,
+          itemIndex: lastItemIndex,
+          viewPosition: 1,
         });
-    } catch (error) {
-    }
+      } catch (error) {
+      }
     }, 300);
     return () => clearTimeout(timer);
-}, [chatMessages.length, groupedMessages]);
+  }, [newestMessageId, groupedMessages]);
+
+  const openMessageActions = useCallback((entry) => {
+    if (entry.pending || entry.isDeleted) return;
+    setActionTarget(entry);
+  }, []);
+
+  const closeMessageActions = useCallback(() => {
+    setActionTarget(null);
+  }, []);
+
+  const myReactionEmojiFor = useCallback((entry) => {
+    if (!entry || !callerUserAccountId) return '';
+    const mine = (entry.reactions || []).find((reaction) => reaction.userAccountId === callerUserAccountId);
+    return mine ? mine.emoji : '';
+  }, [callerUserAccountId]);
+
+  const handleReactionPick = useCallback(async (entry, emoji) => {
+    const currentEmoji = myReactionEmojiFor(entry);
+    const nextEmoji = currentEmoji === emoji ? '' : emoji;
+    closeMessageActions();
+    const result = await reactTo(entry.id, nextEmoji);
+    if (!result.ok && result.status !== 'removed' && result.status !== 'reacted') {
+      showToast("Couldn't update your reaction", 'info');
+    }
+  }, [myReactionEmojiFor, closeMessageActions, reactTo]);
+
+  const handleDeleteOwn = useCallback(async () => {
+    if (!actionTarget) return;
+    const messageId = actionTarget.id;
+    closeMessageActions();
+    const result = await deleteOwn(messageId);
+    if (result.ok) {
+      showToast('Message deleted', 'success');
+    } else {
+      showToast("Couldn't delete the message", 'info');
+    }
+  }, [actionTarget, closeMessageActions, deleteOwn]);
+
+  const handleOpenReport = useCallback(() => {
+    if (!actionTarget) return;
+    setReportTarget(actionTarget);
+    closeMessageActions();
+  }, [actionTarget, closeMessageActions]);
+
+  const handleOpenEmojiPicker = useCallback(() => {
+    if (!EmojiPicker) {
+      showToast('The emoji picker is unavailable on this build', 'info');
+      closeMessageActions();
+      return;
+    }
+    if (!actionTarget) return;
+    setEmojiPickerTarget(actionTarget);
+    closeMessageActions();
+  }, [actionTarget, closeMessageActions]);
+
+  const handleSubmitReport = useCallback(async (reason) => {
+    if (!reportTarget) return;
+    const messageId = reportTarget.id;
+    setReportTarget(null);
+    const result = await report(messageId, reason);
+    if (result.status === 'reported') {
+      showToast('Report submitted. Thank you.', 'success');
+    } else if (result.status === 'alreadyReported') {
+      showToast('You already reported this message', 'info');
+    } else if (result.status === 'cannotReportOwn') {
+      showToast('You cannot report your own message', 'info');
+    } else if (result.status === 'messageGone') {
+      showToast('That message is no longer available', 'info');
+    } else if (result.status === 'invalidReason') {
+      showToast('That reason is too long', 'info');
+    } else {
+      showToast("Couldn't submit the report", 'info');
+    }
+  }, [reportTarget, report]);
+
+  const renderReactions = useCallback((entry, mine) => {
+    const reactions = entry.reactions || [];
+    if (reactions.length === 0 || entry.isDeleted) return null;
+    const countsByEmoji = new Map();
+    reactions.forEach((reaction) => {
+      countsByEmoji.set(reaction.emoji, (countsByEmoji.get(reaction.emoji) || 0) + 1);
+    });
+    const myEmoji = myReactionEmojiFor(entry);
+    return (
+      <View style={[styles.reactionsRow, mine && styles.reactionsRowMine]}>
+        {[...countsByEmoji.entries()].map(([emoji, count]) => (
+          <TouchableOpacity
+            key={emoji}
+            style={[styles.reactionChip, myEmoji === emoji && styles.reactionChipMine]}
+            onPress={() => handleReactionPick(entry, emoji)}
+          >
+            <CustomText style={styles.reactionChipTxt}>
+              {emoji} {count}
+            </CustomText>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  }, [styles, myReactionEmojiFor, handleReactionPick]);
+
+  const renderMessageBody = useCallback((entry, mine) => {
+    if (entry.isDeleted) {
+      return (
+        <CustomText style={[mine ? styles.myChatText : styles.helperChatText, styles.tombstoneTxt]}>
+          Message deleted
+        </CustomText>
+      );
+    }
+    if (entry.kind === 2 && (entry.mediaUrl || entry.localUri)) {
+      const aspectRatio = entry.mediaWidth && entry.mediaHeight ? entry.mediaWidth / entry.mediaHeight : 1;
+      return (
+        <View style={styles.chatSingleImageView}>
+          {entry.localUri ? (
+            <Image source={{ uri: entry.localUri }} style={[styles.chatSingleImage, { aspectRatio }]} fadeDuration={0} />
+          ) : (
+            <RemoteImage uri={entry.mediaUrl} style={[styles.chatSingleImage, { aspectRatio }]} />
+          )}
+        </View>
+      );
+    }
+    if (entry.kind === 3) {
+      if (!entry.mediaUrl) {
+        return (
+          <CustomText style={[mine ? styles.myChatText : styles.helperChatText, styles.mediaPlaceholderTxt]}>
+            Sending video...
+          </CustomText>
+        );
+      }
+      if (Video && playingVideoId === entry.id) {
+        return (
+          <Video
+            source={{ uri: baseService.getMediaUrl(entry.mediaUrl) }}
+            style={styles.videoPlayer}
+            controls
+            paused={false}
+            resizeMode="contain"
+            onEnd={() => setPlayingVideoId(null)}
+            onError={() => {
+              setPlayingVideoId(null);
+              showToast("Couldn't play that video", 'info');
+            }}
+          />
+        );
+      }
+      return (
+        <TouchableOpacity
+          style={styles.videoBubbleBox}
+          onPress={() => {
+            if (!Video) {
+              showToast('Video playback is unavailable on this build', 'info');
+              return;
+            }
+            setPlayingVideoId(entry.id);
+          }}
+        >
+          <CustomText style={styles.videoPlayGlyphTxt}>{'\u25B6'}</CustomText>
+          <CustomText style={styles.videoDurationTxt}>{formatDuration(entry.mediaDurationSeconds)}</CustomText>
+        </TouchableOpacity>
+      );
+    }
+    if (entry.kind === 4) {
+      if (!entry.mediaUrl) {
+        return (
+          <CustomText style={[mine ? styles.myChatText : styles.helperChatText, styles.mediaPlaceholderTxt]}>
+            Sending voice message...
+          </CustomText>
+        );
+      }
+      const isPlayingThisVoice = playingVoiceId === entry.id;
+      const voiceLabel = isPlayingThisVoice
+        ? formatDuration(voicePositionMs / 1000) + ' / ' + formatDuration(entry.mediaDurationSeconds)
+        : formatDuration(entry.mediaDurationSeconds);
+      return (
+        <View style={styles.voiceRow}>
+          <TouchableOpacity style={styles.voicePlayBtn} onPress={() => handleToggleVoice(entry)}>
+            <CustomText style={styles.voicePlayGlyphTxt}>{isPlayingThisVoice ? '\u23F8' : '\u25B6'}</CustomText>
+          </TouchableOpacity>
+          <CustomText style={mine ? styles.myChatText : styles.helperChatText}>{voiceLabel}</CustomText>
+        </View>
+      );
+    }
+    const body = entry.body || '';
+    const isExpanded = !!expanded[entry.id];
+    const isLong = body.length > CHAR_LIMIT;
+    const shownMessage = isExpanded ? body : (isLong ? body.slice(0, CHAR_LIMIT) : body);
+    return (
+      <CustomText style={mine ? styles.myChatText : styles.helperChatText}>
+        {shownMessage}
+        {isLong && (
+          <CustomText
+            style={mine ? styles.myReadMoreTxt : styles.helperReadMoreTxt}
+            onPress={() => toggleExpanded(entry.id)}
+          >
+            {isExpanded ? ' Read less' : ' Read more...'}
+          </CustomText>
+        )}
+      </CustomText>
+    );
+  }, [styles, expanded, toggleExpanded, playingVideoId, playingVoiceId, voicePositionMs, handleToggleVoice]);
+
+  const renderChatItem = useCallback(({ item }) => {
+    const mine = !!item.senderUserAccountId && item.senderUserAccountId === callerUserAccountId;
+    const timeStamp = formatTimeStamp(item.createdAtUtc);
+
+    if (!mine) {
+      const sender = sendersById[item.senderUserAccountId];
+      const senderName = sender ? sender.displayName : 'Former member';
+      return (
+        <Pressable style={styles.helperChatMessageView} onLongPress={() => openMessageActions(item)}>
+          <View style={styles.helperProfilePictureContainer}>
+            <Avatar
+              uri={sender ? sender.profilePhotoUrl : null}
+              initial={senderName ? senderName.charAt(0).toUpperCase() : '?'}
+              style={styles.helperProfilePicture}
+              initialStyle={styles.avatarInitialTxt}
+            />
+          </View>
+          <View style={styles.helperChatView}>
+            <View style={styles.helperChatTextBox}>
+              <CustomText style={styles.helperSenderNameTxt} numberOfLines={1} ellipsizeMode="tail">
+                {senderName}
+              </CustomText>
+              <View>
+                {renderMessageBody(item, false)}
+              </View>
+              <View style={styles.helperTimeStamp}>
+                <CustomText style={styles.helperTimeStampTxt}>{timeStamp}</CustomText>
+              </View>
+            </View>
+            {renderReactions(item, false)}
+          </View>
+        </Pressable>
+      );
+    }
+
+    const viewed = !item.pending && isViewedByEveryoneElse(item.sequence);
+    return (
+      <Pressable style={styles.myChatMessageView} onLongPress={() => openMessageActions(item)}>
+        <View style={styles.myChatTextBox}>
+          <View>
+            {renderMessageBody(item, true)}
+          </View>
+          <View style={styles.myTimeStamp}>
+            <CustomText style={styles.myTimeStampTxt}>{timeStamp}</CustomText>
+            {item.pending ? (
+              <ClockIcon {...styles.sentIndicatorAndClockIcon} />
+            ) : viewed ? (
+              <ViewedMessageIcon {...styles.sentIndicatorAndClockIcon} />
+            ) : (
+              <SentMessageIcon {...styles.sentIndicatorAndClockIcon} />
+            )}
+          </View>
+        </View>
+        {renderReactions(item, true)}
+      </Pressable>
+    );
+  }, [styles, callerUserAccountId, sendersById, isViewedByEveryoneElse, openMessageActions, renderMessageBody, renderReactions]);
 
   const renderSectionHeader = useCallback(({ section: { title } }) => (
     <View style={styles.dayHeader}>
@@ -1439,131 +2123,279 @@ useEffect(() => {
     </View>
   ), [styles]);
 
-  const renderChatItem = useCallback(({ item }) => {
-    const isExpanded = !!expanded[item.id];
-    const isLong = item.message.length > CHAR_LIMIT;
-    const shownMessage = isExpanded ? item.message : (isLong ? item.message.slice(0, CHAR_LIMIT) : item.message);
+  const ChatMessageSeparator = useCallback(() => <View style={styles.ChatMessageSeparator} />, [styles]);
 
-    if (item.helperChat) {
-      return (
-        <View style={styles.helperChatMessageView}>
-          <View style={styles.helperProfilePictureContainer}>
-            <Image source={item.profilePicture} style={styles.helperProfilePicture} fadeDuration={0} />
-          </View>
-          <View style={styles.helperChatView}>
-            {item.message.trim() && (
-                <View style={styles.helperChatTextBox}>
-                    <View>
-                        <CustomText style={styles.helperChatText}>
-                        {shownMessage}
-                        {isLong && (
-                            <CustomText
-                            style={styles.helperReadMoreTxt}
-                            onPress={() => toggleExpanded(item.id)}
-                            >
-                            {isExpanded ? ' Read less' : ' Read more...'}
-                            </CustomText>
-                        )}
-                        </CustomText>
-                    </View>
-                    <View style={styles.helperTimeStamp}>
-                        <CustomText style={styles.helperTimeStampTxt}>{item.timeStamp}</CustomText>
-                    </View>
-                </View>
-            )}
-            {item.chatImages.length > 0 && (
-              <View style={styles.chatMessageImages}>
-                {item.chatImages.map((img, idx) => (
-                  <View key={idx} style={styles.chatMessageImageView}>
-                    <Image source={img.image} style={[styles.chatMessageImage, styles.helperChatMessageImage]} fadeDuration={0} />
-                    <View style={styles.chatMessageImageTimeStamp}>
-                        <CustomText style={styles.chatMessageImageTimeStampTxt}>{img.imageTimeStamp}</CustomText>
-                        <ClockIcon {...styles.sentIndicatorAndClockIcon}/>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-        </View>
-      );
-    } else {
-      return (
-        <View style={styles.myChatMessageView}>
-            {item.message.trim() && (
-                <View style={styles.myChatTextBox}>
-                    <View>
-                        <CustomText style={styles.myChatText}>
-                            {shownMessage}
-                            {isLong && (
-                            <CustomText
-                                style={styles.myReadMoreTxt}
-                                onPress={() => toggleExpanded(item.id)}
-                            >
-                                {isExpanded ? ' Read less' : ' Read more...'}
-                            </CustomText>
-                            )}
-                        </CustomText>
-                    </View>
-                    <View style={styles.myTimeStamp}>
-                        <CustomText style={styles.myTimeStampTxt}>{item.timeStamp}</CustomText>
-                        <ViewedMessageIcon {...styles.sentIndicatorAndClockIcon} />
-                    </View>
-                </View>
-            )}
-            {item.chatImages.length > 0 && (
-              <View style={styles.chatMessageImages}>
-                {item.chatImages.map((img, idx) => (
-                  <View key={idx} style={styles.chatMessageImageView}>
-                    <Image source={img.image} style={[styles.chatMessageImage, styles.myChatMessageImage]} fadeDuration={0} />
-                    <View style={styles.chatMessageImageTimeStamp}>
-                        <CustomText style={styles.chatMessageImageTimeStampTxt}>{img.imageTimeStamp}</CustomText>
-                        <ClockIcon {...styles.sentIndicatorAndClockIcon}/>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-        </View>
-      );
-    }
-  }, [styles, expanded, toggleExpanded]);
-
-  const ChatMessageSeparator = useCallback(() => <View style={styles.ChatMessageSeparator} />, []);
-
-  const handleSend = useCallback(() => {
-    if (!chatText.trim()) return;
-    const now = new Date();
-    const timeStamp = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
-    const newMessage = {
-      id: Date.now().toString(),
-      helperChat: false,
-      chatImages: [],
-      message: chatText,
-      timeStamp,
-      createdAt: now,
-    };
-    setChatMessages(prev => [...prev, newMessage]);
+  const handleSend = useCallback(async () => {
+    const body = chatText.trim();
+    if (!body) return;
     setChatText('');
-  }, [chatText]);
+    const result = await send(body);
+    if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone') {
+      showToast("Couldn't send your message", 'info');
+      setChatText(body);
+    }
+  }, [chatText, send]);
+
+  const handleChangeChatText = useCallback((text) => {
+    setChatText(text);
+    if (text.trim()) notifyTyping();
+  }, [notifyTyping]);
 
   const handleLoginPressIn = useCallback(() => {
     navigation.navigate('LoginOptions');
   }, [navigation]);
 
-  const handleConfirmEditName = useCallback((newName) => {
+  const handleConfirmEditName = useCallback(async (newName) => {
     setShowEditChatNameModal(false);
-    setChat(prev => ({ ...prev, chatName: newName }));
-  }, []);
+    try {
+      await renameChatGroup({ authToken, chatGroupId, name: newName }).unwrap();
+    } catch (error) {
+      showToast("Couldn't rename the group", 'info');
+    }
+  }, [authToken, chatGroupId, renameChatGroup]);
 
-  const handleConfirmDeleteChatGroup = useCallback(() => {
+  const handleConfirmDeleteChatGroup = useCallback(async () => {
     setShowDeleteChatGroupModal(false);
-    navigation.navigate('ChatGroups');
+    try {
+      await deleteChatGroup({ authToken, chatGroupId }).unwrap();
+      navigation.navigate('ChatGroups');
+    } catch (error) {
+      showToast("Couldn't delete the group", 'info');
+    }
+  }, [authToken, chatGroupId, deleteChatGroup, navigation]);
+
+  const handleConfirmLeaveChatGroup = useCallback(async () => {
+    setShowLeaveChatGroupModal(false);
+    try {
+      const result = await leaveChatGroup({ authToken, chatGroupId }).unwrap();
+      if (result.status === 'lastOwner') {
+        showToast('You are the only owner. Delete the group or make it public first.', 'info');
+        return;
+      }
+      navigation.navigate('ChatGroups');
+    } catch (error) {
+      showToast("Couldn't leave the group", 'info');
+    }
+  }, [authToken, chatGroupId, leaveChatGroup, navigation]);
+
+  const handleAcceptRequest = useCallback(async () => {
+    if (!firstPendingMember) return;
+    try {
+      await approveMember({ authToken, chatGroupId, memberUserAccountId: firstPendingMember.userAccountId }).unwrap();
+    } catch (error) {
+      showToast("Couldn't approve the request", 'info');
+    }
+  }, [authToken, chatGroupId, firstPendingMember, approveMember]);
+
+  const handleDeclineRequest = useCallback(async () => {
+    if (!firstPendingMember) return;
+    try {
+      await rejectMember({ authToken, chatGroupId, memberUserAccountId: firstPendingMember.userAccountId }).unwrap();
+    } catch (error) {
+      showToast("Couldn't decline the request", 'info');
+    }
+  }, [authToken, chatGroupId, firstPendingMember, rejectMember]);
+
+  const handleSendImage = useCallback(async (image) => {
+    const result = await sendImage({ uri: image.path, type: image.mime, name: 'photo.jpg', width: image.width, height: image.height });
+    if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone') {
+      if (result.status === 'tooLarge') {
+        showToast('That image is too large', 'info');
+      } else if (result.status === 'invalidMedia') {
+        showToast("That file isn't a supported image", 'info');
+      } else {
+        showToast("Couldn't send your photo", 'info');
+      }
+    }
+  }, [sendImage]);
+
+  const handlePickFromCamera = useCallback(async () => {
+    setShowAttachSheet(false);
+    try {
+      const image = await ImagePicker.openCamera({ mediaType: 'photo', compressImageQuality: 0.9 });
+      await handleSendImage(image);
+    } catch (error) {
+    }
+  }, [handleSendImage]);
+
+  const handlePickFromLibrary = useCallback(async () => {
+    setShowAttachSheet(false);
+    try {
+      const image = await ImagePicker.openPicker({ mediaType: 'photo', compressImageQuality: 0.9 });
+      await handleSendImage(image);
+    } catch (error) {
+    }
+  }, [handleSendImage]);
+
+  const handleSendVideo = useCallback(async (video) => {
+    const durationSeconds = Math.max(1, Math.round((video.duration || 0) / 1000));
+    if (durationSeconds > VIDEO_MAX_SECONDS) {
+      showToast('Videos can be up to 3 minutes long', 'info');
+      return;
+    }
+    if (video.size && video.size > VIDEO_MAX_BYTES) {
+      showToast('That video is too large to send', 'info');
+      return;
+    }
+    const result = await sendVideo({ uri: video.path, type: video.mime, name: 'video.mp4', width: video.width, height: video.height }, durationSeconds);
+    if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone') {
+      if (result.status === 'tooLarge') {
+        showToast('That video is too large to send', 'info');
+      } else if (result.status === 'invalidMedia' || result.status === 'invalidDuration') {
+        showToast("That video can't be sent", 'info');
+      } else {
+        showToast("Couldn't send your video", 'info');
+      }
+    }
+  }, [sendVideo]);
+
+  const handleRecordVideo = useCallback(async () => {
+    setShowAttachSheet(false);
+    try {
+      const video = await ImagePicker.openCamera({ mediaType: 'video' });
+      await handleSendVideo(video);
+    } catch (error) {
+    }
+  }, [handleSendVideo]);
+
+  const handlePickVideoFromLibrary = useCallback(async () => {
+    setShowAttachSheet(false);
+    try {
+      const video = await ImagePicker.openPicker({ mediaType: 'video' });
+      await handleSendVideo(video);
+    } catch (error) {
+    }
+  }, [handleSendVideo]);
+
+  const stopVoicePlayback = useCallback(async () => {
+    setPlayingVoiceId(null);
+    setVoicePositionMs(0);
+    if (!Sound) return;
+    Sound.removePlayBackListener();
+    Sound.removePlaybackEndListener();
+    try {
+      await Sound.stopPlayer();
+    } catch (error) {
+    }
   }, []);
 
-  const handleConfirmLeaveChatGroup = useCallback(() => {
-    setShowLeaveChatGroupModal(false);
-    navigation.navigate('ChatGroups');
+  const handleToggleVoice = useCallback(async (entry) => {
+    if (!Sound) {
+      showToast('Voice playback is unavailable on this build', 'info');
+      return;
+    }
+    if (isRecordingRef.current) return;
+    if (playingVoiceId === entry.id) {
+      await stopVoicePlayback();
+      return;
+    }
+    await stopVoicePlayback();
+    try {
+      Sound.addPlayBackListener((event) => {
+        setVoicePositionMs(event.currentPosition);
+      });
+      Sound.addPlaybackEndListener(() => {
+        setPlayingVoiceId(null);
+        setVoicePositionMs(0);
+        Sound.removePlayBackListener();
+        Sound.removePlaybackEndListener();
+      });
+      await Sound.startPlayer(baseService.getMediaUrl(entry.mediaUrl));
+      setPlayingVoiceId(entry.id);
+    } catch (error) {
+      await stopVoicePlayback();
+      showToast("Couldn't play that voice message", 'info');
+    }
+  }, [playingVoiceId, stopVoicePlayback]);
+
+  const finishRecording = useCallback(async (sendIt) => {
+    if (!Sound || !isRecordingRef.current || recorderBusy) return;
+    setRecorderBusy(true);
+    isRecordingRef.current = false;
+    try {
+      const path = await Sound.stopRecorder();
+      Sound.removeRecordBackListener();
+      const seconds = Math.min(VOICE_MAX_SECONDS, Math.max(1, recordSecondsRef.current));
+      setIsRecording(false);
+      setRecordSeconds(0);
+      recordSecondsRef.current = 0;
+      if (sendIt && path) {
+        const file = Platform.OS === 'ios'
+          ? { uri: path, type: 'audio/mp4', name: 'voice.m4a' }
+          : { uri: path, type: 'audio/mp4', name: 'voice.mp4' };
+        const result = await sendVoice(file, seconds);
+        if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone') {
+          if (result.status === 'tooLarge') {
+            showToast('That voice message is too large to send', 'info');
+          } else if (result.status === 'invalidMedia' || result.status === 'invalidDuration') {
+            showToast("That recording can't be sent", 'info');
+          } else {
+            showToast("Couldn't send your voice message", 'info');
+          }
+        }
+      }
+    } catch (error) {
+      setIsRecording(false);
+      setRecordSeconds(0);
+      recordSecondsRef.current = 0;
+      Sound.removeRecordBackListener();
+    } finally {
+      setRecorderBusy(false);
+    }
+  }, [recorderBusy, sendVoice]);
+
+  useEffect(() => {
+    finishRecordingRef.current = finishRecording;
+  }, [finishRecording]);
+
+  const handleMicPress = useCallback(async () => {
+    if (!Sound) {
+      showToast('Voice recording is unavailable on this build', 'info');
+      return;
+    }
+    if (recorderBusy || isRecordingRef.current) return;
+    setRecorderBusy(true);
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          showToast('Microphone permission is needed for voice messages', 'info');
+          return;
+        }
+      }
+      await stopVoicePlayback();
+      recordSecondsRef.current = 0;
+      setRecordSeconds(0);
+      Sound.addRecordBackListener((event) => {
+        const seconds = Math.floor(event.currentPosition / 1000);
+        recordSecondsRef.current = seconds;
+        setRecordSeconds(seconds);
+        if (seconds >= VOICE_MAX_SECONDS && finishRecordingRef.current) {
+          finishRecordingRef.current(true);
+        }
+      });
+      await Sound.startRecorder();
+      isRecordingRef.current = true;
+      setIsRecording(true);
+    } catch (error) {
+      Sound.removeRecordBackListener();
+      showToast("Couldn't start recording. Check microphone permission.", 'info');
+    } finally {
+      setRecorderBusy(false);
+    }
+  }, [recorderBusy, stopVoicePlayback]);
+
+  useEffect(() => {
+    return () => {
+      if (!Sound) return;
+      Sound.removePlayBackListener();
+      Sound.removePlaybackEndListener();
+      Sound.removeRecordBackListener();
+      Sound.stopPlayer().catch(() => {});
+      if (isRecordingRef.current) {
+        Sound.stopRecorder().catch(() => {});
+      }
+    };
   }, []);
 
   const closeDropdown = useCallback(() => {
@@ -1616,30 +2448,36 @@ useEffect(() => {
     navigation.navigate('Members');
   }, [navigation]);
 
-  const handleMakeChatPrivatePressIn = useCallback(() => {
+  const handleMakeChatPrivatePressIn = useCallback(async () => {
     swallowNextCloseRef.current = true;
-    setChat(prev => ({ ...prev, isPublic: false }));
     closeDropdown();
-  }, [closeDropdown]);
+    try {
+      await setChatGroupVisibility({ authToken, chatGroupId, isPublic: false }).unwrap();
+    } catch (error) {
+      showToast("Couldn't make the chat private", 'info');
+    }
+  }, [authToken, chatGroupId, setChatGroupVisibility, closeDropdown]);
 
-  const handleMakeChatPublicPressIn = useCallback(() => {
+  const handleMakeChatPublicPressIn = useCallback(async () => {
     swallowNextCloseRef.current = true;
-    setChat(prev => ({ ...prev, isPublic: true }));
     closeDropdown();
-  }, [closeDropdown]);
-
-  const handleShareChatPressIn = useCallback(() => {
-    swallowNextCloseRef.current = true;
-  }, []);
+    try {
+      await setChatGroupVisibility({ authToken, chatGroupId, isPublic: true }).unwrap();
+    } catch (error) {
+      showToast("Couldn't make the chat public", 'info');
+    }
+  }, [authToken, chatGroupId, setChatGroupVisibility, closeDropdown]);
 
   const handleDeleteChatPressIn = useCallback(() => {
     swallowNextCloseRef.current = true;
     setShowDeleteChatGroupModal(true);
   }, []);
+
   const handleLeaveChatGroupPress = useCallback(() => {
     swallowNextCloseRef.current = true;
     setShowLeaveChatGroupModal(true);
   }, []);
+
   useEffect(() => {
     if (isActive) {
       requestAnimationFrame(() => {
@@ -1658,22 +2496,7 @@ useEffect(() => {
     }
   }, [isActive, measureToRect]);
 
-  useEffect(() => {
-    setShowRequestToJoin(!chat.isPublic && chat.pendingMembers);
-  }, [chat.isPublic, chat.pendingMembers]);
-
-  const handleAcceptRequest = useCallback(() => {
-    setChat(prev => ({
-      ...prev,
-      members: [...prev.members, requestToJoin.name],
-      pendingMembers: false
-    }));
-    setShowRequestToJoin(false);
-  }, []);
-
-  const handleDeclineRequest = useCallback(() => {
-    setShowRequestToJoin(false);
-  }, []);
+  const showRequestToJoin = owner && !isPublic && !!firstPendingMember;
 
   const rootStyle = {
     ...styles.root,
@@ -1682,27 +2505,31 @@ useEffect(() => {
   };
 
   const renderedMembers = useMemo(() => {
+    const memberNames = activeMemberEntries.map((member) => member.name || member.username || 'Member');
     const elements = [];
-    if (chat.members.length === 1) {
+    if (memberNames.length === 0) {
+      return elements;
+    }
+    if (memberNames.length === 1) {
       elements.push(
-        <CustomText 
-          key="you-and-member" 
-          style={[styles.membersTxt, styles.lightMembersColor]} 
-          numberOfLines={1} 
+        <CustomText
+          key="you-and-member"
+          style={[styles.membersTxt, styles.lightMembersColor]}
+          numberOfLines={1}
           ellipsizeMode="tail"
         >
-          You & {chat.members[0].slice(0, 6)}
+          {memberNames[0].slice(0, 6)}
         </CustomText>
       );
     } else {
       const maxDisplay = 3;
-      const displayedMembers = chat.members.slice(0, maxDisplay);
+      const displayedMembers = memberNames.slice(0, maxDisplay);
       displayedMembers.forEach((member, index) => {
         elements.push(
-          <CustomText 
-            key={`member-${index}`} 
-            style={[styles.membersTxt, styles.lightMembersColor]} 
-            numberOfLines={1} 
+          <CustomText
+            key={`member-${index}`}
+            style={[styles.membersTxt, styles.lightMembersColor]}
+            numberOfLines={1}
             ellipsizeMode="tail"
           >
             {member.slice(0, 6)}
@@ -1710,50 +2537,60 @@ useEffect(() => {
         );
         if (index < displayedMembers.length - 1) {
           elements.push(
-            <CustomText 
-              key={`comma-${index}`} 
+            <CustomText
+              key={`comma-${index}`}
               style={[styles.membersTxt, styles.lightMembersColor]}
             >
-              , 
+              ,
             </CustomText>
           );
         }
       });
-      if (chat.members.length > maxDisplay) {
+      if (memberNames.length > maxDisplay) {
         elements.push(
-          <CustomText 
-            key="comma-before-extra" 
+          <CustomText
+            key="comma-before-extra"
             style={[styles.membersTxt, styles.lightMembersColor]}
           >
-            , 
+            ,
           </CustomText>
         );
         elements.push(
-          <CustomText 
-            key="extra-members" 
-            style={[styles.membersTxt, styles.blackMembersColor]} 
-            numberOfLines={1} 
+          <CustomText
+            key="extra-members"
+            style={[styles.membersTxt, styles.blackMembersColor]}
+            numberOfLines={1}
             ellipsizeMode="tail"
           >
-            +{chat.members.length - maxDisplay}
+            +{memberNames.length - maxDisplay}
           </CustomText>
         );
       }
     }
     return elements;
-  }, [chat.members, styles.membersTxt, styles.lightMembersColor, styles.blackMembersColor]);
+  }, [activeMemberEntries, styles.membersTxt, styles.lightMembersColor, styles.blackMembersColor]);
 
   const typingMembersText = useMemo(() => {
+    if (typingUserIds.length === 0) return '';
     const maxNames = 4;
+    const typingNames = typingUserIds.map((userId) => {
+      const senderName = sendersById[userId] && sendersById[userId].displayName;
+      const memberName = memberNamesById[userId];
+      const displayName = senderName || memberName;
+      return displayName ? displayName.slice(0, 8) : 'Someone';
+    });
     let formattedMembers;
-    if (chat.members.length <= maxNames) {
-      formattedMembers = chat.members.map(member => member.slice(0, 8)).join(', ');
+    if (typingNames.length <= maxNames) {
+      formattedMembers = typingNames.join(', ');
     } else {
-      const firstNames = chat.members.slice(0, maxNames).map(member => member.slice(0, 8));
-      formattedMembers = firstNames.join(', ') + ` +${chat.members.length - maxNames}`;
+      formattedMembers = typingNames.slice(0, maxNames).join(', ') + ` +${typingNames.length - maxNames}`;
     }
-    return `${'•'.repeat(dotCount)} ${formattedMembers} is typing`;
-  }, [chat.members, dotCount]);
+    const verb = typingNames.length === 1 ? 'is' : 'are';
+    return `${'\u2022'.repeat(dotCount)} ${formattedMembers} ${verb} typing`;
+  }, [typingUserIds, sendersById, memberNamesById, dotCount]);
+
+  const myReactionEmojiForTarget = actionTarget ? myReactionEmojiFor(actionTarget) : '';
+  const actionTargetIsMine = !!actionTarget && !!actionTarget.senderUserAccountId && actionTarget.senderUserAccountId === callerUserAccountId;
 
   return (
     <>
@@ -1799,16 +2636,16 @@ useEffect(() => {
                             </TouchableOpacity>
                         </View>
                         <View style={styles.chatNameAndMembers}>
-                            <CustomText style={styles.chatNameTxt}>{chat.chatName}</CustomText>
+                            <CustomText style={styles.chatNameTxt} numberOfLines={1} ellipsizeMode="tail">{chatName}</CustomText>
                             <View style={styles.membersRow}>
                             {renderedMembers}
                             </View>
                         </View>
                     </View>
                     <View style={styles.privacyLabelAndEllipsisRow}>
-                        <View style={[styles.privacyLabel, chat.isPublic ? styles.publicBackgroundColor : styles.privateBackgroundColor]}>
+                        <View style={[styles.privacyLabel, isPublic ? styles.publicBackgroundColor : styles.privateBackgroundColor]}>
                             <CustomText style={styles.privacyLabelTxt}>
-                                {chat.isPublic ? 'Public' : 'Private'}
+                                {isPublic ? 'Public' : 'Private'}
                             </CustomText>
                         </View>
                         <View>
@@ -1824,43 +2661,69 @@ useEffect(() => {
                 </View>
                 </View>
                 <View style={styles.chatGroup}>
-                    <SectionList
-                        ref={sectionListRef}
-                        sections={groupedMessages}
-                        keyExtractor={item => item.id}
-                        renderItem={renderChatItem}
-                        renderSectionHeader={renderSectionHeader}
-                        ItemSeparatorComponent={ChatMessageSeparator}
-                        showsVerticalScrollIndicator={false}
-                        stickySectionHeadersEnabled={false}
-                        onScrollToIndexFailed={() => {}}
-                    />
-                    <View style={styles.peopleTyping}>
-                        <CustomText style={styles.peopleTypingTxt} numberOfLines={1} ellipsizeMode="tail">
-                            {typingMembersText}
-                        </CustomText>
-                    </View>
+                    {status === 'loading' && (
+                        <View style={styles.emptyStateView}>
+                            <CustomText style={styles.emptyStateTxt}>Loading messages...</CustomText>
+                        </View>
+                    )}
+                    {status === 'unreachable' && (
+                        <View style={styles.emptyStateView}>
+                            <CustomText style={styles.emptyStateTxt}>Couldn't load messages. Check your connection.</CustomText>
+                            <TouchableOpacity style={styles.retryBtn} onPress={reload}>
+                                <CustomText style={styles.retryBtnTxt}>Retry</CustomText>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                    {status === 'ok' && (
+                        <SectionList
+                            ref={sectionListRef}
+                            sections={groupedMessages}
+                            keyExtractor={item => item.id}
+                            renderItem={renderChatItem}
+                            renderSectionHeader={renderSectionHeader}
+                            ItemSeparatorComponent={ChatMessageSeparator}
+                            showsVerticalScrollIndicator={false}
+                            stickySectionHeadersEnabled={false}
+                            onScrollToIndexFailed={() => {}}
+                            onStartReached={hasOlder ? loadOlder : undefined}
+                            onStartReachedThreshold={0.2}
+                            maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+                            ListHeaderComponent={loadingOlder ? (
+                                <CustomText style={styles.loadingOlderTxt}>Loading earlier messages...</CustomText>
+                            ) : null}
+                        />
+                    )}
+                    {typingMembersText !== '' && (
+                        <View style={styles.peopleTyping}>
+                            <CustomText style={styles.peopleTypingTxt} numberOfLines={1} ellipsizeMode="tail">
+                                {typingMembersText}
+                            </CustomText>
+                        </View>
+                    )}
                     {showRequestToJoin && (
                     <Pressable style={styles.requestToJoin}>
                         <View style={styles.requestToJoinRow}>
                             <View style={styles.requestToJoinImageAndNames}>
-                                <Image 
-                                    source={requestToJoin.profilePicture}
+                                <Avatar
+                                    uri={firstPendingMember.profilePhotoUrl}
+                                    color={firstPendingMember.avatarColor}
+                                    initial={firstPendingMember.name ? firstPendingMember.name.charAt(0).toUpperCase() : '?'}
                                     style={styles.requestToJoinProfilePicture}
+                                    initialStyle={styles.avatarInitialTxt}
                                 />
                                 <View>
-                                    <CustomText 
+                                    <CustomText
                                         style={styles.requestToJoinNameTxt}
                                         numberOfLines={1}
                                         ellipsizeMode="tail"
-                                    >{requestToJoin.name}</CustomText>
-                                    <CustomText 
+                                    >{firstPendingMember.name}</CustomText>
+                                    <CustomText
                                         style={styles.requestToJoinusernameTxt}
                                         numberOfLines={1}
                                         ellipsizeMode="tail"
-                                    >@{requestToJoin.username}</CustomText>
+                                    >@{firstPendingMember.username}</CustomText>
                                 </View>
-                            </View>                  
+                            </View>
                             <View style={styles.requestToJoinOptions}>
                                 <TouchableOpacity
                                     style={styles.requestToJoinAcceptBtn}
@@ -1884,7 +2747,7 @@ useEffect(() => {
                             onLayout={() => measureToRect(chatDropdownRef, 'chatDropdown')}
                             style={styles.chatGroupDropdown}
                         >
-                            {chat.owner && (
+                            {owner && (
                                 <TouchableOpacity
                                     onPressIn={handleEditNamePressIn}
                                     onPressOut={closeDropdown}
@@ -1894,7 +2757,7 @@ useEffect(() => {
                                     <EditIcon {...styles.dropdownIcons} />
                                 </TouchableOpacity>
                             )}
-                            {chat.owner && 
+                            {owner &&
                                 (
                                     <TouchableOpacity
                                         onPressIn={handleMembersPressIn}
@@ -1903,11 +2766,11 @@ useEffect(() => {
                                     >
                                         <CustomText style={styles.dropdownBlackTxt}>Members</CustomText>
                                         <MembersIcon {...styles.dropdownIcons} />
-                                        {chat.pendingMembers && chat.owner && <PendingMembersCircle {...styles.pendingMembersCircle} />}
+                                        {pendingMemberEntries.length > 0 && <PendingMembersCircle {...styles.pendingMembersCircle} />}
                                     </TouchableOpacity>
                                 )
-                            }                    
-                            {chat.owner && chat.isPublic &&
+                            }
+                            {owner && isPublic &&
                                 (
                                     <TouchableOpacity
                                         onPressIn={handleMakeChatPrivatePressIn}
@@ -1916,10 +2779,10 @@ useEffect(() => {
                                     >
                                         <CustomText style={styles.dropdownBlackTxt}>Make Chat Private</CustomText>
                                         <PrivateIcon {...styles.dropdownIcons} />
-                                    </TouchableOpacity>        
+                                    </TouchableOpacity>
                                 )
                             }
-                            {chat.owner && !chat.isPublic &&
+                            {owner && !isPublic &&
                                 (
                                     <TouchableOpacity
                                         onPressIn={handleMakeChatPublicPressIn}
@@ -1934,12 +2797,12 @@ useEffect(() => {
                             <TouchableOpacity
                                 onPressIn={handleLeaveChatGroupPress}
                                 onPressOut={closeDropdown}
-                                style={[styles.deleteOption, chat.owner && styles.chatGroupDropdownOptionsBorderBottom]}
+                                style={[styles.deleteOption, owner && styles.chatGroupDropdownOptionsBorderBottom]}
                             >
                                 <CustomText style={styles.dropdownRedTxt}>Leave group</CustomText>
                                 <LeaveGroupIcon {...styles.dropdownIcons} />
                             </TouchableOpacity>
-                            {chat.owner && 
+                            {owner &&
                                 (
                                     <TouchableOpacity
                                         onPressIn={handleDeleteChatPressIn}
@@ -1952,7 +2815,7 @@ useEffect(() => {
                                 )
                             }
                         </Pressable>
-                    )}        
+                    )}
                 </View>
 <Pressable
     style={styles.textBoxContainer}
@@ -1964,6 +2827,20 @@ useEffect(() => {
         }
     }}
 >
+    {isRecording ? (
+        <View style={styles.recordingBar}>
+            <TouchableOpacity style={styles.recordingCancelBtn} onPress={() => finishRecording(false)} disabled={recorderBusy}>
+                <CustomText style={styles.recordingCancelTxt}>Cancel</CustomText>
+            </TouchableOpacity>
+            <View style={styles.recordingTimerView}>
+                <View style={styles.recordingDot} />
+                <CustomText style={styles.recordingTimerTxt}>{formatDuration(recordSeconds)}</CustomText>
+            </View>
+            <TouchableOpacity style={styles.recordingSendBtn} onPress={() => finishRecording(true)} disabled={recorderBusy}>
+                <CustomText style={styles.recordingSendTxt}>Send</CustomText>
+            </TouchableOpacity>
+        </View>
+    ) : (
     <View style={styles.inputRow}>
         <View style={styles.inputView}>
             <CustomTextInput
@@ -1973,7 +2850,8 @@ useEffect(() => {
                 autoCapitalize="sentences"
                 autoCorrect={false}
                 value={chatText}
-                onChangeText={setChatText}
+                onChangeText={handleChangeChatText}
+                maxLength={MAX_MESSAGE_LENGTH}
                 placeholderTextColor="rgba(35, 35, 35, 0.50)"
                 placeholder="Message"
                 returnKeyType="done"
@@ -1984,34 +2862,110 @@ useEffect(() => {
             />
         </View>
         <View style={[styles.plusView, styles.textBoxBtnViews]}>
-            <TouchableOpacity style={styles.textBoxBtns}>
+            <TouchableOpacity style={styles.textBoxBtns} onPress={() => { Keyboard.dismiss(); setShowAttachSheet(true); }}>
                 <PlusIcon {...styles.largeIcons}/>
             </TouchableOpacity>
         </View>
-        {!chatText.trim() ? 
+        {!chatText.trim() ?
             (
                 <View style={[styles.microphoneAndSendView, styles.textBoxBtnViews]}>
-                    <TouchableOpacity style={styles.textBoxBtns}>
+                    <TouchableOpacity style={styles.textBoxBtns} onPress={handleMicPress}>
                         <MicrophoneIcon {...styles.largeIcons}/>
-                    </TouchableOpacity>    
-                </View> 
+                    </TouchableOpacity>
+                </View>
             )
         :
             (
                 <View style={[styles.microphoneAndSendView, styles.textBoxBtnViews]}>
                     <TouchableOpacity style={styles.textBoxBtns} onPress={handleSend}>
                         <SendMessageIcon {...styles.largeIcons}/>
-                    </TouchableOpacity>    
+                    </TouchableOpacity>
                 </View>
             )
-        }                                        
+        }
     </View>
-</Pressable> 
+    )}
+</Pressable>
+                {showAttachSheet && (
+                    <Pressable style={styles.attachSheetOverlay} onPress={() => setShowAttachSheet(false)}>
+                        <Pressable style={styles.actionSheetCard} onPress={() => {}}>
+                            <TouchableOpacity style={styles.actionSheetOption} onPress={handlePickFromCamera}>
+                                <CustomText style={styles.actionSheetBlackTxt}>Take Photo</CustomText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.actionSheetOption, styles.actionSheetOptionBorderTop]} onPress={handlePickFromLibrary}>
+                                <CustomText style={styles.actionSheetBlackTxt}>Photo Library</CustomText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.actionSheetOption, styles.actionSheetOptionBorderTop]} onPress={handleRecordVideo}>
+                                <CustomText style={styles.actionSheetBlackTxt}>Record Video</CustomText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.actionSheetOption, styles.actionSheetOptionBorderTop]} onPress={handlePickVideoFromLibrary}>
+                                <CustomText style={styles.actionSheetBlackTxt}>Video Library</CustomText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.actionSheetOption, styles.actionSheetOptionBorderTop]} onPress={() => setShowAttachSheet(false)}>
+                                <CustomText style={styles.actionSheetRedTxt}>Cancel</CustomText>
+                            </TouchableOpacity>
+                        </Pressable>
+                    </Pressable>
+                )}
             </View>
         </KeyboardAvoidingView>
+      {!!actionTarget && (
+      <Modal visible transparent animationType="fade" onRequestClose={closeMessageActions}>
+        <Pressable style={styles.actionSheetOverlay} onPress={closeMessageActions}>
+          <Pressable style={styles.actionSheetCard} onPress={() => {}}>
+            <View style={styles.reactionBarRow}>
+              {QUICK_REACTIONS.map((emoji) => (
+                <TouchableOpacity
+                  key={emoji}
+                  style={[styles.reactionBarBtn, myReactionEmojiForTarget === emoji && styles.reactionBarBtnActive]}
+                  onPress={() => actionTarget && handleReactionPick(actionTarget, emoji)}
+                >
+                  <CustomText style={styles.reactionBarEmojiTxt}>{emoji}</CustomText>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={styles.reactionBarBtn} onPress={handleOpenEmojiPicker}>
+                <CustomText style={styles.reactionBarEmojiTxt}>+</CustomText>
+              </TouchableOpacity>
+            </View>
+            {actionTargetIsMine ? (
+              <TouchableOpacity style={[styles.actionSheetOption, styles.actionSheetOptionBorderTop]} onPress={handleDeleteOwn}>
+                <CustomText style={styles.actionSheetRedTxt}>Delete message</CustomText>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={[styles.actionSheetOption, styles.actionSheetOptionBorderTop]} onPress={handleOpenReport}>
+                <CustomText style={styles.actionSheetRedTxt}>Report message</CustomText>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={[styles.actionSheetOption, styles.actionSheetOptionBorderTop]} onPress={closeMessageActions}>
+              <CustomText style={styles.actionSheetBlackTxt}>Cancel</CustomText>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+      )}
+      {!!emojiPickerTarget && !!EmojiPicker && (
+      <EmojiPicker
+        open
+        onClose={() => setEmojiPickerTarget(null)}
+        onEmojiSelected={(selected) => {
+          const target = emojiPickerTarget;
+          setEmojiPickerTarget(null);
+          if (target && selected && selected.emoji) {
+            handleReactionPick(target, selected.emoji);
+          }
+        }}
+      />
+      )}
+      {!!reportTarget && (
+      <ReportMessageModal
+        visible
+        onSubmit={handleSubmitReport}
+        onCancel={() => setReportTarget(null)}
+      />
+      )}
       <EditChatNameModal
         visible={showEditChatNameModal}
-        initialName={chat.chatName}
+        initialName={chatName}
         maxLen={100}
         onConfirm={handleConfirmEditName}
         onCancel={() => { setShowEditChatNameModal(false); }}
@@ -2020,12 +2974,12 @@ useEffect(() => {
         visible={showDeleteChatGroupModal}
         onConfirm={handleConfirmDeleteChatGroup}
         onCancel={() => { setShowDeleteChatGroupModal(false); }}
-      /> 
+      />
       <LeaveChatGroupModal
         visible={showLeaveChatGroupModal}
         onConfirm={handleConfirmLeaveChatGroup}
         onCancel={() => { setShowLeaveChatGroupModal(false); }}
-      />                  
+      />
     </>
   );
 }
