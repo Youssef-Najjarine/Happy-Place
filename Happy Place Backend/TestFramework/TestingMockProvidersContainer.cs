@@ -71,6 +71,10 @@ DELETE FROM [dbo].[NotificationChannel];
 DELETE FROM [dbo].[HelpOffer];
 DELETE FROM [dbo].[DeviceToken];
 DELETE FROM [dbo].[HelpAvailability];
+DELETE FROM [dbo].[ChatMessageReaction];
+DELETE FROM [dbo].[ChatMessageReport];
+DELETE FROM [dbo].[ChatMediaAsset];
+DELETE FROM [dbo].[ChatMessage];
 DELETE FROM [dbo].[ChatGroupMember];
 DELETE FROM [dbo].[ChatGroup];
 DELETE FROM [dbo].[UserProfilePhoto];
@@ -82,5 +86,6 @@ DELETE FROM [dbo].[ContactChangeAudit];
 DELETE FROM [dbo].[UserAccount];";
         connection.Open();
         command.ExecuteNonQuery();
+        ChatMediaStorage.ClearAll();
     }
 }

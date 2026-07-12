@@ -11,4 +11,6 @@ public class ChatGroupMember {
     public ChatGroupMemberRole MemberRole { get; set; }
     public ChatGroupMemberStatus Status { get; set; }
     public DateTime JoinedAtUtc { get; set; }
+    public Int64 LastReadSequence { get; set; }
+    public DateTime? LastTypingAtUtc { get; set; }
 }

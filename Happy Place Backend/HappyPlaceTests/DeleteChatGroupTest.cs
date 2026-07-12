@@ -38,7 +38,7 @@ public class DeleteChatGroupTest {
     // Tests - Owner Deletes
 
     [Fact]
-    public void OwnerDeletesActiveGroupRemovesIt() {
+    public void OwnerDeletesActiveGroupSoftDeletesIt() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
         Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "My Group", true);
@@ -46,7 +46,7 @@ public class DeleteChatGroupTest {
         JsonElement root = Delete(testingMockProvidersContainer, ownerAuthToken, groupId);
 
         Assert.Equal("deleted", root.GetProperty("status").GetString());
-        Assert.False(GroupExists(groupId));
+        Assert.Equal(ChatGroupStatus.Deleted, GetGroupStatus(groupId));
     }
 
     [Fact]
@@ -146,8 +146,8 @@ public class DeleteChatGroupTest {
 
         Delete(testingMockProvidersContainer, ownerAuthToken, deletedGroupId);
 
-        Assert.False(GroupExists(deletedGroupId));
-        Assert.True(GroupExists(survivingGroupId));
+        Assert.Equal(ChatGroupStatus.Deleted, GetGroupStatus(deletedGroupId));
+        Assert.Equal(ChatGroupStatus.Active, GetGroupStatus(survivingGroupId));
     }
 
     // Tests - Effect On Discovery
@@ -212,7 +212,7 @@ public class DeleteChatGroupTest {
     // Tests - Real Active Group Teardown
 
     [Fact]
-    public void DeleteActiveGroupWithConnectedOffersSucceedsAndCascades() {
+    public void DeleteActiveGroupWithConnectedOffersSucceedsAndTearsDown() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string seekerAuthToken = CreateUser(testingMockProvidersContainer, "Seeker");
         string chatGroupIdText = testingMockProvidersContainer.WebClient.PostJson("api/helpRequest/createRequest", new { AuthToken = seekerAuthToken, Topic = "I need help" }).ReadContentAsJsonDocument().RootElement.GetProperty("chatGroupId").GetString();
@@ -224,7 +224,7 @@ public class DeleteChatGroupTest {
         JsonElement root = Delete(testingMockProvidersContainer, seekerAuthToken, chatGroupId);
 
         Assert.Equal("deleted", root.GetProperty("status").GetString());
-        Assert.False(GroupExists(chatGroupId));
+        Assert.Equal(ChatGroupStatus.Deleted, GetGroupStatus(chatGroupId));
         Assert.Equal(0, CountMembers(chatGroupId));
         Assert.Equal(0, CountOffers(chatGroupId));
     }
@@ -297,6 +297,14 @@ public class DeleteChatGroupTest {
     private static bool GroupExists(Guid groupId) {
         using var dbContext = HappyPlaceDbContext.Create();
         return dbContext.ChatGroups.Any(field => field.Id == groupId);
+    }
+
+    private static ChatGroupStatus? GetGroupStatus(Guid groupId) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == groupId);
+        if (chatGroup == null)
+            return null;
+        return chatGroup.Status;
     }
 
     private static int CountMembers(Guid groupId) {

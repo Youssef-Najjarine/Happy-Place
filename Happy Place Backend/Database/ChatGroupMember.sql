@@ -14,7 +14,10 @@ CREATE TABLE [dbo].[ChatGroupMember]
 	[Status] tinyint NOT NULL
 		constraint [CK-ChatGroupMember-Status] CHECK ([Status] IN (1, 2)),
 	[JoinedAtUtc] datetime2(0) NOT NULL
-		constraint [DF-ChatGroupMember-JoinedAtUtc] default sysutcdatetime()
+		constraint [DF-ChatGroupMember-JoinedAtUtc] default sysutcdatetime(),
+	[LastReadSequence] bigint NOT NULL
+		constraint [DF-ChatGroupMember-LastReadSequence] default 0,
+	[LastTypingAtUtc] datetime2(7) NULL
 )
 GO
 

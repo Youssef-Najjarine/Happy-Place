@@ -288,7 +288,7 @@ public class ListChatGroupsTest {
 
         JsonElement group = GetGroup(List(testingMockProvidersContainer, ownerAuthToken), groupId);
         List<string> actualProperties = [.. group.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
-        List<string> expectedProperties = ["helpers", "id", "isPublic", "joinRequest", "joined", "memberCount", "owner", "pendingMembers", "title"];
+        List<string> expectedProperties = ["helpers", "id", "isPublic", "joinRequest", "joined", "memberCount", "owner", "pendingMembers", "title", "unreadCount"];
 
         Assert.Equal(expectedProperties, actualProperties);
     }

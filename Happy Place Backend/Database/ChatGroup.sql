@@ -11,11 +11,15 @@ CREATE TABLE [dbo].[ChatGroup]
 		constraint [DF-ChatGroup-IsPublic] default 0,
 	[Status] tinyint NOT NULL
 		constraint [DF-ChatGroup-Status] default 2
-		constraint [CK-ChatGroup-Status] CHECK ([Status] IN (1, 2)),
+		constraint [CK-ChatGroup-Status] CHECK ([Status] IN (1, 2, 3)),
 	[CreatedAtUtc] datetime2(0) NOT NULL
 		constraint [DF-ChatGroup-CreatedAtUtc] default sysutcdatetime(),
 	[LastSeenAtUtc] datetime2(0) NOT NULL
-		constraint [DF-ChatGroup-LastSeenAtUtc] default sysutcdatetime()
+		constraint [DF-ChatGroup-LastSeenAtUtc] default sysutcdatetime(),
+	[LastMessageSequence] bigint NOT NULL
+		constraint [DF-ChatGroup-LastMessageSequence] default 0,
+	[LastChangeSequence] bigint NOT NULL
+		constraint [DF-ChatGroup-LastChangeSequence] default 0
 )
 GO
 

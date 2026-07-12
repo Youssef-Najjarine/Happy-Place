@@ -156,6 +156,8 @@ public class UserProfileManager {
         if (!PasswordHasher.VerifyPassword(password, authenticatedUser.HashedPassword))
             throw new ValidationErrorsException(["Password is incorrect."]);
 
+        ChatGroupManager.UntangleUserForAccountDeletion(authenticatedUser.Id);
+
         using var dbContext = HappyPlaceDbContext.Create();
 
         var passwordResetRequests = dbContext.PasswordResetRequests

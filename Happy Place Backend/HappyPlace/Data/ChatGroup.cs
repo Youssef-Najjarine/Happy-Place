@@ -13,4 +13,6 @@ public class ChatGroup {
     public ChatGroupStatus Status { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime LastSeenAtUtc { get; set; }
+    public Int64 LastMessageSequence { get; set; }
+    public Int64 LastChangeSequence { get; set; }
 }

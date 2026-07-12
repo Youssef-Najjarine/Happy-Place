@@ -20,6 +20,10 @@ public class HappyPlaceDbContext : DbContext {
     public DbSet<ContactChangeAudit> ContactChangeAudits { get; set; }
     public DbSet<ChatGroup> ChatGroups { get; set; }
     public DbSet<ChatGroupMember> ChatGroupMembers { get; set; }
+    public DbSet<ChatMessage> ChatMessages { get; set; }
+    public DbSet<ChatMessageReaction> ChatMessageReactions { get; set; }
+    public DbSet<ChatMessageReport> ChatMessageReports { get; set; }
+    public DbSet<ChatMediaAsset> ChatMediaAssets { get; set; }
     public DbSet<HelpAvailability> HelpAvailabilities { get; set; }
     public DbSet<HelpOffer> HelpOffers { get; set; }
     public DbSet<DeviceToken> DeviceTokens { get; set; }

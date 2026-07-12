@@ -26,6 +26,11 @@ namespace HappyWorld.HappyPlace {
         public HttpResponseMessage Get(string url) {
             return this._httpClient.GetAsync(url).GetAwaiter().GetResult();
         }
+        public HttpResponseMessage GetWithRange(string url, long fromByte, long toByte) {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Range = new RangeHeaderValue(fromByte, toByte);
+            return this._httpClient.SendAsync(request).GetAwaiter().GetResult();
+        }
         public HttpResponseMessage UploadMultipart(string url, Dictionary<string, string> formFields, params (string FieldName, byte[] Content, string FileName, string ContentType)[] files) {
             using var multipartContent = new MultipartFormDataContent();
             foreach (var (fieldKey, fieldValue) in formFields) {

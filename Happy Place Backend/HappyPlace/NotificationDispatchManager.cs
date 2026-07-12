@@ -133,6 +133,43 @@ public static class NotificationDispatchManager {
         }
     }
 
+    // Methods - Event Hooks (Messages / group members)
+
+    public static void MarkMessagesDirty(Guid chatGroupId, Guid senderUserAccountId) {
+        try {
+            EnsureMessagesChannels(chatGroupId, senderUserAccountId);
+            using var dbContext = HappyPlaceDbContext.Create();
+            MarkDirty(dbContext.NotificationChannels.Where(field => field.Kind == NotificationChannelKind.Messages && field.ScopeChatGroupId == chatGroupId && field.RecipientUserAccountId != senderUserAccountId));
+        }
+        catch (Exception) {
+        }
+    }
+
+    public static void MarkMessagesReadDirty(Guid chatGroupId, Guid recipientUserAccountId) {
+        try {
+            using var dbContext = HappyPlaceDbContext.Create();
+            MarkDirty(dbContext.NotificationChannels.Where(field => field.Kind == NotificationChannelKind.Messages && field.ScopeChatGroupId == chatGroupId && field.RecipientUserAccountId == recipientUserAccountId));
+        }
+        catch (Exception) {
+        }
+    }
+
+    public static void RemoveMessagesChannel(Guid chatGroupId, Guid recipientUserAccountId) {
+        try {
+            TeardownChannels(field => field.Kind == NotificationChannelKind.Messages && field.ScopeChatGroupId == chatGroupId && field.RecipientUserAccountId == recipientUserAccountId);
+        }
+        catch (Exception) {
+        }
+    }
+
+    public static void RemoveMessagesChannels(Guid chatGroupId) {
+        try {
+            TeardownChannels(field => field.Kind == NotificationChannelKind.Messages && field.ScopeChatGroupId == chatGroupId);
+        }
+        catch (Exception) {
+        }
+    }
+
     // Methods - Event Pushes
 
     public static void SendJoinApprovedPush(Guid recipientUserAccountId, Guid chatGroupId, string chatGroupName) {
@@ -250,6 +287,8 @@ public static class NotificationDispatchManager {
             return CountWaitingForHelper(dbContext, channel.RecipientUserAccountId);
         if (channel.Kind == NotificationChannelKind.JoinRequests)
             return CountPendingJoinRequests(dbContext, channel.ScopeChatGroupId);
+        if (channel.Kind == NotificationChannelKind.Messages)
+            return CountUnreadMessages(dbContext, channel.ScopeChatGroupId, channel.RecipientUserAccountId);
         return CountOffersForGroup(dbContext, channel.ScopeChatGroupId);
     }
 
@@ -272,6 +311,15 @@ public static class NotificationDispatchManager {
         if (chatGroupId == null)
             return 0;
         return dbContext.HelpOffers.Count(field => field.ChatGroupId == chatGroupId.Value && field.Status == HelpOfferStatus.Offered);
+    }
+
+    private static int CountUnreadMessages(HappyPlaceDbContext dbContext, Guid? chatGroupId, Guid recipientUserAccountId) {
+        if (chatGroupId == null)
+            return 0;
+        ChatGroupMember member = dbContext.ChatGroupMembers.SingleOrDefault(field => field.ChatGroupId == chatGroupId.Value && field.UserAccountId == recipientUserAccountId && field.Status == ChatGroupMemberStatus.Active);
+        if (member == null)
+            return 0;
+        return dbContext.ChatMessages.Count(field => field.ChatGroupId == chatGroupId.Value && !field.IsDeleted && field.SenderUserAccountId != recipientUserAccountId && field.Sequence > member.LastReadSequence);
     }
 
     // Methods - Sending
@@ -325,6 +373,8 @@ public static class NotificationDispatchManager {
             return "help-waiting";
         if (channel.Kind == NotificationChannelKind.JoinRequests)
             return $"join-requests-{channel.ScopeChatGroupId}";
+        if (channel.Kind == NotificationChannelKind.Messages)
+            return $"chat-messages-{channel.ScopeChatGroupId}";
         return $"help-offers-{channel.ScopeChatGroupId}";
     }
 
@@ -341,6 +391,15 @@ public static class NotificationDispatchManager {
             string joinBody = count == 1 ? $"1 person wants to join {chatGroupName}." : $"{count} people want to join {chatGroupName}.";
             return new NotificationContent("Join requests", joinBody, new() {
                 ["type"] = "joinRequests",
+                ["count"] = count.ToString(),
+                ["chatGroupId"] = channel.ScopeChatGroupId == null ? "" : channel.ScopeChatGroupId.Value.ToString()
+            });
+        }
+        if (channel.Kind == NotificationChannelKind.Messages) {
+            string chatGroupName = LoadChatGroupName(channel.ScopeChatGroupId);
+            string messagesBody = count == 1 ? "1 new message." : $"{count} new messages.";
+            return new NotificationContent(chatGroupName, messagesBody, new() {
+                ["type"] = "chatMessages",
                 ["count"] = count.ToString(),
                 ["chatGroupId"] = channel.ScopeChatGroupId == null ? "" : channel.ScopeChatGroupId.Value.ToString()
             });
@@ -410,6 +469,29 @@ public static class NotificationDispatchManager {
             LastSentCount = 0,
             IsLive = false
         });
+        TrySaveChanges(dbContext);
+    }
+
+    private static void EnsureMessagesChannels(Guid chatGroupId, Guid senderUserAccountId) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        List<Guid> memberIds = [.. dbContext.ChatGroupMembers
+            .Where(field => field.ChatGroupId == chatGroupId && field.Status == ChatGroupMemberStatus.Active && field.UserAccountId != senderUserAccountId)
+            .Select(field => field.UserAccountId)];
+        if (memberIds.Count == 0)
+            return;
+        List<Guid> existingRecipientIds = [.. dbContext.NotificationChannels
+            .Where(field => field.Kind == NotificationChannelKind.Messages && field.ScopeChatGroupId == chatGroupId)
+            .Select(field => field.RecipientUserAccountId)];
+        foreach (Guid memberId in memberIds)
+            if (!existingRecipientIds.Contains(memberId))
+                dbContext.NotificationChannels.Add(new() {
+                    Id = Guid.NewGuid(),
+                    RecipientUserAccountId = memberId,
+                    Kind = NotificationChannelKind.Messages,
+                    ScopeChatGroupId = chatGroupId,
+                    LastSentCount = 0,
+                    IsLive = false
+                });
         TrySaveChanges(dbContext);
     }
 

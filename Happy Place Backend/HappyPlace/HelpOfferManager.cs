@@ -73,6 +73,11 @@ public static class HelpOfferManager {
         }
         dbContext.ChatGroupMembers.Add(new() { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, UserAccountId = userAccountId.Value, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = now });
         TrySaveChanges(dbContext);
+        bool groupStillActive = dbContext.ChatGroups.Any(field => field.Id == chatGroupId && field.Status == ChatGroupStatus.Active);
+        if (!groupStillActive) {
+            dbContext.ChatGroupMembers.Where(field => field.ChatGroupId == chatGroupId && field.UserAccountId == userAccountId.Value).ExecuteDelete();
+            return HelpJoinResult.Unavailable();
+        }
         ClaimOwnershipIfUnowned(dbContext, chatGroupId, userAccountId.Value);
         return HelpJoinResult.Joined(chatGroup.Id, chatGroup.Name);
     }

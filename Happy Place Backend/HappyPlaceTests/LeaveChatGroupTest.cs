@@ -198,7 +198,7 @@ public class LeaveChatGroupTest {
     // Tests - Owner Leaving As Last Member (Disposition)
 
     [Fact]
-    public void OwnerLeaveAsLastWithDeleteDeletesGroup() {
+    public void OwnerLeaveAsLastWithDeleteSoftDeletesGroup() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
         string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
         Guid ownerUserAccountId = ResolveUserAccountId(ownerAuthToken);
@@ -207,7 +207,7 @@ public class LeaveChatGroupTest {
         JsonElement root = Leave(testingMockProvidersContainer, ownerAuthToken, groupId, "delete");
 
         Assert.Equal("deleted", root.GetProperty("status").GetString());
-        Assert.False(GroupExists(groupId));
+        Assert.Equal(ChatGroupStatus.Deleted, GetGroupStatus(groupId));
         Assert.Equal(0, CountMembers(groupId));
     }
 
@@ -364,12 +364,15 @@ public class LeaveChatGroupTest {
 
             Assert.Empty(errors);
             Assert.False(MembershipExists(groupId, ownerUserAccountId));
-            if (GroupExists(groupId)) {
+            ChatGroupStatus? finalStatus = GetGroupStatus(groupId);
+            Assert.NotNull(finalStatus);
+            if (finalStatus == ChatGroupStatus.Active) {
                 Assert.Equal(1, CountActiveMembers(groupId));
                 Assert.Equal(joinerUserAccountId, GetOwnerUserAccountId(groupId));
                 Assert.True(IsActiveOwner(groupId, joinerUserAccountId));
             }
             else {
+                Assert.Equal(ChatGroupStatus.Deleted, finalStatus);
                 Assert.Equal(0, CountMembers(groupId));
             }
         }
@@ -424,7 +427,7 @@ public class LeaveChatGroupTest {
                 thread.Join();
 
             Assert.Empty(errors);
-            Assert.False(GroupExists(groupId));
+            Assert.Equal(ChatGroupStatus.Deleted, GetGroupStatus(groupId));
             Assert.Equal(0, CountMembers(groupId));
         }
     }
@@ -522,6 +525,14 @@ public class LeaveChatGroupTest {
     private static bool GroupExists(Guid groupId) {
         using var dbContext = HappyPlaceDbContext.Create();
         return dbContext.ChatGroups.Any(field => field.Id == groupId);
+    }
+
+    private static ChatGroupStatus? GetGroupStatus(Guid groupId) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == groupId);
+        if (chatGroup == null)
+            return null;
+        return chatGroup.Status;
     }
 
     private static bool IsPublic(Guid groupId) {
