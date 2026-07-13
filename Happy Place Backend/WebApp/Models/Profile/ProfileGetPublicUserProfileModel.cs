@@ -8,6 +8,6 @@ public record ProfileGetPublicUserProfileModel(string AuthToken, string Username
     }
 
     public PublicProfileResult GetProfile() {
-        return UserProfileManager.GetPublicProfile(this.Username);
+        return UserProfileManager.GetPublicProfile(this.AuthToken, this.Username);
     }
 }

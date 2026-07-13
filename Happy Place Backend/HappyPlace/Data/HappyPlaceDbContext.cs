@@ -28,6 +28,9 @@ public class HappyPlaceDbContext : DbContext {
     public DbSet<HelpOffer> HelpOffers { get; set; }
     public DbSet<DeviceToken> DeviceTokens { get; set; }
     public DbSet<NotificationChannel> NotificationChannels { get; set; }
+    public DbSet<Friendship> Friendships { get; set; }
+    public DbSet<UserBlock> UserBlocks { get; set; }
+    public DbSet<FriendRequestAudit> FriendRequestAudits { get; set; }
 
     // Methods
     public static void SetConnectionString(string connectionString) => _connectionStringOverride = connectionString;

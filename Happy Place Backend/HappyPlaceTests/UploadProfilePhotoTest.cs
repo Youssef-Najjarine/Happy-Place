@@ -60,7 +60,7 @@ public class UploadProfilePhotoTest {
         HttpResponseMessage response = testingMockProvidersContainer.WebClient.UploadMultipart("api/userProfile/uploadProfilePhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", jpegBytes, "photo.jpg", "image/jpeg"));
         var data = response.ReadContentAsJsonDocument();
         string[] actualProperties = [.. data.RootElement.EnumerateObject().Select(property => property.Name).OrderBy(name => name)];
-        string[] expectedProperties = ["avatarColor", "backgroundPhotoUrl", "bio", "displayName", "emailAddress", "phoneNumber", "profilePhotoUrl", "username"];
+        string[] expectedProperties = ["avatarColor", "backgroundPhotoUrl", "bio", "displayName", "emailAddress", "friendCount", "phoneNumber", "profilePhotoUrl", "username"];
 
         Assert.Equal(expectedProperties, actualProperties);
     }
@@ -389,7 +389,7 @@ public class UploadProfilePhotoTest {
 
         testingMockProvidersContainer.WebClient.UploadMultipart("api/userProfile/uploadProfilePhoto", new Dictionary<string, string> { ["AuthToken"] = authToken }, ("Photo", secondJpegBytes, "second.jpg", "image/jpeg")).EnsureSuccessStatusCode();
         using var dbContextAfterSecond = HappyPlaceDbContext.Create();
-        var allPhotosForUser = dbContextAfterSecond.UserProfilePhotos.Where(field => field.UserAccountId == userAccount.Id && field.PhotoType == ProfilePhotoType).ToList();
+        List<UserProfilePhoto> allPhotosForUser = [.. dbContextAfterSecond.UserProfilePhotos.Where(field => field.UserAccountId == userAccount.Id && field.PhotoType == ProfilePhotoType)];
 
         Assert.Single(allPhotosForUser);
         Assert.NotEqual(firstPhotoId, allPhotosForUser[0].Id);

@@ -391,8 +391,8 @@ public class GetMyProfileTest {
 
         HttpResponseMessage profileResponse = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = authToken });
         var profileData = profileResponse.ReadContentAsJsonDocument();
-        List<string> actualProperties = profileData.RootElement.EnumerateObject().Select(property => property.Name).OrderBy(name => name).ToList();
-        List<string> expectedProperties = new List<string> { "avatarColor", "backgroundPhotoUrl", "bio", "displayName", "emailAddress", "phoneNumber", "profilePhotoUrl", "username" }.OrderBy(name => name).ToList();
+        List<string> actualProperties = [.. profileData.RootElement.EnumerateObject().Select(property => property.Name).OrderBy(name => name)];
+        List<string> expectedProperties = ["avatarColor", "backgroundPhotoUrl", "bio", "displayName", "emailAddress", "friendCount", "phoneNumber", "profilePhotoUrl", "username"];
 
         Assert.Equal(expectedProperties, actualProperties);
     }
@@ -466,7 +466,7 @@ public class GetMyProfileTest {
         string verificationCode = EmailVerificationNotification.ExtractVerificationCode(verificationEmail);
         HttpResponseMessage verifyResponse = testingMockProvidersContainer.WebClient.PostJson("api/userAuthentication/verifyEmail", new { Email = uniqueEmail, VerificationCode = verificationCode });
         string authToken = verifyResponse.ReadContentAsJsonDocument().RootElement.GetProperty("authToken").GetString();
-        string tamperedToken = authToken.Substring(0, authToken.Length - 1) + (authToken[^1] == 'A' ? 'B' : 'A');
+        string tamperedToken = authToken[..^1] + (authToken[^1] == 'A' ? 'B' : 'A');
 
         HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/getMyProfile", new { AuthToken = tamperedToken });
 

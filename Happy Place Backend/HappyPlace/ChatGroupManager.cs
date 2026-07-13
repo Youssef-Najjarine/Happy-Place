@@ -83,8 +83,13 @@ public static class ChatGroupManager {
             return [];
         using var dbContext = HappyPlaceDbContext.Create();
 
+        Guid callerUserAccountId = userAccountId.Value;
+        List<Guid> blockRelatedIds = [.. dbContext.UserBlocks
+            .Where(field => field.BlockerUserAccountId == callerUserAccountId || field.BlockedUserAccountId == callerUserAccountId)
+            .Select(field => field.BlockerUserAccountId == callerUserAccountId ? field.BlockedUserAccountId : field.BlockerUserAccountId)];
+
         List<Guid> availableHelperUserAccountIds = [.. dbContext.HelpAvailabilities
-            .Where(field => field.IsAvailable && field.HelperUserAccountId != userAccountId.Value)
+            .Where(field => field.IsAvailable && field.HelperUserAccountId != callerUserAccountId && !blockRelatedIds.Contains(field.HelperUserAccountId))
             .OrderByDescending(field => field.LastSeenAtUtc)
             .Select(field => field.HelperUserAccountId)
             .Take(MaxAvailableHelpers)];
@@ -99,7 +104,7 @@ public static class ChatGroupManager {
         foreach (Guid helperUserAccountId in availableHelperUserAccountIds) {
             if (!usersById.TryGetValue(helperUserAccountId, out UserAccount user))
                 continue;
-            results.Add(new AvailableHelperResult(user.Id.ToString(), user.DisplayName, user.ProfilePhotoUrl, UserAccountRegistrar.GetAvatarColor(user.Id)));
+            results.Add(new AvailableHelperResult(user.Id.ToString(), user.DisplayName, user.ProfilePhotoUrl, UserAccountRegistrar.GetAvatarColor(user.Id), user.Username, user.IsAnonymous));
         }
         return results;
     }

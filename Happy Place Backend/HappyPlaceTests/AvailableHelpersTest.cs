@@ -99,6 +99,30 @@ public class AvailableHelpersTest {
         Assert.True(ContainsHelper(root, secondHelperUserAccountId));
     }
 
+    // Tests - Block Relations
+
+    [Fact]
+    public void BlockRelatedHelpersAreHiddenInBothDirections() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string blockerAuthToken = CreateUser(testingMockProvidersContainer, "Blocker");
+        string blockedAuthToken = CreateUser(testingMockProvidersContainer, "Blocked Helper");
+        Guid blockerUserAccountId = ResolveUserAccountId(blockerAuthToken);
+        Guid blockedUserAccountId = ResolveUserAccountId(blockedAuthToken);
+        Guid controlUserAccountId = SeedUser("Control Helper", null);
+        SeedAvailability(blockerUserAccountId, true, DateTime.UtcNow);
+        SeedAvailability(blockedUserAccountId, true, DateTime.UtcNow);
+        SeedAvailability(controlUserAccountId, true, DateTime.UtcNow);
+        FriendshipTestActions.Block(testingMockProvidersContainer, blockerAuthToken, FriendshipTestActions.ResolveUsername(blockedAuthToken)).EnsureSuccessStatusCode();
+
+        JsonElement blockerRoot = AvailableHelpers(testingMockProvidersContainer, blockerAuthToken);
+        JsonElement blockedRoot = AvailableHelpers(testingMockProvidersContainer, blockedAuthToken);
+
+        Assert.False(ContainsHelper(blockerRoot, blockedUserAccountId));
+        Assert.True(ContainsHelper(blockerRoot, controlUserAccountId));
+        Assert.False(ContainsHelper(blockedRoot, blockerUserAccountId));
+        Assert.True(ContainsHelper(blockedRoot, controlUserAccountId));
+    }
+
     // Tests - Response Shape
 
     [Fact]
@@ -110,7 +134,7 @@ public class AvailableHelpersTest {
 
         JsonElement helper = GetHelper(AvailableHelpers(testingMockProvidersContainer, requesterAuthToken), helperUserAccountId);
         List<string> actualProperties = [.. helper.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
-        List<string> expectedProperties = ["avatarColor", "id", "name", "profilePhotoUrl"];
+        List<string> expectedProperties = ["avatarColor", "id", "isAnonymous", "name", "profilePhotoUrl", "username"];
 
         Assert.Equal(expectedProperties, actualProperties);
     }
@@ -137,6 +161,44 @@ public class AvailableHelpersTest {
         JsonElement helper = GetHelper(AvailableHelpers(testingMockProvidersContainer, requesterAuthToken), helperUserAccountId);
 
         Assert.StartsWith("/api/photo/", helper.GetProperty("profilePhotoUrl").GetString());
+    }
+
+    [Fact]
+    public void UsernameReflectsUserAccount() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string requesterAuthToken = CreateUser(testingMockProvidersContainer, "Requester");
+        string helperAuthToken = CreateUser(testingMockProvidersContainer, "Named Helper");
+        Guid helperUserAccountId = ResolveUserAccountId(helperAuthToken);
+        SeedAvailability(helperUserAccountId, true, DateTime.UtcNow);
+
+        JsonElement helper = GetHelper(AvailableHelpers(testingMockProvidersContainer, requesterAuthToken), helperUserAccountId);
+
+        Assert.Equal(FriendshipTestActions.ResolveUsername(helperAuthToken), helper.GetProperty("username").GetString());
+        Assert.False(helper.GetProperty("isAnonymous").GetBoolean());
+    }
+
+    [Fact]
+    public void UsernameIsNullWhenUserHasNoUsername() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string requesterAuthToken = CreateUser(testingMockProvidersContainer, "Requester");
+        Guid helperUserAccountId = SeedUser("Incomplete Helper", null);
+        SeedAvailability(helperUserAccountId, true, DateTime.UtcNow);
+
+        JsonElement helper = GetHelper(AvailableHelpers(testingMockProvidersContainer, requesterAuthToken), helperUserAccountId);
+
+        Assert.Equal(JsonValueKind.Null, helper.GetProperty("username").ValueKind);
+    }
+
+    [Fact]
+    public void AnonymousHelpersAreMarkedAnonymous() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string requesterAuthToken = CreateUser(testingMockProvidersContainer, "Requester");
+        Guid helperUserAccountId = SeedAnonymousUser("Guest Helper");
+        SeedAvailability(helperUserAccountId, true, DateTime.UtcNow);
+
+        JsonElement helper = GetHelper(AvailableHelpers(testingMockProvidersContainer, requesterAuthToken), helperUserAccountId);
+
+        Assert.True(helper.GetProperty("isAnonymous").GetBoolean());
     }
 
     // Tests - Ordering And Cap
@@ -221,6 +283,14 @@ public class AvailableHelpersTest {
         using var dbContext = HappyPlaceDbContext.Create();
         Guid userAccountId = Guid.NewGuid();
         dbContext.UserAccounts.Add(new UserAccount { Id = userAccountId, DisplayName = displayName, IsAnonymous = false, CreatedAtUtc = DateTime.UtcNow, ProfilePhotoUrl = profilePhotoUrl });
+        dbContext.SaveChanges();
+        return userAccountId;
+    }
+
+    private static Guid SeedAnonymousUser(string displayName) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        Guid userAccountId = Guid.NewGuid();
+        dbContext.UserAccounts.Add(new UserAccount { Id = userAccountId, DisplayName = displayName, IsAnonymous = true, CreatedAtUtc = DateTime.UtcNow, ProfilePhotoUrl = null });
         dbContext.SaveChanges();
         return userAccountId;
     }

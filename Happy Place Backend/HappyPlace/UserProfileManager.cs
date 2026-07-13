@@ -46,14 +46,20 @@ public class UserProfileManager {
         return GetAuthenticatedUserAccount(authToken) != null;
     }
 
-    public static PublicProfileResult GetPublicProfile(string username) {
+    public static PublicProfileResult GetPublicProfile(string authToken, string username) {
+        var caller = GetAuthenticatedUserAccount(authToken);
+        if (caller == null)
+            return null;
         if (string.IsNullOrWhiteSpace(username))
             return null;
         using var dbContext = HappyPlaceDbContext.Create();
         var userAccount = dbContext.UserAccounts.SingleOrDefault(field => field.Username == username);
         if (userAccount == null)
             return null;
-        return PublicProfileResult.FromUserAccount(userAccount);
+        if (FriendshipManager.IsBlockedEitherDirection(caller.Id, userAccount.Id))
+            return null;
+        string friendshipStatus = FriendshipManager.ComputeFriendshipStatus(caller.Id, userAccount.Id);
+        return PublicProfileResult.FromUserAccount(userAccount, friendshipStatus);
     }
 
     // Methods - Profile Update
@@ -157,6 +163,7 @@ public class UserProfileManager {
             throw new ValidationErrorsException(["Password is incorrect."]);
 
         ChatGroupManager.UntangleUserForAccountDeletion(authenticatedUser.Id);
+        FriendshipManager.UntangleUserForAccountDeletion(authenticatedUser.Id);
 
         using var dbContext = HappyPlaceDbContext.Create();
 
@@ -439,21 +446,7 @@ public class UserProfileManager {
     // Methods - Private
 
     private static UserAccount GetAuthenticatedUserAccount(string authToken) {
-        if (string.IsNullOrWhiteSpace(authToken))
-            return null;
-        UserAuthenticationToken token;
-        try {
-            token = UserAuthenticationToken.ValidateToken(authToken);
-        }
-        catch {
-            return null;
-        }
-        if (token == null)
-            return null;
-        if (!Guid.TryParse(token.Identifier, out Guid userId))
-            return null;
-        using var dbContext = HappyPlaceDbContext.Create();
-        return dbContext.UserAccounts.SingleOrDefault(field => field.Id == userId);
+        return UserAccountResolver.Resolve(authToken);
     }
 
     private static void ValidateUsernameFormat(string normalizedUsername) {
@@ -602,8 +595,8 @@ public class UserProfileManager {
         image.Metadata.ExifProfile = null;
         image.Metadata.XmpProfile = null;
         image.Metadata.IccProfile = null;
-        image.Mutate(x => x.BackgroundColor(Color.White));
-        image.Mutate(x => x.Resize(new ResizeOptions {
+        image.Mutate(imageProcessingContext => imageProcessingContext.BackgroundColor(Color.White));
+        image.Mutate(imageProcessingContext => imageProcessingContext.Resize(new ResizeOptions {
             Size = new Size(outputWidth, outputHeight),
             Mode = ResizeMode.Crop,
             Position = AnchorPositionMode.Center

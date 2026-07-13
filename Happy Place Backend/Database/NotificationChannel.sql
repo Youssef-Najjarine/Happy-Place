@@ -7,7 +7,7 @@ CREATE TABLE [dbo].[NotificationChannel]
 		constraint [FK-NotificationChannel-RecipientUserAccountId]
 		FOREIGN KEY REFERENCES [dbo].[UserAccount]([Id]) ON DELETE CASCADE,
 	[Kind] tinyint NOT NULL
-		constraint [CK-NotificationChannel-Kind] CHECK ([Kind] IN (1, 2, 3, 4)),
+		constraint [CK-NotificationChannel-Kind] CHECK ([Kind] IN (1, 2, 3, 4, 5)),
 	[ScopeChatGroupId] uniqueidentifier NULL
 		constraint [FK-NotificationChannel-ScopeChatGroupId]
 		FOREIGN KEY REFERENCES [dbo].[ChatGroup]([Id]) ON DELETE CASCADE,
@@ -42,6 +42,11 @@ GO
 CREATE UNIQUE NONCLUSTERED INDEX [UQ-NotificationChannel-Messages]
 	ON [dbo].[NotificationChannel]([RecipientUserAccountId], [ScopeChatGroupId])
 	WHERE [Kind] = 4;
+GO
+
+CREATE UNIQUE NONCLUSTERED INDEX [UQ-NotificationChannel-FriendRequests]
+	ON [dbo].[NotificationChannel]([RecipientUserAccountId])
+	WHERE [Kind] = 5;
 GO
 
 CREATE NONCLUSTERED INDEX [IX-NotificationChannel-Due]

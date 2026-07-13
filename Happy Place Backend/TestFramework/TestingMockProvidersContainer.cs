@@ -67,6 +67,9 @@ public class TestingMockProvidersContainer : IDisposable {
         using var connection = new SqlConnection(TestConnectionString);
         using var command = connection.CreateCommand();
         command.CommandText = @"
+DELETE FROM [dbo].[FriendRequestAudit];
+DELETE FROM [dbo].[UserBlock];
+DELETE FROM [dbo].[Friendship];
 DELETE FROM [dbo].[NotificationChannel];
 DELETE FROM [dbo].[HelpOffer];
 DELETE FROM [dbo].[DeviceToken];

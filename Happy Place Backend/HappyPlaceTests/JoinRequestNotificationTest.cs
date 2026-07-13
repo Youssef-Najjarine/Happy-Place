@@ -342,11 +342,11 @@ public class JoinRequestNotificationTest {
         container.WebClient.PostJson("api/chatGroup/leave", new { AuthToken = authToken, ChatGroupId = chatGroupId, Disposition = disposition }).EnsureSuccessStatusCode();
     }
 
-    private static (string AuthToken, string DeviceToken, Guid GroupId) OwnerWithDeviceAndPrivateGroup(TestingMockProvidersContainer container, string groupName) {
+    private static OwnerContext OwnerWithDeviceAndPrivateGroup(TestingMockProvidersContainer container, string groupName) {
         string ownerAuthToken = CreateUser(container, "Owner");
         string ownerDeviceToken = RegisterNewDevice(container, ownerAuthToken);
         Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), groupName, false);
-        return (ownerAuthToken, ownerDeviceToken, groupId);
+        return new OwnerContext(ownerAuthToken, ownerDeviceToken, groupId);
     }
 
     private static List<Exception> RunConcurrently(params Action[] actions) {
@@ -413,4 +413,8 @@ public class JoinRequestNotificationTest {
     private static List<PushMessage> DismissalsTo(TestingMockProvidersContainer container, string deviceToken) {
         return [.. container.PushProvider.SentMessages.Where(message => message.Token == deviceToken && message.IsDismiss)];
     }
+
+    // Records
+
+    private record OwnerContext(string AuthToken, string DeviceToken, Guid GroupId);
 }

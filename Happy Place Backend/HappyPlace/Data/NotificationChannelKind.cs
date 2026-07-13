@@ -4,5 +4,6 @@ public enum NotificationChannelKind : byte {
     Waiting = 1,
     Offers = 2,
     JoinRequests = 3,
-    Messages = 4
+    Messages = 4,
+    FriendRequests = 5
 }

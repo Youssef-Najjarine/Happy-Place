@@ -170,6 +170,26 @@ public static class NotificationDispatchManager {
         }
     }
 
+    // Methods - Event Hooks (Friend Requests / recipient)
+
+    public static void MarkFriendRequestsDirty(Guid recipientUserAccountId) {
+        try {
+            EnsureFriendRequestsChannel(recipientUserAccountId);
+            using var dbContext = HappyPlaceDbContext.Create();
+            MarkDirty(dbContext.NotificationChannels.Where(field => field.Kind == NotificationChannelKind.FriendRequests && field.RecipientUserAccountId == recipientUserAccountId));
+        }
+        catch (Exception) {
+        }
+    }
+
+    public static void RemoveFriendRequestsChannel(Guid recipientUserAccountId) {
+        try {
+            TeardownChannels(field => field.Kind == NotificationChannelKind.FriendRequests && field.RecipientUserAccountId == recipientUserAccountId);
+        }
+        catch (Exception) {
+        }
+    }
+
     // Methods - Event Pushes
 
     public static void SendJoinApprovedPush(Guid recipientUserAccountId, Guid chatGroupId, string chatGroupName) {
@@ -180,6 +200,21 @@ public static class NotificationDispatchManager {
                 Body = $"You were accepted into {chatGroupName}.",
                 Data = new() { ["type"] = "joinApproved", ["chatGroupId"] = chatGroupId.ToString(), ["alerting"] = "true" },
                 CollapseId = $"join-approved-{chatGroupId}",
+                Alerting = true
+            });
+        }
+        catch (Exception) {
+        }
+    }
+
+    public static void SendFriendRequestAcceptedPush(Guid recipientUserAccountId, Guid accepterUserAccountId, string accepterDisplayName, string accepterUsername) {
+        try {
+            SendToRecipientDevices(recipientUserAccountId, deviceToken => new PushMessage {
+                Token = deviceToken,
+                Title = "New friend!",
+                Body = $"{accepterDisplayName} accepted your friend request.",
+                Data = new() { ["type"] = "friendAccepted", ["username"] = accepterUsername ?? "", ["alerting"] = "true" },
+                CollapseId = $"friend-accepted-{accepterUserAccountId}",
                 Alerting = true
             });
         }
@@ -289,6 +324,8 @@ public static class NotificationDispatchManager {
             return CountPendingJoinRequests(dbContext, channel.ScopeChatGroupId);
         if (channel.Kind == NotificationChannelKind.Messages)
             return CountUnreadMessages(dbContext, channel.ScopeChatGroupId, channel.RecipientUserAccountId);
+        if (channel.Kind == NotificationChannelKind.FriendRequests)
+            return CountPendingFriendRequests(dbContext, channel.RecipientUserAccountId);
         return CountOffersForGroup(dbContext, channel.ScopeChatGroupId);
     }
 
@@ -296,6 +333,10 @@ public static class NotificationDispatchManager {
         if (chatGroupId == null)
             return 0;
         return dbContext.ChatGroupMembers.Count(field => field.ChatGroupId == chatGroupId.Value && field.Status == ChatGroupMemberStatus.Pending);
+    }
+
+    private static int CountPendingFriendRequests(HappyPlaceDbContext dbContext, Guid recipientUserAccountId) {
+        return dbContext.Friendships.Count(field => field.AddresseeUserAccountId == recipientUserAccountId && field.Status == FriendshipStatus.Pending);
     }
 
     private static int CountWaitingForHelper(HappyPlaceDbContext dbContext, Guid helperUserAccountId) {
@@ -375,6 +416,8 @@ public static class NotificationDispatchManager {
             return $"join-requests-{channel.ScopeChatGroupId}";
         if (channel.Kind == NotificationChannelKind.Messages)
             return $"chat-messages-{channel.ScopeChatGroupId}";
+        if (channel.Kind == NotificationChannelKind.FriendRequests)
+            return "friend-requests";
         return $"help-offers-{channel.ScopeChatGroupId}";
     }
 
@@ -402,6 +445,13 @@ public static class NotificationDispatchManager {
                 ["type"] = "chatMessages",
                 ["count"] = count.ToString(),
                 ["chatGroupId"] = channel.ScopeChatGroupId == null ? "" : channel.ScopeChatGroupId.Value.ToString()
+            });
+        }
+        if (channel.Kind == NotificationChannelKind.FriendRequests) {
+            string friendRequestsBody = count == 1 ? "1 person sent you a friend request." : $"{count} people sent you friend requests.";
+            return new NotificationContent("Friend requests", friendRequestsBody, new() {
+                ["type"] = "friendRequests",
+                ["count"] = count.ToString()
             });
         }
         string offersBody = count == 1 ? "1 person wants to help with your request." : $"{count} people want to help with your request.";
@@ -466,6 +516,22 @@ public static class NotificationDispatchManager {
             RecipientUserAccountId = ownerUserAccountId,
             Kind = NotificationChannelKind.JoinRequests,
             ScopeChatGroupId = chatGroupId,
+            LastSentCount = 0,
+            IsLive = false
+        });
+        TrySaveChanges(dbContext);
+    }
+
+    private static void EnsureFriendRequestsChannel(Guid recipientUserAccountId) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        bool exists = dbContext.NotificationChannels.Any(field => field.Kind == NotificationChannelKind.FriendRequests && field.RecipientUserAccountId == recipientUserAccountId);
+        if (exists)
+            return;
+        dbContext.NotificationChannels.Add(new() {
+            Id = Guid.NewGuid(),
+            RecipientUserAccountId = recipientUserAccountId,
+            Kind = NotificationChannelKind.FriendRequests,
+            ScopeChatGroupId = null,
             LastSentCount = 0,
             IsLive = false
         });

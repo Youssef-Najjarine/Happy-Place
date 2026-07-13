@@ -454,8 +454,8 @@ public class UpdateProfileTest {
 
         HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/userProfile/updateProfile", new { AuthToken = authToken, Username = currentUsername, DisplayName = "Original Name", Bio = "A bio" });
         var data = response.ReadContentAsJsonDocument();
-        List<string> actualProperties = data.RootElement.EnumerateObject().Select(property => property.Name).OrderBy(name => name).ToList();
-        List<string> expectedProperties = new List<string> { "avatarColor", "backgroundPhotoUrl", "bio", "displayName", "emailAddress", "phoneNumber", "profilePhotoUrl", "username" }.OrderBy(name => name).ToList();
+        List<string> actualProperties = [.. data.RootElement.EnumerateObject().Select(property => property.Name).OrderBy(name => name)];
+        List<string> expectedProperties = ["avatarColor", "backgroundPhotoUrl", "bio", "displayName", "emailAddress", "friendCount", "phoneNumber", "profilePhotoUrl", "username"];
 
         Assert.Equal(expectedProperties, actualProperties);
     }

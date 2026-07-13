@@ -76,6 +76,9 @@
     <Build Include="ChatMessageReaction.sql" />
     <Build Include="ChatMessageReport.sql" />
     <Build Include="ChatMediaAsset.sql" />
+    <Build Include="Friendship.sql" />
+    <Build Include="UserBlock.sql" />
+    <Build Include="FriendRequestAudit.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Local.SqlServer.HappyPlace.publish.xml" />
