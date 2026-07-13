@@ -3,6 +3,7 @@ import loadingReducer from './loadingSlice';
 import userReducer from './userSlice';
 import { helpApi } from './helpApi';
 import { chatGroupsApi } from './chatGroupsApi';
+import { friendsApi } from './friendsApi';
 
 const store = configureStore({
   reducer: {
@@ -10,9 +11,10 @@ const store = configureStore({
     user: userReducer,
     [helpApi.reducerPath]: helpApi.reducer,
     [chatGroupsApi.reducerPath]: chatGroupsApi.reducer,
+    [friendsApi.reducerPath]: friendsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(helpApi.middleware).concat(chatGroupsApi.middleware),
+    getDefaultMiddleware().concat(helpApi.middleware).concat(chatGroupsApi.middleware).concat(friendsApi.middleware),
 });
 
 export default store;

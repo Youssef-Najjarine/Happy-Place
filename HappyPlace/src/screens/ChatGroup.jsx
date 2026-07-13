@@ -1772,6 +1772,20 @@ export default function ChatGroup() {
     return names;
   }, [activeMemberEntries]);
 
+  const memberUsernamesById = useMemo(() => {
+    const usernames = {};
+    activeMemberEntries.forEach((member) => {
+      if (member.username) usernames[member.userAccountId] = member.username;
+    });
+    return usernames;
+  }, [activeMemberEntries]);
+
+  const openSenderProfile = useCallback((senderUserAccountId) => {
+    const username = memberUsernamesById[senderUserAccountId];
+    if (!username) return;
+    navigation.push('Profile', { username });
+  }, [memberUsernamesById, navigation]);
+
   const [renameChatGroup] = useRenameChatGroupMutation();
   const [setChatGroupVisibility] = useSetChatGroupVisibilityMutation();
   const [deleteChatGroup] = useDeleteChatGroupMutation();
@@ -2068,14 +2082,18 @@ export default function ChatGroup() {
       const senderName = sender ? sender.displayName : 'Former member';
       return (
         <Pressable style={styles.helperChatMessageView} onLongPress={() => openMessageActions(item)}>
-          <View style={styles.helperProfilePictureContainer}>
+          <TouchableOpacity
+            style={styles.helperProfilePictureContainer}
+            disabled={!memberUsernamesById[item.senderUserAccountId]}
+            onPress={() => openSenderProfile(item.senderUserAccountId)}
+          >
             <Avatar
               uri={sender ? sender.profilePhotoUrl : null}
               initial={senderName ? senderName.charAt(0).toUpperCase() : '?'}
               style={styles.helperProfilePicture}
               initialStyle={styles.avatarInitialTxt}
             />
-          </View>
+          </TouchableOpacity>
           <View style={styles.helperChatView}>
             <View style={styles.helperChatTextBox}>
               <CustomText style={styles.helperSenderNameTxt} numberOfLines={1} ellipsizeMode="tail">
@@ -2115,7 +2133,7 @@ export default function ChatGroup() {
         {renderReactions(item, true)}
       </Pressable>
     );
-  }, [styles, callerUserAccountId, sendersById, isViewedByEveryoneElse, openMessageActions, renderMessageBody, renderReactions]);
+  }, [styles, callerUserAccountId, sendersById, isViewedByEveryoneElse, openMessageActions, renderMessageBody, renderReactions, memberUsernamesById, openSenderProfile]);
 
   const renderSectionHeader = useCallback(({ section: { title } }) => (
     <View style={styles.dayHeader}>

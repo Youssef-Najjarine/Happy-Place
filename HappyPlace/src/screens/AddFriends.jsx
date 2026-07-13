@@ -1,43 +1,38 @@
 import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
-import { View, TouchableOpacity, StyleSheet, Image, FlatList, useWindowDimensions, Pressable } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused, useFocusEffect } from '@react-navigation/native';
+import { useDispatch } from 'react-redux';
+import { showLoading, hideLoading } from 'store/loadingSlice';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import { HappyColor, White, Black, VeryLightGray } from 'src/constants/colors';
+import { HappyColor, White, Black, VeryLightGray, SoftRosePink } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
-import { tabletBreakpoint } from 'src/constants/breakpoints';
 import CustomText from 'src/components/FontFamilyText';
 import CustomTextInput from 'src/components/FontFamilyTextInput';
+import Avatar from 'src/components/Avatar';
+import { showToast } from 'src/components/Toast';
+import tokenStorage from 'src/services/tokenStorage';
+import {
+  useSearchUsersQuery,
+  useSendFriendRequestMutation,
+  useCancelFriendRequestMutation,
+  useAcceptFriendRequestMutation,
+  useDeclineFriendRequestMutation,
+} from 'store/friendsApi';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
 import DownArrowIcon from 'assets/images/global/arrow-down-icon.svg';
 import UpArrowIcon from 'assets/images/addFriends/arrow-up-icon.svg';
 import SearchIcon from 'assets/images/global/search-icon.svg';
-import Image1 from 'assets/images/placeholderProfiles/profile-1.png';
-import Image2 from 'assets/images/placeholderProfiles/profile-2.png';
-import Image3 from 'assets/images/placeholderProfiles/profile-3.png';
-import Image4 from 'assets/images/placeholderProfiles/profile-4.png';
-import Image5 from 'assets/images/placeholderProfiles/profile-5.png';
-import Image6 from 'assets/images/placeholderProfiles/profile-6.png';
-import Image7 from 'assets/images/placeholderProfiles/profile-7.jpg';
-import Image8 from 'assets/images/placeholderProfiles/profile-8.jpg';
-import Image9 from 'assets/images/placeholderProfiles/profile-9.jpg';
-import Image10 from 'assets/images/placeholderProfiles/profile-10.jpg';
-import Image11 from 'assets/images/placeholderProfiles/profile-11.jpg';
-import Image12 from 'assets/images/placeholderProfiles/profile-12.jpg';
-import Image13 from 'assets/images/placeholderProfiles/profile-13.jpg';
-import Image14 from 'assets/images/placeholderProfiles/profile-14.jpg';
-import Image15 from 'assets/images/placeholderProfiles/profile-15.jpg';
-import Image16 from 'assets/images/placeholderProfiles/profile-16.jpg';
-import Image17 from 'assets/images/placeholderProfiles/profile-17.jpg';
-import Image18 from 'assets/images/placeholderProfiles/profile-18.jpg';
-import Image19 from 'assets/images/placeholderProfiles/profile-19.jpg';
-import Image20 from 'assets/images/placeholderProfiles/profile-20.jpg';
+import XIcon from 'assets/images/global/black-x-icon.svg';
+import HappyEmoji from 'assets/images/global/happy-emoji.svg';
+import SadEmoji from 'assets/images/global/sad-emoji.svg';
 
-const stylesActive = StyleSheet.create({
-  zLift: { zIndex: 1000, elevation: 1000, overflow: 'visible' },
-});
+const STATUS_LABELS = {
+  self: 'You',
+  friends: 'Friends',
+};
 
 const phoneStyles = StyleSheet.create({
   root: {
@@ -168,6 +163,13 @@ const phoneStyles = StyleSheet.create({
     height: '100%',
     resizeMode: 'contain'
   },
+  avatarInitialTxt: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    fontWeight: 700,
+    color: White
+  },
   friendFullName: {
     width: scaleWidth(145),
     fontSize: scaleFont(16),
@@ -183,6 +185,14 @@ const phoneStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.12),
     fontWeight: 600,
     fontStyle: 'italic',
+    opacity: 0.6,
+    color: Black
+  },
+  statusLabelTxt: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    fontWeight: 600,
     opacity: 0.6,
     color: Black
   },
@@ -213,6 +223,92 @@ const phoneStyles = StyleSheet.create({
     fontSize: scaleFont(16),
     lineHeight: scaleLineHeight(24),
     letterSpacing: scaleLetterSpacing(-0.16),
+    fontWeight: 600,
+    color: White
+  },
+  requestOptions: {
+    flexDirection: 'row',
+    gap: scaleWidth(8)
+  },
+  acceptBtn: {
+    width: scaleWidth(74),
+    height: scaleHeight(42),
+    borderRadius: scaleWidth(99),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: HappyColor
+  },
+  acceptTxt: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    fontWeight: 600,
+    color: White
+  },
+  xBtn: {
+    width: scaleWidth(42),
+    height: scaleHeight(42),
+    borderRadius: scaleWidth(99),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: VeryLightGray
+  },
+  xIcon: {
+    width: scaleWidth(28),
+    height: scaleHeight(28)
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: scaleWidth(40),
+    paddingBottom: scaleHeight(80),
+    gap: scaleHeight(16)
+  },
+  emptyStateIconCircle: {
+    width: scaleWidth(96),
+    height: scaleWidth(96),
+    borderRadius: scaleWidth(99),
+    backgroundColor: SoftRosePink,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: scaleHeight(4)
+  },
+  emptyStateIcon: {
+    width: scaleWidth(44),
+    height: scaleHeight(44),
+    resizeMode: 'contain'
+  },
+  emptyStateTitle: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    fontWeight: 700,
+    color: Black,
+    textAlign: 'center'
+  },
+  emptyStateSubtitle: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    fontWeight: 500,
+    color: Black,
+    textAlign: 'center',
+    opacity: 0.6
+  },
+  emptyStateRetryBtn: {
+    width: scaleWidth(140),
+    height: scaleHeight(41),
+    borderRadius: scaleWidth(99),
+    marginTop: scaleHeight(4),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: HappyColor
+  },
+  emptyStateRetryTxt: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
     fontWeight: 600,
     color: White
   }
@@ -346,6 +442,13 @@ const tabletStyles = StyleSheet.create({
     height: '100%',
     resizeMode: 'contain'
   },
+  avatarInitialTxt: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    fontWeight: 700,
+    color: White
+  },
   friendFullName: {
     width: scaleWidth(445.35733),
     fontSize: scaleFont(20),
@@ -361,6 +464,14 @@ const tabletStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.16),
     fontWeight: 600,
     fontStyle: 'italic',
+    opacity: 0.6,
+    color: Black
+  },
+  statusLabelTxt: {
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    fontWeight: 600,
     opacity: 0.6,
     color: Black
   },
@@ -393,399 +504,343 @@ const tabletStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.2),
     fontWeight: 600,
     color: White
+  },
+  requestOptions: {
+    flexDirection: 'row',
+    gap: scaleWidth(10.73)
+  },
+  acceptBtn: {
+    width: scaleWidth(99.28),
+    height: scaleHeight(56.34),
+    borderRadius: scaleWidth(132.792),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: HappyColor
+  },
+  acceptTxt: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    fontWeight: 600,
+    color: White
+  },
+  xBtn: {
+    width: scaleWidth(56.34),
+    height: scaleHeight(56.34),
+    borderRadius: scaleWidth(132.792),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: VeryLightGray
+  },
+  xIcon: {
+    width: scaleWidth(37.56),
+    height: scaleHeight(37.56)
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: scaleWidth(80),
+    paddingBottom: scaleHeight(100),
+    gap: scaleHeight(20)
+  },
+  emptyStateIconCircle: {
+    width: scaleWidth(140),
+    height: scaleWidth(140),
+    borderRadius: scaleWidth(132.792),
+    backgroundColor: SoftRosePink,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: scaleHeight(6)
+  },
+  emptyStateIcon: {
+    width: scaleWidth(64),
+    height: scaleHeight(64),
+    resizeMode: 'contain'
+  },
+  emptyStateTitle: {
+    fontSize: scaleFont(26),
+    lineHeight: scaleLineHeight(39),
+    letterSpacing: scaleLetterSpacing(-0.26),
+    fontWeight: 700,
+    color: Black,
+    textAlign: 'center'
+  },
+  emptyStateSubtitle: {
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    fontWeight: 500,
+    color: Black,
+    textAlign: 'center',
+    opacity: 0.6
+  },
+  emptyStateRetryBtn: {
+    width: scaleWidth(200),
+    height: scaleHeight(50.82),
+    borderRadius: scaleWidth(132.792),
+    marginTop: scaleHeight(6),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: HappyColor
+  },
+  emptyStateRetryTxt: {
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    fontWeight: 600,
+    color: White
   }
 });
-const SEED_SUGGESTIONS = [
-        {
-            photo: Image13,
-            requestSent: true,
-            name: "Jaydon HerWitz Jaydon HerWitz",
-            username: "jaydon671 Jaydon HerWitzJaydon HerWitz",
-        },
-        {
-            photo: Image14,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image15,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image16,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image17,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image18,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image19,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image20,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image1,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image2,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image3,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image4,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },   
-        {
-            photo: Image5,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image6,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image7,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image8,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image9,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image10,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image11,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image12,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image13,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image14,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image15,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image16,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image17,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },                 
-];
 export default function AddFriends() {
   const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const navigation = useNavigation();
+  const dispatch = useDispatch();
+  const isFocused = useIsFocused();
+
+  const [authToken, setAuthToken] = useState(tokenStorage.peekToken());
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const token = await tokenStorage.getToken();
+      if (!cancelled && token) setAuthToken(token);
+    })();
+    const unsubscribe = tokenStorage.subscribe((token) => {
+      if (!cancelled) setAuthToken(token);
+    });
+    return () => { cancelled = true; unsubscribe(); };
+  }, []);
+
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+  const trimmedQuery = debouncedSearch.trim();
+  const isSearching = trimmedQuery.length > 0;
+
   const [sentRequestsTop, setSentRequestsTop] = useState(false);
-  const [suggestions, setSuggestions] = useState(() =>
-  SEED_SUGGESTIONS.map((s, i) => ({ ...s, id: `s-${i}`, _i: i }))
-);
   const friendsRef = useRef(null);
   const listCommonProps = useMemo(
-    () => ({ keyboardShouldPersistTaps: 'always'}),
+    () => ({ keyboardShouldPersistTaps: 'always' }),
+    []
   );
-  const friends = {
-    suggestions: [
-        {
-            photo: Image13,
-            requestSent: true,
-            name: "Jaydon HerWitz Jaydon HerWitz",
-            username: "jaydon671 Jaydon HerWitzJaydon HerWitz",
-        },
-        {
-            photo: Image14,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image15,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image16,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image17,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image18,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image19,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image20,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image1,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image2,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image3,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image4,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },   
-        {
-            photo: Image5,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image6,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image7,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image8,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image9,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image10,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image11,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image12,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image13,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image14,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image15,
-            requestSent: false,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image16,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },
-        {
-            photo: Image17,
-            requestSent: true,
-            name: "Jaydon HerWitz",
-            username: "jaydon671",
-        },                 
-    ]
-  };
-  const suggestionsSorted = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const filtered = q
-      ? suggestions.filter(
-          s =>
-            s.name.toLowerCase().includes(q) ||
-            s.username.toLowerCase().includes(q)
-        )
-      : suggestions;
 
-    return [...filtered].sort((a, b) => {
-      if (a.requestSent !== b.requestSent) {
-        // sent requests at bottom by default; at top when toggled
+  const listPollingInterval = isFocused ? 5000 : 0;
+  const {
+    data: searchData,
+    isSuccess: searchQuerySucceeded,
+    isError: searchQueryErrored,
+    refetch: refetchSearch
+  } = useSearchUsersQuery(
+    { authToken, query: trimmedQuery },
+    { skip: !authToken, pollingInterval: listPollingInterval }
+  );
+  const [sendFriendRequest] = useSendFriendRequestMutation();
+  const [cancelFriendRequest] = useCancelFriendRequestMutation();
+  const [acceptFriendRequest] = useAcceptFriendRequestMutation();
+  const [declineFriendRequest] = useDeclineFriendRequestMutation();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!authToken) return;
+      refetchSearch();
+    }, [authToken, refetchSearch])
+  );
+
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const searchResolved = searchQuerySucceeded || searchQueryErrored;
+  useEffect(() => {
+    if (searchResolved && !hasLoaded) setHasLoaded(true);
+  }, [searchResolved, hasLoaded]);
+  useEffect(() => {
+    if (hasLoaded || searchResolved) return;
+    dispatch(showLoading());
+    return () => dispatch(hideLoading());
+  }, [hasLoaded, searchResolved, dispatch]);
+
+  const userRows = searchData?.users || [];
+  const connectionFailed = userRows.length === 0 && searchQueryErrored;
+
+  const sortedRows = useMemo(() => {
+    const indexed = userRows.map((row, index) => ({ row, index }));
+    indexed.sort((a, b) => {
+      const aSent = a.row.friendshipStatus === 'requestSent';
+      const bSent = b.row.friendshipStatus === 'requestSent';
+      if (aSent !== bSent) {
         return sentRequestsTop
-          ? (a.requestSent ? -1 : 1)
-          : (a.requestSent ? 1 : -1);
+          ? (aSent ? -1 : 1)
+          : (aSent ? 1 : -1);
       }
-      return a._i - b._i; // stable tie-break
+      return a.index - b.index;
     });
-  }, [suggestions, search, sentRequestsTop]);
+    return indexed.map((entry) => entry.row);
+  }, [userRows, sentRequestsTop]);
+
+  const handleActionResult = useCallback((data) => {
+    if (data?.status === 'accountRequired') {
+      showToast('Create an account to use friends', 'error');
+      navigation.navigate('FinishAccount');
+      return false;
+    }
+    return true;
+  }, [navigation]);
+  const handleActionError = useCallback((error) => {
+    if (error?.status === 429) {
+      showToast('Too many friend requests. Please try again later.', 'error');
+      return;
+    }
+    showToast('Something went wrong. Please try again.', 'error');
+  }, []);
+
+  const handleAddFriend = useCallback(async (username) => {
+    if (!authToken) return;
+    try {
+      const data = await sendFriendRequest({ authToken, username }).unwrap();
+      handleActionResult(data);
+    } catch (error) {
+      handleActionError(error);
+    }
+  }, [authToken, sendFriendRequest, handleActionResult, handleActionError]);
+  const handleCancelRequest = useCallback(async (username) => {
+    if (!authToken) return;
+    try {
+      const data = await cancelFriendRequest({ authToken, username }).unwrap();
+      handleActionResult(data);
+    } catch (error) {
+      handleActionError(error);
+    }
+  }, [authToken, cancelFriendRequest, handleActionResult, handleActionError]);
+  const handleAccept = useCallback(async (username) => {
+    if (!authToken) return;
+    try {
+      const data = await acceptFriendRequest({ authToken, username }).unwrap();
+      handleActionResult(data);
+    } catch (error) {
+      handleActionError(error);
+    }
+  }, [authToken, acceptFriendRequest, handleActionResult, handleActionError]);
+  const handleDecline = useCallback(async (username) => {
+    if (!authToken) return;
+    try {
+      const data = await declineFriendRequest({ authToken, username }).unwrap();
+      handleActionResult(data);
+    } catch (error) {
+      handleActionError(error);
+    }
+  }, [authToken, declineFriendRequest, handleActionResult, handleActionError]);
+  const handleOpenProfile = useCallback((username) => {
+    navigation.push('Profile', { username });
+  }, [navigation]);
+
   const friendsListContent = useMemo(() => ({
     ...styles.friendsListContent,
     paddingBottom: bottomSafeHeight
   }), [styles.friendsListContent, bottomSafeHeight]);
-  const handleAddFriend = useCallback((id) => {
-    setSuggestions(prev => prev.map(p => p.id === id ? { ...p, requestSent: true } : p));
-  }, []);
-  const handleCancelRequest = useCallback((id) => {
-    setSuggestions(prev => prev.map(p => p.id === id ? { ...p, requestSent: false } : p));
-  }, []);
+
+  const renderRightControl = useCallback((item) => {
+    if (item.friendshipStatus === 'requestSent') {
+      return (
+        <TouchableOpacity
+          style={styles.cancelRequestBtn}
+          onPress={() => handleCancelRequest(item.username)}
+        >
+          <CustomText style={styles.cancelRequestTxt}>Cancel Request</CustomText>
+        </TouchableOpacity>
+      );
+    }
+    if (item.friendshipStatus === 'requestReceived') {
+      return (
+        <View style={styles.requestOptions}>
+          <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAccept(item.username)}>
+            <CustomText style={styles.acceptTxt}>Accept</CustomText>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.xBtn} onPress={() => handleDecline(item.username)}>
+            <XIcon {...styles.xIcon}/>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    if (item.friendshipStatus === 'none') {
+      return (
+        <TouchableOpacity
+          style={styles.addFriendBtn}
+          onPress={() => handleAddFriend(item.username)}
+        >
+          <CustomText style={styles.addFriendTxt}>Add Friend</CustomText>
+        </TouchableOpacity>
+      );
+    }
+    return (
+      <CustomText style={styles.statusLabelTxt}>{STATUS_LABELS[item.friendshipStatus] || ''}</CustomText>
+    );
+  }, [styles, handleCancelRequest, handleAccept, handleDecline, handleAddFriend]);
+
   const renderFriend = useCallback(({ item }) => {
     return (
       <View style={styles.friendCard}>
-        <View style={styles.friendImageAndName}>
+        <TouchableOpacity style={styles.friendImageAndName} onPress={() => handleOpenProfile(item.username)}>
           <View style={styles.friendImage}>
-            <Image
-              source={item.photo}
+            <Avatar
+              uri={item.profilePhotoUrl}
+              color={item.avatarColor}
+              initial={(item.displayName || item.username || '?')[0].toUpperCase()}
               style={styles.friendPhoto}
-              accessible
-              accessibilityLabel="Add Friends photo"
+              initialStyle={styles.avatarInitialTxt}
             />
           </View>
           <View>
             <CustomText style={styles.friendFullName} numberOfLines={1} ellipsizeMode="tail">
-              {item.name}
+              {item.displayName}
             </CustomText>
             <CustomText style={styles.friendUsername} numberOfLines={1} ellipsizeMode="tail">
               @{item.username}
             </CustomText>
           </View>
-        </View>
+        </TouchableOpacity>
 
         <View>
-          {item.requestSent ? (
-            <TouchableOpacity
-              style={styles.cancelRequestBtn}
-              onPress={() => handleCancelRequest(item.id)}
-            >
-              <CustomText style={styles.cancelRequestTxt}>Cancel Request</CustomText>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.addFriendBtn}
-              onPress={() => handleAddFriend(item.id)}
-            >
-              <CustomText style={styles.addFriendTxt}>Add Friend</CustomText>
-            </TouchableOpacity>
-          )}
+          {renderRightControl(item)}
         </View>
       </View>
     );
-  }, [styles, handleAddFriend, handleCancelRequest]);
+  }, [styles, handleOpenProfile, renderRightControl]);
+
+  const renderEmpty = useCallback(() => {
+    if (!hasLoaded) return null;
+    if (connectionFailed) {
+      return (
+        <View style={styles.emptyState}>
+          <View style={styles.emptyStateIconCircle}>
+            <SadEmoji {...styles.emptyStateIcon} />
+          </View>
+          <CustomText style={styles.emptyStateTitle}>Can't connect right now</CustomText>
+          <CustomText style={styles.emptyStateSubtitle}>
+            Check your internet connection and try again.
+          </CustomText>
+          <TouchableOpacity style={styles.emptyStateRetryBtn} onPress={refetchSearch}>
+            <CustomText style={styles.emptyStateRetryTxt}>Retry</CustomText>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    const title = isSearching ? 'No matches' : 'No suggestions yet';
+    const subtitle = isSearching
+      ? 'Try a different name or username.'
+      : 'Join a chat group to meet people you can add.';
+    return (
+      <View style={styles.emptyState}>
+        <View style={styles.emptyStateIconCircle}>
+          <HappyEmoji {...styles.emptyStateIcon} />
+        </View>
+        <CustomText style={styles.emptyStateTitle}>{title}</CustomText>
+        <CustomText style={styles.emptyStateSubtitle}>{subtitle}</CustomText>
+      </View>
+    );
+  }, [hasLoaded, connectionFailed, styles, refetchSearch, isSearching]);
+
   const rootStyle = {
   ...styles.root,
   paddingTop: statusBarHeight + styles.root.paddingTop
@@ -826,7 +881,7 @@ export default function AddFriends() {
         </View>
         <View style={styles.suggestionsAndRequests}>
           <View>
-            <CustomText style={styles.suggestionsTxt}>Suggestions</CustomText>
+            <CustomText style={styles.suggestionsTxt}>{isSearching ? 'Results' : 'Suggestions'}</CustomText>
           </View>
           <View style={styles.sentRequests}>
             <TouchableOpacity
@@ -845,11 +900,12 @@ export default function AddFriends() {
         <View style={styles.friendsBody}>
             <FlatList
             ref={friendsRef}
-            data={suggestionsSorted}
+            data={sortedRows}
             contentContainerStyle={friendsListContent}
             showsVerticalScrollIndicator={false}
-            keyExtractor={(item) => item.id} 
+            keyExtractor={(item) => item.username}
             renderItem={renderFriend}
+            ListEmptyComponent={renderEmpty}
             {...listCommonProps}
             />
         </View>

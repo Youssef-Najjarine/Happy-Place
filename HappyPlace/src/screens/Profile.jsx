@@ -23,6 +23,8 @@ import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import CustomText from 'src/components/FontFamilyText';
 import RemoteImage from 'src/components/RemoteImage';
 import PhotoActionSheet from 'src/components/PhotoActionSheet';
+import UnfriendModal from 'src/components/UnfriendModal';
+import BlockUserModal from 'src/components/BlockUserModal';
 import { showToast } from 'src/components/Toast';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
 import EditRedIcon from 'assets/images/profile/edit-red-icon.svg';
@@ -30,8 +32,18 @@ import LogoutIcon from 'assets/images/profile/logout-icon.svg';
 import EditWhiteIcon from 'assets/images/profile/edit-white-icon.svg';
 import PhoneIcon from 'assets/images/profile/grey-phone-icon.svg';
 import MailIcon from 'assets/images/profile/grey-mail-icon.svg';
+import EllipsisIcon from 'assets/images/global/three-dots-icon.svg';
+import XIcon from 'assets/images/global/black-x-icon.svg';
 import tokenStorage from 'services/tokenStorage';
 import profileService from 'services/profileService';
+import {
+  useSendFriendRequestMutation,
+  useCancelFriendRequestMutation,
+  useAcceptFriendRequestMutation,
+  useDeclineFriendRequestMutation,
+  useUnfriendMutation,
+  useBlockUserMutation,
+} from 'store/friendsApi';
 
 const ACTION_SHEET_DISMISS_DELAY_MS = 600;
 
@@ -133,6 +145,53 @@ const phoneStyles = StyleSheet.create({
     color: HappyColor
   },
   logout: {
+    width: scaleWidth(39),
+    borderRadius: scaleWidth(99),
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: White
+  },
+  relationshipActions: {
+    top: scaleHeight(20),
+    right: scaleWidth(20),
+    height: scaleHeight(39),
+    gap: scaleWidth(12),
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  relationshipBtn: {
+    width: scaleWidth(122),
+    borderRadius: scaleWidth(99),
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: White
+  },
+  relationshipBtnTxt: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    fontWeight: 600,
+    color: HappyColor
+  },
+  relationshipAcceptBtn: {
+    width: scaleWidth(92),
+    borderRadius: scaleWidth(99),
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: HappyColor
+  },
+  relationshipAcceptTxt: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    fontWeight: 600,
+    color: White
+  },
+  relationshipCircleBtn: {
     width: scaleWidth(39),
     borderRadius: scaleWidth(99),
     height: '100%',
@@ -431,6 +490,53 @@ const tabletStyles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: White
   },
+  relationshipActions: {
+    top: scaleHeight(26.83),
+    right: scaleWidth(26.83),
+    height: 72.56,
+    gap: scaleWidth(16.1),
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  relationshipBtn: {
+    width: scaleWidth(145.65334),
+    borderRadius: scaleWidth(132.792),
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: White
+  },
+  relationshipBtnTxt: {
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    fontWeight: 600,
+    color: HappyColor
+  },
+  relationshipAcceptBtn: {
+    width: scaleWidth(112),
+    borderRadius: scaleWidth(132.792),
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: HappyColor
+  },
+  relationshipAcceptTxt: {
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    fontWeight: 600,
+    color: White
+  },
+  relationshipCircleBtn: {
+    borderRadius: scaleWidth(132.792),
+    width: 72.56,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: White
+  },
   editBackground: {
     borderRadius: scaleWidth(132.792),
     bottom: scaleHeight(26.83),
@@ -675,6 +781,15 @@ export default function Profile() {
   const [hasError, setHasError] = useState(false);
   const [bioExpanded, setBioExpanded] = useState(false);
   const [photoActionSheet, setPhotoActionSheet] = useState(null);
+  const [unfriendModalVisible, setUnfriendModalVisible] = useState(false);
+  const [blockModalVisible, setBlockModalVisible] = useState(false);
+
+  const [sendFriendRequest] = useSendFriendRequestMutation();
+  const [cancelFriendRequest] = useCancelFriendRequestMutation();
+  const [acceptFriendRequest] = useAcceptFriendRequestMutation();
+  const [declineFriendRequest] = useDeclineFriendRequestMutation();
+  const [unfriend] = useUnfriendMutation();
+  const [blockUser] = useBlockUserMutation();
 
   const fetchProfile = useCallback(async () => {
     setProfile(null);
@@ -851,6 +966,118 @@ export default function Profile() {
     await removePhoto(photoType);
   };
 
+  const applyFriendshipUpdate = useCallback((friendshipStatus, friendCountDelta = 0) => {
+    setProfile((prev) => prev ? { ...prev, friendshipStatus, friendCount: Math.max(0, (prev.friendCount ?? 0) + friendCountDelta) } : prev);
+  }, []);
+
+  const handleRelationshipError = useCallback((error) => {
+    if (error?.status === 429) {
+      showToast('Too many friend requests. Please try again later.', 'error');
+      return;
+    }
+    showToast('Something went wrong. Please try again.', 'error');
+  }, []);
+
+  const handleAccountRequired = useCallback(() => {
+    showToast('Create an account to use friends', 'error');
+    navigation.navigate('FinishAccount');
+  }, [navigation]);
+
+  const handleSendRequest = async () => {
+    try {
+      const token = await tokenStorage.getToken();
+      if (!token || !profile) return;
+      const data = await sendFriendRequest({ authToken: token, username: profile.username }).unwrap();
+      if (data.status === 'requested') applyFriendshipUpdate('requestSent');
+      else if (data.status === 'accepted') applyFriendshipUpdate('friends', 1);
+      else if (data.status === 'alreadyFriends') applyFriendshipUpdate('friends');
+      else if (data.status === 'alreadyRequested') applyFriendshipUpdate('requestSent');
+      else if (data.status === 'accountRequired') handleAccountRequired();
+      else fetchProfile();
+    } catch (error) {
+      handleRelationshipError(error);
+    }
+  };
+
+  const handleCancelRequest = async () => {
+    try {
+      const token = await tokenStorage.getToken();
+      if (!token || !profile) return;
+      const data = await cancelFriendRequest({ authToken: token, username: profile.username }).unwrap();
+      if (data.status === 'canceled') applyFriendshipUpdate('none');
+      else if (data.status === 'accountRequired') handleAccountRequired();
+      else fetchProfile();
+    } catch (error) {
+      handleRelationshipError(error);
+    }
+  };
+
+  const handleAcceptRequest = async () => {
+    try {
+      const token = await tokenStorage.getToken();
+      if (!token || !profile) return;
+      const data = await acceptFriendRequest({ authToken: token, username: profile.username }).unwrap();
+      if (data.status === 'accepted') applyFriendshipUpdate('friends', 1);
+      else if (data.status === 'alreadyFriends') applyFriendshipUpdate('friends');
+      else if (data.status === 'accountRequired') handleAccountRequired();
+      else fetchProfile();
+    } catch (error) {
+      handleRelationshipError(error);
+    }
+  };
+
+  const handleDeclineRequest = async () => {
+    try {
+      const token = await tokenStorage.getToken();
+      if (!token || !profile) return;
+      const data = await declineFriendRequest({ authToken: token, username: profile.username }).unwrap();
+      if (data.status === 'declined') applyFriendshipUpdate('none');
+      else if (data.status === 'accountRequired') handleAccountRequired();
+      else fetchProfile();
+    } catch (error) {
+      handleRelationshipError(error);
+    }
+  };
+
+  const handleConfirmUnfriend = async () => {
+    setUnfriendModalVisible(false);
+    try {
+      const token = await tokenStorage.getToken();
+      if (!token || !profile) return;
+      const data = await unfriend({ authToken: token, username: profile.username }).unwrap();
+      if (data.status === 'unfriended') applyFriendshipUpdate('none', -1);
+      else if (data.status === 'accountRequired') handleAccountRequired();
+      else fetchProfile();
+    } catch (error) {
+      handleRelationshipError(error);
+    }
+  };
+
+  const handleConfirmBlock = async () => {
+    setBlockModalVisible(false);
+    try {
+      const token = await tokenStorage.getToken();
+      if (!token || !profile) return;
+      const data = await blockUser({ authToken: token, username: profile.username }).unwrap();
+      if (data.status === 'blocked') {
+        showToast('User blocked', 'success');
+        navigation.goBack();
+      }
+      else if (data.status === 'accountRequired') handleAccountRequired();
+      else fetchProfile();
+    } catch (error) {
+      handleRelationshipError(error);
+    }
+  };
+
+  const handleFriendsPress = () => {
+    if (isOwnProfile) {
+      navigation.navigate('Friends');
+    } else if (profile) {
+      navigation.navigate('Friends', { username: profile.username, displayName: profile.displayName });
+    }
+  };
+
   const rootStyle = {
     ...styles.root,
     paddingTop: statusBarHeight,
@@ -890,6 +1117,7 @@ export default function Profile() {
   const hasBio = profile.bio && profile.bio.length > 0;
   const isLongBio = hasBio && profile.bio.length > BIO_LIMIT;
   const shownBio = hasBio ? (bioExpanded ? profile.bio : (isLongBio ? profile.bio.slice(0, BIO_LIMIT) : profile.bio)) : '';
+  const friendshipStatus = profile.friendshipStatus;
 
   return (
     <View style={rootStyle}>
@@ -929,6 +1157,56 @@ export default function Profile() {
               onPress={logout}
             >
               <LogoutIcon {...styles.iconsMatchingSize} />
+            </TouchableOpacity>
+          </View>
+        )}
+        {!isOwnProfile && (
+          <View style={styles.relationshipActions}>
+            {friendshipStatus === 'none' && (
+              <TouchableOpacity
+                style={styles.relationshipAcceptBtn}
+                onPress={handleSendRequest}
+              >
+                <CustomText style={styles.relationshipAcceptTxt}>Add Friend</CustomText>
+              </TouchableOpacity>
+            )}
+            {friendshipStatus === 'requestSent' && (
+              <TouchableOpacity
+                style={styles.relationshipBtn}
+                onPress={handleCancelRequest}
+              >
+                <CustomText style={styles.relationshipBtnTxt}>Requested</CustomText>
+              </TouchableOpacity>
+            )}
+            {friendshipStatus === 'requestReceived' && (
+              <>
+                <TouchableOpacity
+                  style={styles.relationshipAcceptBtn}
+                  onPress={handleAcceptRequest}
+                >
+                  <CustomText style={styles.relationshipAcceptTxt}>Accept</CustomText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.relationshipCircleBtn}
+                  onPress={handleDeclineRequest}
+                >
+                  <XIcon {...styles.iconsMatchingSize} />
+                </TouchableOpacity>
+              </>
+            )}
+            {friendshipStatus === 'friends' && (
+              <TouchableOpacity
+                style={styles.relationshipBtn}
+                onPress={() => setUnfriendModalVisible(true)}
+              >
+                <CustomText style={styles.relationshipBtnTxt}>Friends</CustomText>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.relationshipCircleBtn}
+              onPress={() => setBlockModalVisible(true)}
+            >
+              <EllipsisIcon {...styles.iconsMatchingSize} />
             </TouchableOpacity>
           </View>
         )}
@@ -985,9 +1263,9 @@ export default function Profile() {
           )}
           <TouchableOpacity
             style={styles.friends}
-            onPress={() => navigation.navigate('Friends')}
+            onPress={handleFriendsPress}
           >
-            <CustomText style={styles.friendsTxt}>0 Friends</CustomText>
+            <CustomText style={styles.friendsTxt}>{profile.friendCount ?? 0} Friends</CustomText>
           </TouchableOpacity>
         </View>
         {hasBio && (
@@ -1112,6 +1390,18 @@ export default function Profile() {
         onChooseFromLibrary={handleChooseFromLibrary}
         onRemove={handleRemovePhoto}
         onCancel={() => setPhotoActionSheet(null)}
+      />
+      <UnfriendModal
+        visible={unfriendModalVisible}
+        username={profile.username}
+        onConfirm={handleConfirmUnfriend}
+        onCancel={() => setUnfriendModalVisible(false)}
+      />
+      <BlockUserModal
+        visible={blockModalVisible}
+        username={profile.username}
+        onConfirm={handleConfirmBlock}
+        onCancel={() => setBlockModalVisible(false)}
       />
     </View>
   );

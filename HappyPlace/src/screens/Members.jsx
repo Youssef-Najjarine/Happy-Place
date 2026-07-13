@@ -536,6 +536,10 @@ export default function Members() {
   const handleRejectPress = useCallback((memberUserAccountId) => {
     if (authToken && chatGroupId) rejectMember({ authToken, chatGroupId, memberUserAccountId });
   }, [authToken, chatGroupId, rejectMember]);
+  const handleOpenProfile = useCallback((username) => {
+    if (!username) return;
+    navigation.push('Profile', { username });
+  }, [navigation]);
   const scrollableMembersListContent = useMemo(() => ({
     paddingBottom: bottomSafeHeight
   }), [bottomSafeHeight]);
@@ -568,7 +572,11 @@ export default function Members() {
     const canRemove = isOwner && !item.isOwner;
     return (
       <View style={styles.memberCard}>
-        <View style={styles.memberImageAndName}>
+        <TouchableOpacity
+          style={styles.memberImageAndName}
+          disabled={!item.username}
+          onPress={() => handleOpenProfile(item.username)}
+        >
           <View style={styles.memberImage}>
             <Avatar
               uri={item.profilePhotoUrl}
@@ -584,7 +592,7 @@ export default function Members() {
               <CustomText style={styles.memberUsername} numberOfLines={1} ellipsizeMode="tail">@{item.username}</CustomText>
             ) : null}
           </View>
-        </View>
+        </TouchableOpacity>
         {canRemove && (
           <View>
             <TouchableOpacity
@@ -614,11 +622,15 @@ export default function Members() {
         )}
       </View>
     );
-  }, [activeDropdownIndex, styles, closeAllMenus, isOwner, handleEllipsisPress, handleRemovePressIn, measureToRect]);
+  }, [activeDropdownIndex, styles, closeAllMenus, isOwner, handleEllipsisPress, handleRemovePressIn, measureToRect, handleOpenProfile]);
   const renderPending = useCallback(({ item, index }) => {
     return (
       <View style={styles.memberCard}>
-        <View style={styles.memberImageAndName}>
+        <TouchableOpacity
+          style={styles.memberImageAndName}
+          disabled={!item.username}
+          onPress={() => handleOpenProfile(item.username)}
+        >
           <View style={styles.memberImage}>
             <Avatar
               uri={item.profilePhotoUrl}
@@ -634,7 +646,7 @@ export default function Members() {
               <CustomText style={styles.memberUsername} numberOfLines={1} ellipsizeMode="tail">@{item.username}</CustomText>
             ) : null}
           </View>
-        </View>
+        </TouchableOpacity>
         <View style={styles.pendingOptions}>
             <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAcceptPress(item.userAccountId)}>
                 <CustomText style={styles.acceptTxt}>Accept</CustomText>
@@ -645,7 +657,7 @@ export default function Members() {
         </View>
       </View>
     );
-  }, [styles, handleAcceptPress, handleRejectPress]);
+  }, [styles, handleAcceptPress, handleRejectPress, handleOpenProfile]);
   const rootStyle = {
     ...styles.root,
     paddingTop: statusBarHeight + styles.root.paddingTop

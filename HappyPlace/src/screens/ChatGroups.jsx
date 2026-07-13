@@ -1281,9 +1281,17 @@ export default function ChatGroups() {
     closeAllMenus();
     if (authToken) joinPublicChatGroup({ authToken, chatGroupId: id });
   }, [closeAllMenus, authToken, joinPublicChatGroup]);
+  const handleOpenHelperProfile = useCallback((username) => {
+    if (!username) return;
+    navigation.push('Profile', { username });
+  }, [navigation]);
   const renderHelper = useCallback(({ item }) => (
     <View style={styles.helperCard}>
-      <TouchableOpacity style={styles.helperCardBtn}>
+      <TouchableOpacity
+        style={styles.helperCardBtn}
+        disabled={!item.username || item.isAnonymous}
+        onPress={() => handleOpenHelperProfile(item.username)}
+      >
         <Avatar
           uri={item.profilePhotoUrl}
           color={item.avatarColor}
@@ -1294,7 +1302,7 @@ export default function ChatGroups() {
         <CustomText style={styles.helperName} numberOfLines={1} ellipsizeMode="tail">{item.name}</CustomText>
       </TouchableOpacity>
     </View>
-  ), [styles]);
+  ), [styles, handleOpenHelperProfile]);
   const renderChatGroup = useCallback(({ item, index }) => {
       const isActive = activeDropdownIndex === index;
       const maxVisible = 5;
