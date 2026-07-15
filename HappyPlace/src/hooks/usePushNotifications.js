@@ -54,7 +54,7 @@ export default function usePushNotifications() {
         const resetToChatGroup = (chatGroupId) => {
             runWhenSettled(() => {
                 if (active && navigationRef.isReady()) {
-                    navigationRef.reset({ index: 1, routes: [{ name: 'ChatGroups' }, { name: 'ChatGroup', params: { chatGroupId } }] });
+                    navigationRef.reset({ index: 1, routes: [{ name: 'MainTabs', params: { screen: 'ChatGroups' } }, { name: 'ChatGroup', params: { chatGroupId } }] });
                 }
             });
         };
@@ -63,9 +63,13 @@ export default function usePushNotifications() {
             runWhenSettled(() => {
                 if (active && navigationRef.isReady()) {
                     if (routeName === 'ChatGroups') {
-                        navigationRef.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
+                        navigationRef.reset({ index: 0, routes: [{ name: 'MainTabs', params: { screen: 'ChatGroups' } }] });
+                    } else if (routeName === 'OfferHelp') {
+                        navigationRef.reset({ index: 0, routes: [{ name: 'MainTabs', params: { screen: 'Help', params: { helpView: 'needsHelp' } } }] });
+                    } else if (routeName === 'Help') {
+                        navigationRef.reset({ index: 0, routes: [{ name: 'MainTabs', params: { screen: 'Help' } }] });
                     } else {
-                        navigationRef.reset({ index: 1, routes: [{ name: 'ChatGroups' }, { name: routeName, params: routeParams }] });
+                        navigationRef.reset({ index: 1, routes: [{ name: 'MainTabs', params: { screen: 'ChatGroups' } }, { name: routeName, params: routeParams }] });
                     }
                 }
             });
@@ -74,7 +78,15 @@ export default function usePushNotifications() {
         const navigateToRoute = (routeName) => {
             runWhenSettled(() => {
                 if (active && navigationRef.isReady()) {
-                    navigationRef.navigate(routeName);
+                    if (routeName === 'ChatGroups') {
+                        navigationRef.navigate('MainTabs', { screen: 'ChatGroups' });
+                    } else if (routeName === 'OfferHelp') {
+                        navigationRef.navigate('MainTabs', { screen: 'Help', params: { helpView: 'needsHelp' } });
+                    } else if (routeName === 'Help') {
+                        navigationRef.navigate('MainTabs', { screen: 'Help' });
+                    } else {
+                        navigationRef.navigate(routeName);
+                    }
                 }
             });
         };
@@ -150,7 +162,7 @@ export default function usePushNotifications() {
             if (data.type === 'helpOffers') {
                 await waitForNavigationReady();
                 if (!active) return;
-                navigateToRoute('ChatGroups');
+                navigateToRoute('Help');
             }
         };
 
@@ -207,7 +219,7 @@ export default function usePushNotifications() {
                 const notification = remoteMessage.notification;
                 const body = notification && notification.body ? notification.body : null;
                 if (!body) return;
-                const target = data.type === 'helpWaiting' ? 'OfferHelp' : 'ChatGroups';
+                const target = data.type === 'helpWaiting' ? 'OfferHelp' : 'Help';
                 const toastKey = data.type === 'helpWaiting' ? 'help-waiting' : `help-offers-${data.chatGroupId || ''}`;
                 const toastAction = { label: 'View', onPress: () => navigateToRoute(target) };
                 const isAlerting = data.alerting === 'true';
@@ -230,7 +242,7 @@ export default function usePushNotifications() {
                 pendingInvite.set(initialData.chatGroupId);
             }
             if (active && initialData && (initialData.type === 'helpWaiting' || initialData.type === 'helpOffers')) {
-                const notificationRouteName = initialData.type === 'helpWaiting' ? 'OfferHelp' : 'ChatGroups';
+                const notificationRouteName = initialData.type === 'helpWaiting' ? 'OfferHelp' : 'Help';
                 pendingNotificationRoute.set(notificationRouteName);
                 await waitForNavigationReady();
                 if (active) {

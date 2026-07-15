@@ -5,6 +5,7 @@ import authenticationService from 'src/services/authenticationService';
 import helpSessionStorage from 'src/services/helpSessionStorage';
 import { showToast } from 'src/components/Toast';
 import { usePollRequestQuery, useLazyMyOpenRequestQuery, useCreateRequestMutation, useConnectMutation, useCancelRequestMutation } from 'src/store/helpApi';
+import { useRenameChatGroupMutation } from 'src/store/chatGroupsApi';
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -21,6 +22,7 @@ export default function useSeekerSearch() {
     const [connectRequest] = useConnectMutation();
     const [cancelRequest] = useCancelRequestMutation();
     const [triggerMyOpenRequest] = useLazyMyOpenRequestQuery();
+    const [renameChatGroup] = useRenameChatGroupMutation();
 
     const { currentData: statusData, error: statusError } = usePollRequestQuery(
         { authToken, chatGroupId },
@@ -149,6 +151,28 @@ export default function useSeekerSearch() {
         }
     }, [authToken, chatGroupId, cancelRequest, reset]);
 
+    const updateTopic = useCallback(async (newTopic) => {
+        if (phase !== 'waiting' || !authToken || !chatGroupId) return;
+        const previousTopic = topic;
+        setTopic(newTopic);
+        try {
+            const result = await renameChatGroup({ authToken, chatGroupId, name: newTopic }).unwrap();
+            if (result && result.status === 'renamed') {
+                if (result.title != null) setTopic(result.title);
+                return;
+            }
+            setTopic(previousTopic);
+            showToast('Couldn\u2019t update that \u2014 tap to try again', 'info');
+        } catch (error) {
+            if (error && error.status === 401) {
+                await handleAuthFailure();
+                return;
+            }
+            setTopic(previousTopic);
+            showToast('Couldn\u2019t update that \u2014 tap to try again', 'info');
+        }
+    }, [phase, authToken, chatGroupId, topic, renameChatGroup, handleAuthFailure]);
+
     useEffect(() => {
         let cancelled = false;
         const restore = async () => {
@@ -176,6 +200,7 @@ export default function useSeekerSearch() {
                 await helpSessionStorage.saveSeeking(result.chatGroupId);
                 setAuthToken(token);
                 setChatGroupId(result.chatGroupId);
+                setTopic(result.chatGroupName);
                 setPhase('waiting');
             } catch (error) {
             }
@@ -198,6 +223,7 @@ export default function useSeekerSearch() {
         }
         if (statusData.status === 'waiting') {
             setReadyHelperCount(statusData.readyHelperCount);
+            setTopic(statusData.chatGroupName);
         }
     }, [phase, statusData, goToChat, reset]);
 
@@ -208,5 +234,5 @@ export default function useSeekerSearch() {
         }
     }, [phase, statusError, handleAuthFailure]);
 
-    return { phase, readyHelperCount, topic, beginSearch, connect, cancelSearch };
+    return { phase, readyHelperCount, topic, beginSearch, connect, cancelSearch, updateTopic };
 }

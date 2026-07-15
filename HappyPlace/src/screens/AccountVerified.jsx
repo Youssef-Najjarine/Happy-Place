@@ -215,7 +215,7 @@ export default function AccountVerified() {
 
   const handleGetStarted = async () => {
     if (!authToken) {
-      navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
+      navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
       return;
     }
     dispatch(showLoading());
@@ -232,7 +232,7 @@ export default function AccountVerified() {
         const profileData = await profileResponse.json();
         dispatch(setUser(profileData));
       }
-      navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
+      navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     } catch (err) {
       showToast('Something went wrong. Please try again.', 'error');
     } finally {

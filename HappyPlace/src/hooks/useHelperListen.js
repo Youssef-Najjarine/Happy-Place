@@ -139,8 +139,8 @@ export default function useHelperListen() {
         applyIntent(seq, token, false);
     }, [applyIntent]);
 
-    const openPicker = useCallback(() => {
-        navigation.navigate('OfferHelp');
+    const openPicker = useCallback((targetHelpView) => {
+        navigation.setParams({ helpView: targetHelpView });
     }, [navigation]);
 
     useEffect(() => {

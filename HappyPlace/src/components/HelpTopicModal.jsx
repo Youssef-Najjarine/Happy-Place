@@ -236,6 +236,7 @@ const PRESENTATION_CONFIRM_TIMEOUT_MS = 1000;
 const HelpTopicModal = ({
   visible,
   maxLen = 100,
+  initialTopic = '',
   onConfirm,
   onCancel,
   onPresentationFailed,
@@ -265,8 +266,8 @@ const HelpTopicModal = ({
   };
 
   useEffect(() => {
-    if (visible) setTopic('');
-  }, [visible]);
+    if (visible) setTopic(initialTopic || '');
+  }, [visible, initialTopic]);
 
   const remaining = useMemo(() => `${topic.length}/${maxLen} characters`, [topic.length, maxLen]);
   const trimmedTopic = topic.trim();

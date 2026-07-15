@@ -2,18 +2,21 @@ import React from 'react';
 import { StatusBar, useColorScheme } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import store from 'store';
 import navigationRef from 'src/services/navigationService';
 import usePushNotifications from 'src/hooks/usePushNotifications';
+import useUserHydration from 'src/hooks/useUserHydration';
 import ErrorBoundary from 'components/ErrorBoundary';
 import LoadingModal from 'components/LoadingModal';
 import ToastHost from 'src/components/Toast';
+import BottomTabBar from 'src/components/BottomTabBar';
 import Home from 'screens/Home';
+import Help from 'screens/Help';
 import ChatGroups from 'screens/ChatGroups';
 import ChatGroup from 'screens/ChatGroup';
-import OfferHelp from 'screens/OfferHelp';
 import CreateAccount from 'screens/CreateAccount';
 import FinishAccount from 'screens/FinishAccount';
 import VerifyCode from 'screens/VerifyCode';
@@ -34,10 +37,27 @@ import Members from 'screens/Members';
 import TermsAndPrivacyInformation from 'screens/TermsAndPrivacyInformation';
 
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 function PushNotificationsManager() {
   usePushNotifications();
   return null;
+}
+
+function UserHydrationManager() {
+  useUserHydration();
+  return null;
+}
+
+function MainTabs() {
+  return (
+    <Tab.Navigator initialRouteName="ChatGroups" backBehavior="initialRoute" screenOptions={{ headerShown: false }} tabBar={(tabBarProps) => <BottomTabBar {...tabBarProps} />}>
+      <Tab.Screen name="Help" component={Help} options={{ tabBarLabel: 'Help' }} />
+      <Tab.Screen name="ChatGroups" component={ChatGroups} options={{ tabBarLabel: 'Chats' }} />
+      <Tab.Screen name="MyFriends" component={Friends} options={{ tabBarLabel: 'Friends' }} />
+      <Tab.Screen name="MyProfile" component={Profile} options={{ tabBarLabel: 'Profile' }} />
+    </Tab.Navigator>
+  );
 }
 
 const App = () => {
@@ -61,9 +81,8 @@ const App = () => {
               <Stack.Screen name="FinishAccount" component={FinishAccount} />
               <Stack.Screen name="VerifyCode" component={VerifyCode} />
               <Stack.Screen name="AccountVerified" component={AccountVerified} />
-              <Stack.Screen name="ChatGroups" component={ChatGroups} />
+              <Stack.Screen name="MainTabs" component={MainTabs} />
               <Stack.Screen name="ChatGroup" component={ChatGroup} />
-              <Stack.Screen name="OfferHelp" component={OfferHelp} />
               <Stack.Screen name="LoginOptions" component={LoginOptions} />
               <Stack.Screen name="Login" component={Login} />
               <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
@@ -82,6 +101,7 @@ const App = () => {
             <LoadingModal />
           </NavigationContainer>
           <PushNotificationsManager />
+          <UserHydrationManager />
           <ToastHost />
         </ErrorBoundary>
       </SafeAreaProvider>

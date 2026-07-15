@@ -3,8 +3,6 @@ import { View, TouchableOpacity, StyleSheet, Image, FlatList, useWindowDimension
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation, useRoute, useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
-import HelpHub from 'src/components/HelpHub';
-import AccountBar from 'src/components/AccountBar';
 import { 
   HappyColor, 
   White, 
@@ -44,7 +42,6 @@ import { showToast } from 'src/components/Toast';
 import {
   useListChatGroupsPageQuery,
   useLazyListChatGroupsPageQuery,
-  useAvailableHelpersQuery,
   useRenameChatGroupMutation,
   useSetChatGroupVisibilityMutation,
   useDeleteChatGroupMutation,
@@ -142,47 +139,6 @@ const phoneStyles = StyleSheet.create({
   },
   mainContent: { 
     flex: 1 
-  },
-  helpers: { 
-    paddingLeft: scaleWidth(20), 
-    height: scaleHeight(115), 
-    marginBottom: scaleHeight(16), 
-    width: '100%' 
-  },
-  availableHelpersTxt: { 
-    fontSize: scaleFont(16), 
-    lineHeight: scaleLineHeight(24), 
-    letterSpacing: scaleLetterSpacing(-0.16), 
-    color: Black, 
-    fontWeight: 600 
-  },
-  helpersListContent: { 
-    paddingTop: scaleHeight(12), 
-    gap: scaleWidth(16) 
-  },
-  helperCard: { 
-    width: scaleWidth(50)
-  },
-  helperCardBtn: {
-    width: '100%',
-    height: '100%',
-    gap: scaleHeight(8),
-    alignItems: 'center'
-  },
-  helperImage: { 
-    width: scaleWidth(50), 
-    height: scaleHeight(50), 
-    borderRadius: scaleWidth(50), 
-    resizeMode: 'cover' 
-  },
-  helperName: { 
-    fontSize: scaleFont(14), 
-    lineHeight: scaleLineHeight(21),
-    letterSpacing: scaleLetterSpacing(-0.14), 
-    height: scaleHeight(21),
-    width: '100%',
-    textAlign: 'center',
-    color: Black
   },
   ChatGroups: { 
     paddingHorizontal: scaleWidth(20), 
@@ -572,47 +528,6 @@ const tabletStyles = StyleSheet.create({
   mainContent: { 
     flex: 1 
   },
-  helpers: { 
-    paddingLeft: scaleWidth(24), 
-    height: scaleHeight(174), 
-    marginBottom: scaleHeight(20), 
-    width: '100%' 
-  },
-  availableHelpersTxt: { 
-    fontSize: scaleFont(20), 
-    lineHeight: scaleLineHeight(30), 
-    letterSpacing: scaleLetterSpacing(-0.2), 
-    color: Black, 
-    fontWeight: 600 
-  },
-  helpersListContent: { 
-    paddingTop: scaleHeight(16.16), 
-    gap: scaleWidth(24) 
-  },
-  helperCard: { 
-    width: scaleWidth(67.067)
-  },
-  helperCardBtn: {
-    width: '100%',
-    height: '100%',
-    gap: scaleHeight(10.73),
-    alignItems: 'center'
-  },
-  helperImage: { 
-    width: 93.03, 
-    height: 93.03, 
-    borderRadius: scaleWidth(67.067), 
-    resizeMode: 'cover' 
-  },
-  helperName: { 
-    fontSize: scaleFont(16), 
-    lineHeight: scaleLineHeight(24),
-    letterSpacing: scaleLetterSpacing(-0.16), 
-    height: scaleHeight(24),
-    width: '100%',
-    textAlign: 'center',
-    color: Black
-  },
   ChatGroups: { 
     paddingHorizontal: scaleWidth(24), 
     width: '100%', 
@@ -984,7 +899,7 @@ export default function ChatGroups() {
   const route = useRoute();
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
+  const { statusBarHeight } = useSafeAreaPadding();
   const { width } = useWindowDimensions();
   const isTablet = width >= tabletBreakpoint;
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
@@ -1032,7 +947,6 @@ export default function ChatGroups() {
   const listPollingInterval = isFocused ? 5000 : 0;
   const { data: chatGroupsPage, isSuccess: chatGroupsQuerySucceeded, isError: chatGroupsQueryErrored, refetch: refetchChatGroups } = useListChatGroupsPageQuery({ authToken, sortBy, search: debouncedSearch, cursor: null }, { skip: !authToken, pollingInterval: listPollingInterval });
   const [fetchNextChatGroupsPage, { isFetching: isFetchingNextChatGroupsPage }] = useLazyListChatGroupsPageQuery();
-  const { data: availableHelpersData, refetch: refetchAvailableHelpers } = useAvailableHelpersQuery(authToken, { skip: !authToken, pollingInterval: listPollingInterval });
   const [displayedGroups, setDisplayedGroups] = useState([]);
   const [hasLoadedChatGroups, setHasLoadedChatGroups] = useState(false);
   const chatGroupsResolved = chatGroupsQuerySucceeded || chatGroupsQueryErrored || bootstrapFailed;
@@ -1053,17 +967,15 @@ export default function ChatGroups() {
     useCallback(() => {
       if (!authToken) return;
       refetchChatGroups();
-      refetchAvailableHelpers();
-    }, [authToken, refetchChatGroups, refetchAvailableHelpers])
+    }, [authToken, refetchChatGroups])
   );
   const handleRetryConnection = useCallback(() => {
     if (authToken) {
       refetchChatGroups();
-      refetchAvailableHelpers();
       return;
     }
     setBootstrapAttempt((attempt) => attempt + 1);
-  }, [authToken, refetchChatGroups, refetchAvailableHelpers]);
+  }, [authToken, refetchChatGroups]);
   const hasShownConnectionToastRef = useRef(false);
   useEffect(() => {
     if (connectionFailed && !hasShownConnectionToastRef.current) {
@@ -1074,7 +986,6 @@ export default function ChatGroups() {
       hasShownConnectionToastRef.current = false;
     }
   }, [connectionFailed, handleRetryConnection]);
-  const helpersTop = availableHelpersData || [];
   const [renameChatGroup] = useRenameChatGroupMutation();
   const [setChatGroupVisibility] = useSetChatGroupVisibilityMutation();
   const [deleteChatGroup] = useDeleteChatGroupMutation();
@@ -1148,9 +1059,6 @@ export default function ChatGroups() {
    () => displayedGroups.find(g => g.id === selectedChatGroupId) ?? null,
    [displayedGroups, selectedChatGroupId]
   );
-  const handleHelpersScroll = useCallback(() => {
-    if (isSortOpen) setIsSortOpen(false);
-  }, [isSortOpen]);
   const handleChatGroupsScroll = useCallback(() => {
     if (activeDropdownIndex !== null) setActiveDropdownIndex(null);
     if (isSortOpen) setIsSortOpen(false);
@@ -1281,28 +1189,6 @@ export default function ChatGroups() {
     closeAllMenus();
     if (authToken) joinPublicChatGroup({ authToken, chatGroupId: id });
   }, [closeAllMenus, authToken, joinPublicChatGroup]);
-  const handleOpenHelperProfile = useCallback((username) => {
-    if (!username) return;
-    navigation.push('Profile', { username });
-  }, [navigation]);
-  const renderHelper = useCallback(({ item }) => (
-    <View style={styles.helperCard}>
-      <TouchableOpacity
-        style={styles.helperCardBtn}
-        disabled={!item.username || item.isAnonymous}
-        onPress={() => handleOpenHelperProfile(item.username)}
-      >
-        <Avatar
-          uri={item.profilePhotoUrl}
-          color={item.avatarColor}
-          initial={(item.name || '?').charAt(0).toUpperCase()}
-          style={styles.helperImage}
-          initialStyle={{ color: White, fontSize: scaleFont(18), fontWeight: '600' }}
-        />
-        <CustomText style={styles.helperName} numberOfLines={1} ellipsizeMode="tail">{item.name}</CustomText>
-      </TouchableOpacity>
-    </View>
-  ), [styles, handleOpenHelperProfile]);
   const renderChatGroup = useCallback(({ item, index }) => {
       const isActive = activeDropdownIndex === index;
       const maxVisible = 5;
@@ -1506,7 +1392,7 @@ export default function ChatGroups() {
         </View>
         <CustomText style={styles.emptyStateTitle}>No chats yet</CustomText>
         <CustomText style={styles.emptyStateSubtitle}>
-          Tap HELP ME to talk to someone, or I CAN HELP to support someone.
+          Head to the Help tab to talk to someone, or to support someone.
         </CustomText>
       </View>
     );
@@ -1516,24 +1402,6 @@ export default function ChatGroups() {
     if (!authToken || !nextCursor || isFetchingNextChatGroupsPage) return;
     fetchNextChatGroupsPage({ authToken, sortBy, search: debouncedSearch, cursor: nextCursor });
   }, [authToken, sortBy, debouncedSearch, chatGroupsPage?.nextCursor, isFetchingNextChatGroupsPage, fetchNextChatGroupsPage]);
-  const renderFeedHeader = useCallback(() => {
-    if (helpersTop.length === 0) return null;
-    return (
-      <View style={styles.helpers}>
-        <CustomText style={styles.availableHelpersTxt}>Available Helpers</CustomText>
-        <FlatList
-          data={helpersTop}
-          {...listCommonProps}
-          onScroll={handleHelpersScroll}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.helpersListContent}
-          keyExtractor={(item) => item.id}
-          renderItem={renderHelper}
-          horizontal
-        />
-      </View>
-    );
-  }, [helpersTop, styles, listCommonProps, handleHelpersScroll, renderHelper]);
   const renderPageLoadingFooter = useCallback(() => {
     if (!isFetchingNextChatGroupsPage) return null;
     return (
@@ -1581,15 +1449,11 @@ export default function ChatGroups() {
   );
   const chatGroupsContentContainer = useMemo(() => ({
     ...styles.chatGroupsListContent,
-    paddingBottom: bottomSafeHeight + styles.chatGroupsListContent.paddingBottom,
-  }), [styles.chatGroupsListContent, bottomSafeHeight]);
+  }), [styles.chatGroupsListContent]);
   return (
     <>
       <View style={styles.root} onTouchEndCapture={handleRootTouchEndCapture}>
         <View style={topNavStyle}>
-          <AccountBar closeMenus={closeAllMenus} />
-
-          <HelpHub />
           <SearchAndSortChatGroupsBar
             search={search}
             onChangeSearch={setSearch}
@@ -1614,7 +1478,6 @@ export default function ChatGroups() {
                 removeClippedSubviews={false}
                 extraData={{ activeDropdownIndex, displayedGroups }}
                 renderItem={renderChatGroup}
-                ListHeaderComponent={renderFeedHeader}
                 onEndReached={handleEndReached}
                 onEndReachedThreshold={0.5}
                 ListFooterComponent={renderPageLoadingFooter}
@@ -1642,7 +1505,7 @@ export default function ChatGroups() {
             bottom: 0,
             left: 0,
             right: 0,
-            height: bottomSafeHeight + scaleHeight(50),
+            height: scaleHeight(50),
           }}
         />
       </View>

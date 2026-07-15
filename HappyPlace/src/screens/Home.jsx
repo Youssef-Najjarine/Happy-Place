@@ -356,11 +356,11 @@ export default function Home() {
   }
 
   const handleHelpMe = () => {
-    navigation.navigate('ChatGroups', { startSearching: true, searchRole: 'Seeker' });
+    navigation.navigate('MainTabs', { screen: 'Help', params: { startSearching: true, searchRole: 'Seeker' } });
   };
 
   const handleICanHelp = () => {
-    navigation.navigate('ChatGroups', { startHelping: true });
+    navigation.navigate('MainTabs', { screen: 'Help', params: { startHelping: true } });
   };
 
   const handleSignUp = () => {

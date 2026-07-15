@@ -542,7 +542,7 @@ export default function Login() {
           const profileData = await profileResponse.json();
           dispatch(setUser(profileData));
         }
-        navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
+        navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
       }
     } catch (err) {
       showToast('Something went wrong. Please try again.', 'error');

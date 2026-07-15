@@ -160,6 +160,16 @@ const phoneStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.16),
     color: Black,
     fontWeight: 600
+  },
+  searchTopicTxt: {
+    flex: 1,
+    marginHorizontal: scaleWidth(10),
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    fontWeight: 500,
+    color: Black,
+    opacity: 0.6
   }
 });
 
@@ -306,17 +316,31 @@ const tabletStyles = StyleSheet.create({
     letterSpacing: scaleLetterSpacing(-0.2),
     fontWeight: 600,
     color: Black
+  },
+  searchTopicTxt: {
+    flex: 1,
+    marginHorizontal: scaleWidth(12),
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    fontWeight: 500,
+    color: Black,
+    opacity: 0.6
   }
 });
 
-export default function HelpHub() {
+export default function HelpHub({ onListeningChange }) {
   const navigation = useNavigation();
   const route = useRoute();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const isGlobalLoading = useSelector((state) => state.loading.isLoading);
-  const { phase, readyHelperCount, beginSearch, connect, cancelSearch } = useSeekerSearch();
+  const { phase, readyHelperCount, topic, updateTopic, beginSearch, connect, cancelSearch } = useSeekerSearch();
   const { listening, pendingCount, readyCount, offeredCount, startListening, stopListening, openPicker } = useHelperListen();
+  useEffect(() => {
+    if (onListeningChange) onListeningChange(listening);
+  }, [listening, onListeningChange]);
   const [showHelpTopic, setShowHelpTopic] = useState(false);
+  const [showEditTopic, setShowEditTopic] = useState(false);
   const [pendingHelpTopic, setPendingHelpTopic] = useState(false);
   const topicRetryUsedRef = useRef(false);
   const [showStopHelping, setShowStopHelping] = useState(false);
@@ -388,6 +412,20 @@ export default function HelpHub() {
     showToast('Couldn\u2019t open that. Tap HELP ME to try again', 'info');
   }, []);
 
+  const handleEditTopicPress = useCallback(() => {
+    if (phase !== 'waiting') return;
+    setShowEditTopic(true);
+  }, [phase]);
+
+  const handleConfirmEditTopic = useCallback((topicText) => {
+    setShowEditTopic(false);
+    updateTopic(topicText);
+  }, [updateTopic]);
+
+  const handleCancelEditTopic = useCallback(() => {
+    setShowEditTopic(false);
+  }, []);
+
   const handleHelperCancel = useCallback(() => {
     if (offeredCount > 0) {
       setShowStopHelping(true);
@@ -409,9 +447,12 @@ export default function HelpHub() {
     <>
       {(phase !== 'idle' || showHelpTopic) ? (
         <View style={styles.searchingView}>
-          <View style={styles.searching}>
+          <TouchableOpacity style={styles.searching} onPress={handleEditTopicPress}>
             <CustomText style={styles.searchingTxt}>{readyHelperCount > 0 ? `${readyHelperCount} ready` : `Searching${'.'.repeat(dotCount)}`}</CustomText>
-          </View>
+          </TouchableOpacity>
+          {readyHelperCount > 0 ? null : (
+            <CustomText style={styles.searchTopicTxt} numberOfLines={1} ellipsizeMode="tail">{topic || ''}</CustomText>
+          )}
           <View style={styles.waitingActions}>
             {readyHelperCount > 0 ? (
               <View style={styles.connectView}>
@@ -432,7 +473,7 @@ export default function HelpHub() {
           <CustomText style={styles.helperStatus} numberOfLines={1}>{readyCount === 1 ? '1 ready to join' : `${readyCount} ready to join`}</CustomText>
           <View style={styles.waitingActions}>
             <View style={styles.helpBtnView}>
-              <TouchableOpacity style={styles.helpBtn} onPressIn={openPicker}>
+              <TouchableOpacity style={styles.helpBtn} onPressIn={() => openPicker('ready')}>
                 <CustomText style={styles.helpBtnTxt}>View</CustomText>
               </TouchableOpacity>
             </View>
@@ -450,7 +491,7 @@ export default function HelpHub() {
           <View style={styles.waitingActions}>
             {pendingCount > 0 ? (
               <View style={styles.helpBtnView}>
-                <TouchableOpacity style={styles.helpBtn} onPressIn={openPicker}>
+                <TouchableOpacity style={styles.helpBtn} onPressIn={() => openPicker('needsHelp')}>
                   <CustomText style={styles.helpBtnTxt}>Help</CustomText>
                 </TouchableOpacity>
               </View>
@@ -480,6 +521,14 @@ export default function HelpHub() {
         onConfirm={handleConfirmTopic}
         onCancel={handleCancelTopic}
         onPresentationFailed={handleTopicPresentationFailed}
+      />
+      <HelpTopicModal
+        visible={showEditTopic}
+        maxLen={100}
+        initialTopic={topic || ''}
+        onConfirm={handleConfirmEditTopic}
+        onCancel={handleCancelEditTopic}
+        onPresentationFailed={handleCancelEditTopic}
       />
       <StopHelpingModal
         visible={showStopHelping}

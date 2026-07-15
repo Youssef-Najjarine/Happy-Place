@@ -62,11 +62,15 @@ export const chatGroupsApi = createApi({
             }),
             merge: (currentCache, newPage, { arg }) => {
                 if (!arg.cursor) {
+                    const cacheHasDeeperPages = currentCache.items.length > newPage.items.length;
+                    if (newPage.nextCursor === null || !cacheHasDeeperPages) {
+                        currentCache.items = newPage.items;
+                        currentCache.nextCursor = newPage.nextCursor;
+                        return;
+                    }
                     const freshIds = new Set(newPage.items.map((item) => item.id));
-                    const survivingTail = currentCache.items.filter((item) => !freshIds.has(item.id) && currentCache.items.indexOf(item) >= newPage.items.length);
-                    const hasPagedDeeper = currentCache.items.length > newPage.items.length;
+                    const survivingTail = currentCache.items.filter((item, itemIndex) => !freshIds.has(item.id) && itemIndex >= newPage.items.length);
                     currentCache.items = [...newPage.items, ...survivingTail];
-                    currentCache.nextCursor = hasPagedDeeper ? currentCache.nextCursor : newPage.nextCursor;
                     return;
                 }
                 const existingIds = new Set(currentCache.items.map((item) => item.id));

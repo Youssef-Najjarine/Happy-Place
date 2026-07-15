@@ -775,6 +775,8 @@ export default function Profile() {
 
   const targetUsername = route.params?.username;
   const isOwnProfile = !targetUsername;
+  const isTabInstance = route.name === 'MyProfile';
+  const bottomInsetHeight = isTabInstance ? 0 : bottomSafeHeight;
 
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -1081,7 +1083,7 @@ export default function Profile() {
   const rootStyle = {
     ...styles.root,
     paddingTop: statusBarHeight,
-    paddingBottom: bottomSafeHeight
+    paddingBottom: bottomInsetHeight
   };
 
   if (isLoading) {
@@ -1092,12 +1094,14 @@ export default function Profile() {
     return (
       <View style={rootStyle}>
         <View style={styles.errorBackArrowContainer}>
-          <TouchableOpacity
-            style={styles.errorBackArrow}
-            onPress={() => navigation.goBack()}
-          >
-            <BackArrow {...styles.iconsMatchingSize} />
-          </TouchableOpacity>
+          {!isTabInstance && (
+            <TouchableOpacity
+              style={styles.errorBackArrow}
+              onPress={() => navigation.goBack()}
+            >
+              <BackArrow {...styles.iconsMatchingSize} />
+            </TouchableOpacity>
+          )}
         </View>
         <View style={styles.errorContent}>
           <CustomText style={styles.errorHeading}>Unable to load profile</CustomText>
@@ -1137,12 +1141,14 @@ export default function Profile() {
             style={styles.backgroundImage}
           />
         )}
-        <TouchableOpacity
-          style={styles.BackArrow}
-          onPress={() => navigation.goBack()}
-        >
-          <BackArrow {...styles.iconsMatchingSize} />
-        </TouchableOpacity>
+        {!isTabInstance && (
+          <TouchableOpacity
+            style={styles.BackArrow}
+            onPress={() => navigation.goBack()}
+          >
+            <BackArrow {...styles.iconsMatchingSize} />
+          </TouchableOpacity>
+        )}
         {isOwnProfile && (
           <View style={styles.editAndLogout}>
             <TouchableOpacity

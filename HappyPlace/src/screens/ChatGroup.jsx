@@ -1798,11 +1798,11 @@ export default function ChatGroup() {
     if (status === 'notMember') {
       exitHandledRef.current = true;
       showToast('You are no longer a member of this group', 'info');
-      navigation.navigate('ChatGroups');
+      navigation.navigate('MainTabs', { screen: 'ChatGroups' });
     } else if (status === 'groupGone') {
       exitHandledRef.current = true;
       showToast('This group is no longer available', 'info');
-      navigation.navigate('ChatGroups');
+      navigation.navigate('MainTabs', { screen: 'ChatGroups' });
     }
   }, [status, navigation]);
 
@@ -2176,7 +2176,7 @@ export default function ChatGroup() {
     setShowDeleteChatGroupModal(false);
     try {
       await deleteChatGroup({ authToken, chatGroupId }).unwrap();
-      navigation.navigate('ChatGroups');
+      navigation.navigate('MainTabs', { screen: 'ChatGroups' });
     } catch (error) {
       showToast("Couldn't delete the group", 'info');
     }
@@ -2190,7 +2190,7 @@ export default function ChatGroup() {
         showToast('You are the only owner. Delete the group or make it public first.', 'info');
         return;
       }
-      navigation.navigate('ChatGroups');
+      navigation.navigate('MainTabs', { screen: 'ChatGroups' });
     } catch (error) {
       showToast("Couldn't leave the group", 'info');
     }

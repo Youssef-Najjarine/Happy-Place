@@ -36,7 +36,7 @@ export default function useAutoSignIn(navigation) {
                     const hasPendingInvite = pendingInvite.peek() || pendingInvite.wasHandled();
                     const hasPendingNotificationRoute = pendingNotificationRoute.peek() || pendingNotificationRoute.wasHandled();
                     if (!hasPendingInvite && !hasPendingNotificationRoute) {
-                        navigation.reset({ index: 0, routes: [{ name: 'ChatGroups' }] });
+                        navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
                         return;
                     }
                     setIsCheckingToken(false);

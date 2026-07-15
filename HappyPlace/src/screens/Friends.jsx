@@ -885,6 +885,8 @@ export default function Friends() {
   const routeUsername = route.params?.username || null;
   const routeDisplayName = route.params?.displayName || null;
   const isOwnMode = !routeUsername;
+  const isTabInstance = route.name === 'MyFriends';
+  const bottomInsetHeight = isTabInstance ? 0 : bottomSafeHeight;
 
   const [authToken, setAuthToken] = useState(tokenStorage.peekToken());
   useEffect(() => {
@@ -1128,8 +1130,8 @@ export default function Friends() {
 
   const friendsListContent = useMemo(() => ({
     ...styles.friendsListContent,
-    paddingBottom: bottomSafeHeight + styles.friendsListContent.paddingBottom,
-  }), [styles.friendsListContent, bottomSafeHeight]);
+    paddingBottom: bottomInsetHeight + styles.friendsListContent.paddingBottom,
+  }), [styles.friendsListContent, bottomInsetHeight]);
   useEffect(() => {
     ellipsisRefs.current = Array(displayedData.length)
       .fill(null)
@@ -1400,14 +1402,16 @@ export default function Friends() {
         <View style={styles.topNav}>
             <View style={styles.friendsHeaderRow}>
                 <View style={styles.backArrowAndfriendsRow}>
-                    <View>
-                        <TouchableOpacity
-                            style={styles.BackArrow}
-                            onPress={() => navigation.goBack()}
-                        >
-                            <BackArrow {...styles.backArrowIcon}/>
-                        </TouchableOpacity>
-                    </View>
+                    {!isTabInstance && (
+                        <View>
+                            <TouchableOpacity
+                                style={styles.BackArrow}
+                                onPress={() => navigation.goBack()}
+                            >
+                                <BackArrow {...styles.backArrowIcon}/>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                     <View>
                         <CustomText style={styles.headerTitleTxt} numberOfLines={1} ellipsizeMode="tail">{headerTitle}</CustomText>
                     </View>
@@ -1536,7 +1540,7 @@ export default function Friends() {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: bottomSafeHeight + scaleHeight(50),
+                height: bottomInsetHeight + scaleHeight(50),
             }}
         />
     </View>
