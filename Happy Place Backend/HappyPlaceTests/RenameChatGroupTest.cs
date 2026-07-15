@@ -172,12 +172,12 @@ public class RenameChatGroupTest {
     }
 
     [Fact]
-    public void ProvisionalGroupCannotBeRenamedReturnsNone() {
+    public void NonOwnerCannotRenameProvisionalGroupReturnsNone() {
         using var testingMockProvidersContainer = new TestingMockProvidersContainer();
-        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
-        Guid groupId = CreateProvisionalGroup(ResolveUserAccountId(ownerAuthToken), "Waiting For Help", true);
+        string strangerAuthToken = CreateUser(testingMockProvidersContainer, "Stranger");
+        Guid groupId = CreateProvisionalGroup(SeedUser("Seeker", null), "Waiting For Help", true);
 
-        JsonElement root = Rename(testingMockProvidersContainer, ownerAuthToken, groupId, "New Name");
+        JsonElement root = Rename(testingMockProvidersContainer, strangerAuthToken, groupId, "Hijacked Name");
 
         Assert.Equal("none", root.GetProperty("status").GetString());
         Assert.Equal("Waiting For Help", GetGroupName(groupId));
@@ -236,6 +236,63 @@ public class RenameChatGroupTest {
 
         Assert.False(GetGroupIsPublic(groupId));
         Assert.Equal(2, CountMembers(groupId));
+    }
+
+    // Tests - Provisional Groups (Pending Help Requests)
+
+    [Fact]
+    public void OwnerRenamesProvisionalGroupUpdatesName() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid groupId = CreateProvisionalGroup(ResolveUserAccountId(ownerAuthToken), "Waiting For Help", true);
+
+        JsonElement root = Rename(testingMockProvidersContainer, ownerAuthToken, groupId, "Edited Topic");
+
+        Assert.Equal("renamed", root.GetProperty("status").GetString());
+        Assert.Equal("Edited Topic", root.GetProperty("title").GetString());
+        Assert.Equal("Edited Topic", GetGroupName(groupId));
+    }
+
+    [Fact]
+    public void GuestOwnerRenamesProvisionalGroupUpdatesName() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string guestAuthToken = TestUserFactory.CreateGuestUser(testingMockProvidersContainer);
+        Guid groupId = CreateProvisionalGroup(ResolveUserAccountId(guestAuthToken), "Guest Topic", true);
+
+        JsonElement root = Rename(testingMockProvidersContainer, guestAuthToken, groupId, "Edited Guest Topic");
+
+        Assert.Equal("renamed", root.GetProperty("status").GetString());
+        Assert.Equal("Edited Guest Topic", GetGroupName(groupId));
+    }
+
+    [Fact]
+    public void RenamedProvisionalNameVisibleInMyOpenRequest() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid groupId = CreateProvisionalGroup(ResolveUserAccountId(ownerAuthToken), "Waiting For Help", true);
+        Rename(testingMockProvidersContainer, ownerAuthToken, groupId, "Edited Topic");
+
+        JsonElement root = testingMockProvidersContainer.WebClient.PostJson("api/helpRequest/myOpenRequest", new { AuthToken = ownerAuthToken }).ReadContentAsJsonDocument().RootElement.Clone();
+
+        Assert.Equal("waiting", root.GetProperty("status").GetString());
+        Assert.Equal("Edited Topic", root.GetProperty("chatGroupName").GetString());
+    }
+
+    [Fact]
+    public void RenamedProvisionalNameVisibleInHelperOpenRequests() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        string helperAuthToken = CreateUser(testingMockProvidersContainer, "Helper");
+        Guid groupId = CreateProvisionalGroup(ResolveUserAccountId(ownerAuthToken), "Waiting For Help", true);
+        Rename(testingMockProvidersContainer, ownerAuthToken, groupId, "Edited Topic");
+
+        JsonElement root = testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/openRequests", new { AuthToken = helperAuthToken }).ReadContentAsJsonDocument().RootElement.Clone();
+        string foundChatGroupName = null;
+        foreach (JsonElement openRequest in root.EnumerateArray()) {
+            if (openRequest.GetProperty("chatGroupId").GetString() == groupId.ToString()) foundChatGroupName = openRequest.GetProperty("chatGroupName").GetString();
+        }
+
+        Assert.Equal("Edited Topic", foundChatGroupName);
     }
 
     // Helpers - Acting

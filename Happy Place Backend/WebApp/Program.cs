@@ -34,6 +34,15 @@ namespace HappyWorld.HappyPlace.WebApp {
             if (app.Environment.IsDevelopment()) {
                 app.MapOpenApi();
             }
+            else {
+                app.UseExceptionHandler(exceptionHandlerApp => {
+                    exceptionHandlerApp.Run(context => {
+                        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                        context.Response.ContentType = "application/json";
+                        return context.Response.WriteAsync("{\"status\":\"error\"}");
+                    });
+                });
+            }
             //app.UseHttpsRedirection();
             app.UseResponseCompression();
             if (!app.Environment.IsDevelopment()) {

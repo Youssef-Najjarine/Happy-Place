@@ -191,7 +191,9 @@ public static class ChatGroupManager {
             return ChatGroupRenameResult.InvalidName();
         using var dbContext = HappyPlaceDbContext.Create();
         ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId);
-        if (!IsOwnedActiveGroup(chatGroup, userAccountId.Value))
+        if (chatGroup == null || chatGroup.OwnerUserAccountId != userAccountId.Value)
+            return ChatGroupRenameResult.None();
+        if (chatGroup.Status != ChatGroupStatus.Active && chatGroup.Status != ChatGroupStatus.Provisional)
             return ChatGroupRenameResult.None();
         chatGroup.Name = normalizedName;
         TrySaveChanges(dbContext);

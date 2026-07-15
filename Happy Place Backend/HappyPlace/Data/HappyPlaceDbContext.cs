@@ -38,7 +38,7 @@ public class HappyPlaceDbContext : DbContext {
     public static void ResetConnectionString() => _connectionStringOverride = null;
 
     public static HappyPlaceDbContext Create() {
-        string connectionString = _connectionStringOverride ?? "Server=.;Database=HappyPlace;Trusted_Connection=True;MultipleActiveResultSets=true;trustservercertificate=yes";
+        string connectionString = _connectionStringOverride ?? "Server=.;Database=HappyPlace;Trusted_Connection=True;MultipleActiveResultSets=true;trustservercertificate=yes;ConnectRetryCount=3;ConnectRetryInterval=5";
         var optionsBuilder = new DbContextOptionsBuilder<HappyPlaceDbContext>();
         optionsBuilder.UseSqlServer(connectionString);
         return new HappyPlaceDbContext(optionsBuilder.Options);
