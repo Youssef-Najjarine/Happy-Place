@@ -453,7 +453,7 @@ export default function Members() {
   const navigation = useNavigation();
   const route = useRoute();
   const chatGroupId = route.params?.chatGroupId;
-  const isOwner = !!route.params?.isOwner;
+  const routeIsOwner = !!route.params?.isOwner;
   const [authToken, setAuthToken] = useState(null);
   const [activeDropdownIndex, setActiveDropdownIndex] = useState(null);
   const ellipsisRefs = useRef([]);
@@ -491,6 +491,13 @@ export default function Members() {
     members: membersData?.members || [],
     pending: membersData?.pendingMembers || [],
   };
+  const callerUserAccountId = membersData?.callerUserAccountId ?? null;
+  const derivedIsOwner = useMemo(() => {
+    if (!callerUserAccountId) return null;
+    const callerEntry = (membersData?.members || []).find((member) => member.userAccountId === callerUserAccountId);
+    return callerEntry ? !!callerEntry.isOwner : false;
+  }, [membersData, callerUserAccountId]);
+  const isOwner = derivedIsOwner ?? routeIsOwner;
   const closeAllMenus = useCallback(() => {
     setActiveDropdownIndex(null);
   }, []);

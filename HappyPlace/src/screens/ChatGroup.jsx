@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, TouchableOpacity, StyleSheet, Image, FlatList, SectionList, useWindowDimensions, KeyboardAvoidingView, Platform, Pressable, ScrollView, Keyboard, Modal, PermissionsAndroid } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image, FlatList, SectionList, useWindowDimensions, Platform, Pressable, ScrollView, Keyboard, PanResponder, Modal, PermissionsAndroid, AppState, Animated, Easing } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
@@ -19,6 +19,8 @@ import {
 } from 'src/constants/colors';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import EditChatNameModal from 'src/components/EditChatNameModal';
+import ViewChatNameModal from 'src/components/ViewChatNameModal';
+import MediaViewerModal from 'src/components/MediaViewerModal';
 import DeleteChatGroupModal from 'src/components/DeleteChatGroupModal';
 import LeaveChatGroupModal from 'src/components/LeaveChatGroupModal';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
@@ -29,6 +31,7 @@ import CustomTextInput from 'src/components/FontFamilyTextInput';
 import { useSelector } from 'react-redux';
 import tokenStorage from 'src/services/tokenStorage';
 import { showToast } from 'src/components/Toast';
+import { Svg, Path, Rect } from 'react-native-svg';
 import Avatar from 'src/components/Avatar';
 import RemoteImage from 'src/components/RemoteImage';
 import ReportMessageModal from 'src/components/ReportMessageModal';
@@ -47,9 +50,27 @@ function loadOptionalModule(loader) {
 const Video = loadOptionalModule(() => require('react-native-video'));
 const Sound = loadOptionalModule(() => require('react-native-nitro-sound'));
 const EmojiPicker = loadOptionalModule(() => require('rn-emoji-keyboard'));
+
+function PlayGlyph({ size, color }) {
+    return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+            <Path d="M8 5.14v13.72c0 .96 1.05 1.55 1.87 1.05l10.98-6.86c.77-.48.77-1.62 0-2.1L9.87 4.09C9.05 3.59 8 4.18 8 5.14z" fill={color} />
+        </Svg>
+    );
+}
+
+function PauseGlyph({ size, color }) {
+    return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+            <Rect x="6" y="4.5" width="4.4" height="15" rx="2.2" fill={color} />
+            <Rect x="13.6" y="4.5" width="4.4" height="15" rx="2.2" fill={color} />
+        </Svg>
+    );
+}
 import useChatMessages from 'src/hooks/useChatMessages';
 import { selectCachedChatGroup } from 'src/store/chatMessagesApi';
 import { useListMembersQuery, useRenameChatGroupMutation, useSetChatGroupVisibilityMutation, useDeleteChatGroupMutation, useLeaveChatGroupMutation, useApproveMemberMutation, useRejectMemberMutation } from 'src/store/chatGroupsApi';
+import { formatMessageTime, localDateKey, localDateKeyForDaysAgo, formatDayHeader } from 'src/utils/chatTime';
 import MicrophoneIcon from 'assets/images/chatGroup/microphone-icon.svg';
 import PlusIcon from 'assets/images/chatGroup/plus-black-icon.svg';
 import SendMessageIcon from 'assets/images/chatGroup/send-message-icon.svg';
@@ -65,7 +86,6 @@ import PrivateIcon from 'assets/images/global/private-chat-icon.svg';
 import LeaveGroupIcon from 'assets/images/global/leave-and-remove-chat-icon.svg';
 import TrashIcon from 'assets/images/global/trash-outline-icon.svg';
 import XIcon from 'assets/images/global/black-x-icon.svg';
-import Image1 from 'assets/images/placeholderProfiles/profile-1.png';
 
 const phoneStyles = StyleSheet.create({
     root: { 
@@ -76,62 +96,12 @@ const phoneStyles = StyleSheet.create({
     },
     topNav: {
         gap: scaleHeight(12),
+        paddingTop: scaleHeight(12),
         paddingBottom: scaleHeight(16),
         borderBottomLeftRadius: scaleWidth(24),
         borderBottomRightRadius: scaleWidth(24),
-        marginBottom: scaleHeight(20),
         width: '100%',
         backgroundColor: White
-    },
-    profileAndLogin: {
-        height: scaleHeight(44),
-        paddingHorizontal: scaleWidth(20),
-        width: '100%',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-    },
-    welcomeBackTxt: {
-        fontSize: scaleFont(16),
-        lineHeight: scaleLineHeight(24),
-        letterSpacing: scaleLetterSpacing(-0.16),
-        fontWeight: 600,
-        color: Black
-    },
-    profileImage: { 
-        width: scaleWidth(44), 
-        height: scaleHeight(44), 
-        borderRadius: scaleWidth(99),
-        resizeMode: 'contain' 
-    },
-    loginBg: { 
-        backgroundColor: VeryLightGray
-    },
-    unlockAllFeaturesTxt: {
-        fontSize: scaleFont(14),
-        lineHeight: scaleLineHeight(21),
-        letterSpacing: scaleLetterSpacing(-0.14),
-        fontWeight: 600,
-        color: Black
-    },
-    loginView: { 
-        width: scaleWidth(62), 
-        height: scaleHeight(32) 
-    },
-    loginBtn: {
-        borderRadius: scaleWidth(99),
-        width: '100%',
-        height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: HappyColor
-    },
-    loginBtnTxt: {
-        fontSize: scaleFont(16),
-        lineHeight: scaleLineHeight(24),
-        letterSpacing: scaleLetterSpacing(-0.16),
-        fontWeight: 600,
-        color: White
     },
     chatHeaderRow: {
         paddingHorizontal: scaleWidth(20),
@@ -141,6 +111,7 @@ const phoneStyles = StyleSheet.create({
     },
     backArrowAndChatNameRow: {
         gap: scaleWidth(12),
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center'
     },
@@ -153,7 +124,8 @@ const phoneStyles = StyleSheet.create({
         backgroundColor: VeryLightGray
     },
     chatNameAndMembers: {
-        gap: scaleHeight(2)
+        gap: scaleHeight(2),
+        flex: 1
     },
     largeIcons: {
         width: scaleWidth(28),
@@ -183,8 +155,12 @@ const phoneStyles = StyleSheet.create({
     blackMembersColor: {
         color: Black
     },
+    memberNameShrink: {
+        flexShrink: 1
+    },
     privacyLabelAndEllipsisRow: {
         gap: scaleWidth(12),
+        flexShrink: 0,
         flexDirection: 'row',
         alignItems: 'center'
     },
@@ -371,7 +347,6 @@ const phoneStyles = StyleSheet.create({
     },
     chatGroup: {
         paddingHorizontal: scaleWidth(20),
-        marginBottom: scaleHeight(16),
         flex: 1,
         minHeight: 0,
         position: 'relative',
@@ -397,6 +372,29 @@ const phoneStyles = StyleSheet.create({
     sentIndicatorAndClockIcon: {
         width: scaleWidth(12),
         height: scaleHeight(12)
+    },
+    failedIndicator: {
+        width: scaleWidth(14),
+        height: scaleHeight(14),
+        borderRadius: scaleWidth(99),
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: HappyColor
+    },
+    failedIndicatorTxt: {
+        fontSize: scaleFont(10),
+        lineHeight: scaleLineHeight(12),
+        fontWeight: 700,
+        color: White
+    },
+    notDeliveredTxt: {
+        fontSize: scaleFont(12),
+        lineHeight: scaleLineHeight(16),
+        letterSpacing: scaleLetterSpacing(-0.12),
+        fontWeight: 500,
+        marginTop: scaleHeight(2),
+        alignSelf: 'flex-end',
+        color: HappyColor
     },
     myChatTextBox: {
         gap: scaleHeight(6),
@@ -557,10 +555,9 @@ const phoneStyles = StyleSheet.create({
         color: Black
     },
     textBoxContainer: {
-        paddingHorizontal: scaleWidth(20)
+        width: '100%'
     },
     inputRow: {
-        height: scaleHeight(54),
         paddingVertical: scaleHeight(6),
         paddingHorizontal: scaleWidth(6),
         borderRadius: scaleWidth(50),
@@ -569,17 +566,20 @@ const phoneStyles = StyleSheet.create({
         backgroundColor: White
     },
     inputView: {
-        width: '100%',
-        height: '100%'
+        width: '100%'
     },
     input: {
         paddingLeft: scaleWidth(56),
         paddingRight: scaleWidth(56),
+        paddingTop: scaleHeight(10.5),
+        paddingBottom: scaleHeight(10.5),
         fontSize: scaleFont(16),
         lineHeight: scaleLineHeight(21),
         letterSpacing: scaleLetterSpacing(-0.16),
         width: '100%',
-        height: '100%',
+        minHeight: scaleHeight(42),
+        maxHeight: scaleHeight(126),
+        textAlignVertical: 'center',
         fontWeight: 500,
         color: Black
     },
@@ -596,14 +596,37 @@ const phoneStyles = StyleSheet.create({
         alignItems: 'center'
     },
     plusView: {
-        top: scaleHeight(6),
+        bottom: scaleHeight(6),
         left: scaleWidth(6),
         backgroundColor: "#F9F5EA"
     },  
     microphoneAndSendView: {
-        top: scaleHeight(6),
+        bottom: scaleHeight(6),
         right: scaleWidth(6),
         backgroundColor: HappyColor
+    },
+    scrollToBottomPill: {
+        position: 'absolute',
+        bottom: scaleHeight(8),
+        alignSelf: 'center',
+        paddingHorizontal: scaleWidth(14),
+        height: scaleHeight(34),
+        borderRadius: scaleWidth(99),
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: Black,
+        shadowOffset: { width: 0, height: scaleHeight(2) },
+        shadowOpacity: 0.2,
+        shadowRadius: scaleWidth(6),
+        elevation: 4,
+        backgroundColor: HappyColor
+    },
+    scrollToBottomPillTxt: {
+        fontSize: scaleFont(14),
+        lineHeight: scaleLineHeight(21),
+        letterSpacing: scaleLetterSpacing(-0.14),
+        fontWeight: 600,
+        color: White
     },
     helperSenderNameTxt: {
         fontSize: scaleFont(12),
@@ -807,27 +830,46 @@ const phoneStyles = StyleSheet.create({
         width: scaleWidth(220),
         height: scaleHeight(140),
         borderRadius: scaleWidth(12),
+        overflow: 'hidden',
+        position: 'relative',
         alignItems: 'center',
         justifyContent: 'center',
         gap: scaleHeight(6),
         backgroundColor: Charcoal
     },
-    videoPlayGlyphTxt: {
-        fontSize: scaleFont(28),
-        color: White
+    videoPreviewFill: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
     },
-    videoDurationTxt: {
+    videoPreviewScrim: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.18)'
+    },
+    videoPreviewPlayCircle: {
+        width: scaleWidth(52),
+        height: scaleWidth(52),
+        borderRadius: scaleWidth(99),
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.45)'
+    },
+    videoPreviewDurationTxt: {
+        position: 'absolute',
+        right: scaleWidth(8),
+        bottom: scaleHeight(8),
         fontSize: scaleFont(12),
         fontWeight: 600,
         color: White
     },
-    videoPlayer: {
-        width: scaleWidth(220),
-        height: scaleHeight(160),
-        borderRadius: scaleWidth(12),
-        backgroundColor: Charcoal
-    },
     voiceRow: {
+        width: scaleWidth(216),
         flexDirection: 'row',
         alignItems: 'center',
         gap: scaleWidth(10),
@@ -841,9 +883,147 @@ const phoneStyles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: VeryLightGray
     },
-    voicePlayGlyphTxt: {
-        fontSize: scaleFont(16),
+    voiceTrackTouch: {
+        flex: 1,
+        height: scaleHeight(28),
+        justifyContent: 'center'
+    },
+    voiceTrackBase: {
+        height: scaleHeight(4),
+        borderRadius: scaleWidth(99),
+        width: '100%'
+    },
+    voiceTrackFill: {
+        position: 'absolute',
+        height: scaleHeight(4),
+        borderRadius: scaleWidth(99),
+        left: 0
+    },
+    voiceTrackThumb: {
+        position: 'absolute',
+        width: scaleWidth(12),
+        height: scaleWidth(12),
+        borderRadius: scaleWidth(99),
+        marginLeft: scaleWidth(-6)
+    },
+    voiceTrackBaseMine: {
+        backgroundColor: 'rgba(255,255,255,0.4)'
+    },
+    voiceTrackBaseHelper: {
+        backgroundColor: VeryLightGray
+    },
+    voiceTrackFillMine: {
+        backgroundColor: White
+    },
+    voiceTrackFillHelper: {
+        backgroundColor: HappyColor
+    },
+    voiceThumbMine: {
+        backgroundColor: White
+    },
+    voiceThumbHelper: {
+        backgroundColor: HappyColor
+    },
+    voiceTimeTxt: {
+        fontSize: scaleFont(12),
+        lineHeight: scaleLineHeight(16),
+        fontWeight: 600
+    },
+    voiceTimeMine: {
+        color: White
+    },
+    voiceTimeHelper: {
+        color: Charcoal
+    },
+    stagedAttachmentBar: {
+        marginBottom: scaleHeight(8)
+    },
+    stagedAttachmentBarContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: scaleWidth(10),
+        paddingTop: scaleHeight(8),
+        paddingHorizontal: scaleWidth(12)
+    },
+    stagedItem: {
+        position: 'relative'
+    },
+    composerOverlay: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 1001,
+        elevation: 1001
+    },
+    composerBackdrop: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        opacity: 0.88,
+        backgroundColor: WarmIvory
+    },
+    stagedThumb: {
+        width: scaleWidth(64),
+        height: scaleWidth(64),
+        borderRadius: scaleWidth(10),
+        overflow: 'hidden',
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: Charcoal
+    },
+    stagedThumbFill: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
+    },
+    stagedThumbScrim: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.18)'
+    },
+    stagedVoiceChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: scaleWidth(8),
+        height: scaleHeight(40),
+        paddingHorizontal: scaleWidth(14),
+        borderRadius: scaleWidth(99),
+        borderWidth: scaleWidth(1),
+        borderColor: SoftGray,
+        backgroundColor: White
+    },
+    stagedVoiceTxt: {
+        fontSize: scaleFont(14),
+        lineHeight: scaleLineHeight(21),
+        fontWeight: 600,
         color: Black
+    },
+    stagedRemoveBtn: {
+        position: 'absolute',
+        top: scaleHeight(-7),
+        right: scaleWidth(-7),
+        width: scaleWidth(22),
+        height: scaleWidth(22),
+        borderRadius: scaleWidth(99),
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 2,
+        backgroundColor: TranslucentBlack
+    },
+    stagedRemoveTxt: {
+        fontSize: scaleFont(13),
+        lineHeight: scaleLineHeight(15),
+        fontWeight: 600,
+        color: White
     },
     attachSheetOverlay: {
         position: 'absolute',
@@ -867,62 +1047,12 @@ const tabletStyles = StyleSheet.create({
     },
     topNav: {
         gap: scaleHeight(16.1),
+        paddingTop: scaleHeight(16.1),
         paddingBottom: scaleHeight(20),
         borderBottomLeftRadius: scaleWidth(32.192),
         borderBottomRightRadius: scaleWidth(32.192),
-        marginBottom: scaleHeight(26.83),
         width: '100%',
         backgroundColor: White
-    },
-    profileAndLogin: {
-        height: 84,
-        paddingHorizontal: scaleWidth(24),
-        width: '100%',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-    },
-    welcomeBackTxt: {
-        fontSize: scaleFont(20),
-        lineHeight: scaleLineHeight(30),
-        letterSpacing: scaleLetterSpacing(-0.2),
-        fontWeight: 600,
-        color: Black
-    },
-    profileImage: { 
-        width: 83.23,
-        height: 83.23, 
-        borderRadius: scaleWidth(132.792),
-        resizeMode: 'contain' 
-    },
-    loginBg: { 
-        backgroundColor: VeryLightGray
-    },
-    unlockAllFeaturesTxt: {
-        fontSize: scaleFont(16),
-        lineHeight: scaleLineHeight(24),
-        letterSpacing: scaleLetterSpacing(-0.16),
-        fontWeight: 600,
-        color: Black
-    },
-    loginView: { 
-        width: scaleWidth(79.192), 
-        height: scaleHeight(40.73067) 
-    },
-    loginBtn: {
-        borderRadius: scaleWidth(132.792),
-        width: '100%',
-        height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: HappyColor
-    },
-    loginBtnTxt: {
-        fontSize: scaleFont(20),
-        lineHeight: scaleLineHeight(30),
-        letterSpacing: scaleLetterSpacing(-0.2),
-        fontWeight: 600,
-        color: White
     },
     chatHeaderRow: {
         paddingHorizontal: scaleWidth(24),
@@ -932,6 +1062,7 @@ const tabletStyles = StyleSheet.create({
     },
     backArrowAndChatNameRow: {
         gap: scaleWidth(16.1),
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center'
     },
@@ -944,7 +1075,8 @@ const tabletStyles = StyleSheet.create({
         backgroundColor: VeryLightGray
     },
     chatNameAndMembers: {
-        gap: scaleHeight(2.68)
+        gap: scaleHeight(2.68),
+        flex: 1
     },
     largeIcons: {
         width: scaleWidth(37.557),
@@ -974,8 +1106,12 @@ const tabletStyles = StyleSheet.create({
     blackMembersColor: {
         color: Black
     },
+    memberNameShrink: {
+        flexShrink: 1
+    },
     privacyLabelAndEllipsisRow: {
         gap: scaleWidth(16.1),
+        flexShrink: 0,
         flexDirection: 'row',
         alignItems: 'center'
     },
@@ -1162,7 +1298,6 @@ const tabletStyles = StyleSheet.create({
     },
     chatGroup: {
         paddingHorizontal: scaleWidth(24),
-        marginBottom: scaleHeight(20),
         flex: 1,
         minHeight: 0,
         position: 'relative',
@@ -1188,6 +1323,29 @@ const tabletStyles = StyleSheet.create({
     sentIndicatorAndClockIcon: {
         width: scaleWidth(16.096),
         height: scaleHeight(16.096)
+    },
+    failedIndicator: {
+        width: scaleWidth(18),
+        height: scaleHeight(18),
+        borderRadius: scaleWidth(132.792),
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: HappyColor
+    },
+    failedIndicatorTxt: {
+        fontSize: scaleFont(12),
+        lineHeight: scaleLineHeight(14),
+        fontWeight: 700,
+        color: White
+    },
+    notDeliveredTxt: {
+        fontSize: scaleFont(14),
+        lineHeight: scaleLineHeight(21),
+        letterSpacing: scaleLetterSpacing(-0.14),
+        fontWeight: 500,
+        marginTop: scaleHeight(2.68),
+        alignSelf: 'flex-end',
+        color: HappyColor
     },
     myChatTextBox: {
         gap: scaleHeight(8.05),
@@ -1348,10 +1506,9 @@ const tabletStyles = StyleSheet.create({
         color: Black
     },
     textBoxContainer: {
-        paddingHorizontal: scaleWidth(24)
+        width: '100%'
     },
     inputRow: {
-        height: scaleHeight(72.43201),
         paddingVertical: scaleHeight(8.05),
         paddingHorizontal: scaleWidth(8.05),
         borderRadius: scaleWidth(67.067),
@@ -1360,17 +1517,20 @@ const tabletStyles = StyleSheet.create({
         backgroundColor: White
     },
     inputView: {
-        width: '100%',
-        height: '100%'
+        width: '100%'
     },
     input: {
         paddingLeft: scaleWidth(60),
         paddingRight: scaleWidth(60),
+        paddingTop: scaleHeight(13.166),
+        paddingBottom: scaleHeight(13.166),
         fontSize: scaleFont(20),
         lineHeight: scaleLineHeight(30),
         letterSpacing: scaleLetterSpacing(-0.2),
         width: '100%',
-        height: '100%',
+        minHeight: scaleHeight(56.332),
+        maxHeight: scaleHeight(176.332),
+        textAlignVertical: 'center',
         fontWeight: 500,
         color: Black
     },
@@ -1387,14 +1547,37 @@ const tabletStyles = StyleSheet.create({
         alignItems: 'center'
     },
     plusView: {
-        top: scaleHeight(8.05),
+        bottom: scaleHeight(8.05),
         left: scaleWidth(8.05),
         backgroundColor: "#F9F5EA"
     },  
     microphoneAndSendView: {
-        top: scaleHeight(8.05),
+        bottom: scaleHeight(8.05),
         right: scaleWidth(8.05),
         backgroundColor: HappyColor
+    },
+    scrollToBottomPill: {
+        position: 'absolute',
+        bottom: scaleHeight(10),
+        alignSelf: 'center',
+        paddingHorizontal: scaleWidth(18),
+        height: scaleHeight(42),
+        borderRadius: scaleWidth(132.792),
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: Black,
+        shadowOffset: { width: 0, height: scaleHeight(2) },
+        shadowOpacity: 0.2,
+        shadowRadius: scaleWidth(6),
+        elevation: 4,
+        backgroundColor: HappyColor
+    },
+    scrollToBottomPillTxt: {
+        fontSize: scaleFont(16),
+        lineHeight: scaleLineHeight(24),
+        letterSpacing: scaleLetterSpacing(-0.16),
+        fontWeight: 600,
+        color: White
     },
     helperSenderNameTxt: {
         fontSize: scaleFont(12),
@@ -1598,27 +1781,46 @@ const tabletStyles = StyleSheet.create({
         width: scaleWidth(220),
         height: scaleHeight(140),
         borderRadius: scaleWidth(12),
+        overflow: 'hidden',
+        position: 'relative',
         alignItems: 'center',
         justifyContent: 'center',
         gap: scaleHeight(6),
         backgroundColor: Charcoal
     },
-    videoPlayGlyphTxt: {
-        fontSize: scaleFont(28),
-        color: White
+    videoPreviewFill: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
     },
-    videoDurationTxt: {
+    videoPreviewScrim: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.18)'
+    },
+    videoPreviewPlayCircle: {
+        width: scaleWidth(52),
+        height: scaleWidth(52),
+        borderRadius: scaleWidth(99),
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.45)'
+    },
+    videoPreviewDurationTxt: {
+        position: 'absolute',
+        right: scaleWidth(8),
+        bottom: scaleHeight(8),
         fontSize: scaleFont(12),
         fontWeight: 600,
         color: White
     },
-    videoPlayer: {
-        width: scaleWidth(220),
-        height: scaleHeight(160),
-        borderRadius: scaleWidth(12),
-        backgroundColor: Charcoal
-    },
     voiceRow: {
+        width: scaleWidth(216),
         flexDirection: 'row',
         alignItems: 'center',
         gap: scaleWidth(10),
@@ -1632,9 +1834,147 @@ const tabletStyles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: VeryLightGray
     },
-    voicePlayGlyphTxt: {
-        fontSize: scaleFont(16),
+    voiceTrackTouch: {
+        flex: 1,
+        height: scaleHeight(28),
+        justifyContent: 'center'
+    },
+    voiceTrackBase: {
+        height: scaleHeight(4),
+        borderRadius: scaleWidth(99),
+        width: '100%'
+    },
+    voiceTrackFill: {
+        position: 'absolute',
+        height: scaleHeight(4),
+        borderRadius: scaleWidth(99),
+        left: 0
+    },
+    voiceTrackThumb: {
+        position: 'absolute',
+        width: scaleWidth(12),
+        height: scaleWidth(12),
+        borderRadius: scaleWidth(99),
+        marginLeft: scaleWidth(-6)
+    },
+    voiceTrackBaseMine: {
+        backgroundColor: 'rgba(255,255,255,0.4)'
+    },
+    voiceTrackBaseHelper: {
+        backgroundColor: VeryLightGray
+    },
+    voiceTrackFillMine: {
+        backgroundColor: White
+    },
+    voiceTrackFillHelper: {
+        backgroundColor: HappyColor
+    },
+    voiceThumbMine: {
+        backgroundColor: White
+    },
+    voiceThumbHelper: {
+        backgroundColor: HappyColor
+    },
+    voiceTimeTxt: {
+        fontSize: scaleFont(12),
+        lineHeight: scaleLineHeight(16),
+        fontWeight: 600
+    },
+    voiceTimeMine: {
+        color: White
+    },
+    voiceTimeHelper: {
+        color: Charcoal
+    },
+    stagedAttachmentBar: {
+        marginBottom: scaleHeight(8)
+    },
+    stagedAttachmentBarContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: scaleWidth(10),
+        paddingTop: scaleHeight(8),
+        paddingHorizontal: scaleWidth(12)
+    },
+    stagedItem: {
+        position: 'relative'
+    },
+    composerOverlay: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 1001,
+        elevation: 1001
+    },
+    composerBackdrop: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        opacity: 0.88,
+        backgroundColor: WarmIvory
+    },
+    stagedThumb: {
+        width: scaleWidth(64),
+        height: scaleWidth(64),
+        borderRadius: scaleWidth(10),
+        overflow: 'hidden',
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: Charcoal
+    },
+    stagedThumbFill: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
+    },
+    stagedThumbScrim: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.18)'
+    },
+    stagedVoiceChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: scaleWidth(8),
+        height: scaleHeight(40),
+        paddingHorizontal: scaleWidth(14),
+        borderRadius: scaleWidth(99),
+        borderWidth: scaleWidth(1),
+        borderColor: SoftGray,
+        backgroundColor: White
+    },
+    stagedVoiceTxt: {
+        fontSize: scaleFont(14),
+        lineHeight: scaleLineHeight(21),
+        fontWeight: 600,
         color: Black
+    },
+    stagedRemoveBtn: {
+        position: 'absolute',
+        top: scaleHeight(-7),
+        right: scaleWidth(-7),
+        width: scaleWidth(22),
+        height: scaleWidth(22),
+        borderRadius: scaleWidth(99),
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 2,
+        backgroundColor: TranslucentBlack
+    },
+    stagedRemoveTxt: {
+        fontSize: scaleFont(13),
+        lineHeight: scaleLineHeight(15),
+        fontWeight: 600,
+        color: White
     },
     attachSheetOverlay: {
         position: 'absolute',
@@ -1653,12 +1993,8 @@ const QUICK_REACTIONS = ['\u2764\uFE0F', '\uD83D\uDC4D', '\uD83D\uDE0A', '\uD83D
 const CHAR_LIMIT = 400;
 const MAX_MESSAGE_LENGTH = 4096;
 
-function formatTimeStamp(createdAtUtc) {
-    const date = new Date(createdAtUtc);
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
-}
-
 const VOICE_MAX_SECONDS = 300;
+const MAX_STAGED_ATTACHMENTS = 10;
 const VIDEO_MAX_SECONDS = 180;
 const VIDEO_MAX_BYTES = 100 * 1024 * 1024;
 
@@ -1669,17 +2005,79 @@ function formatDuration(totalSeconds) {
     return minutes + ':' + String(remainder).padStart(2, '0');
 }
 
+function clampRatio(value) {
+    return Math.min(1, Math.max(0, value));
+}
+
+function VoiceBubble({ entry, styles, mine, active, paused, positionMs, onToggle, onSeek }) {
+    const trackWidthRef = useRef(1);
+    const grantXRef = useRef(0);
+    const [scrubRatio, setScrubRatio] = useState(null);
+    const seekPanResponder = useMemo(() => PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (event, gestureState) => Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderGrant: (event) => {
+            grantXRef.current = event.nativeEvent.locationX;
+            setScrubRatio(clampRatio(grantXRef.current / trackWidthRef.current));
+        },
+        onPanResponderMove: (event, gestureState) => {
+            setScrubRatio(clampRatio((grantXRef.current + gestureState.dx) / trackWidthRef.current));
+        },
+        onPanResponderRelease: (event, gestureState) => {
+            const ratio = clampRatio((grantXRef.current + gestureState.dx) / trackWidthRef.current);
+            setScrubRatio(null);
+            onSeek(entry, ratio);
+        },
+        onPanResponderTerminate: () => {
+            setScrubRatio(null);
+        },
+    }), [entry, onSeek]);
+    const durationSeconds = Math.max(1, entry.mediaDurationSeconds || 1);
+    const playedRatio = scrubRatio != null ? scrubRatio : (active ? clampRatio((positionMs / 1000) / durationSeconds) : 0);
+    const shownSeconds = scrubRatio != null ? durationSeconds * scrubRatio : (active ? positionMs / 1000 : durationSeconds);
+    return (
+        <View style={styles.voiceRow}>
+            <TouchableOpacity style={styles.voicePlayBtn} onPress={() => onToggle(entry)}>
+                {active && !paused ? (
+                    <PauseGlyph size={scaleWidth(16)} color={Black} />
+                ) : (
+                    <PlayGlyph size={scaleWidth(16)} color={Black} />
+                )}
+            </TouchableOpacity>
+            <View
+                style={styles.voiceTrackTouch}
+                onLayout={(event) => { trackWidthRef.current = Math.max(1, event.nativeEvent.layout.width); }}
+                {...seekPanResponder.panHandlers}
+            >
+                <View pointerEvents="none" style={[styles.voiceTrackBase, mine ? styles.voiceTrackBaseMine : styles.voiceTrackBaseHelper]} />
+                <View pointerEvents="none" style={[styles.voiceTrackFill, mine ? styles.voiceTrackFillMine : styles.voiceTrackFillHelper, { width: (playedRatio * 100) + '%' }]} />
+                <View pointerEvents="none" style={[styles.voiceTrackThumb, mine ? styles.voiceThumbMine : styles.voiceThumbHelper, { left: (playedRatio * 100) + '%' }]} />
+            </View>
+            <CustomText style={[styles.voiceTimeTxt, mine ? styles.voiceTimeMine : styles.voiceTimeHelper]}>{formatDuration(shownSeconds)}</CustomText>
+        </View>
+    );
+}
+
 export default function ChatGroup() {
   const [showEditChatNameModal, setShowEditChatNameModal] = useState(false);
+  const [showViewChatNameModal, setShowViewChatNameModal] = useState(false);
   const [showDeleteChatGroupModal, setShowDeleteChatGroupModal] = useState(false);
   const [showLeaveChatGroupModal, setShowLeaveChatGroupModal] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const [chatText, setChatText] = useState('');
   const inputRef = useRef(null);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeightState, setKeyboardHeightState] = useState(0);
+  const [composerBarHeight, setComposerBarHeight] = useState(scaleHeight(66));
+  const [unseenCount, setUnseenCount] = useState(0);
+  const [composerInputHeight, setComposerInputHeight] = useState(null);
+  const [stagedAttachments, setStagedAttachments] = useState([]);
   const [dotCount, setDotCount] = useState(1);
   const [authToken, setAuthToken] = useState(null);
   const [actionTarget, setActionTarget] = useState(null);
+  const [failedTarget, setFailedTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [emojiPickerTarget, setEmojiPickerTarget] = useState(null);
   const [showAttachSheet, setShowAttachSheet] = useState(false);
@@ -1688,7 +2086,8 @@ export default function ChatGroup() {
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [playingVoiceId, setPlayingVoiceId] = useState(null);
   const [voicePositionMs, setVoicePositionMs] = useState(0);
-  const [playingVideoId, setPlayingVideoId] = useState(null);
+  const [voicePaused, setVoicePaused] = useState(false);
+  const [viewerTarget, setViewerTarget] = useState(null);
   const recordSecondsRef = useRef(0);
   const isRecordingRef = useRef(false);
   const finishRecordingRef = useRef(null);
@@ -1697,7 +2096,6 @@ export default function ChatGroup() {
   const navigation = useNavigation();
   const route = useRoute();
   const focused = useIsFocused();
-  const cameFromLogin = route.params?.from === 'login';
   const chatGroupId = route.params?.chatGroupId ?? null;
   const chatDropdownRef = useRef(null);
   const ellipsisRef = useRef(null);
@@ -1708,14 +2106,74 @@ export default function ChatGroup() {
   });
   const sectionListRef = useRef(null);
   const lastScrolledMessageIdRef = useRef(null);
+  const isNearBottomRef = useRef(true);
+  const scrollToBottomRef = useRef(null);
+  const keyboardVisibleRef = useRef(false);
+  const keyboardSpacerAnim = useRef(new Animated.Value(0)).current;
   const exitHandledRef = useRef(false);
 
   const [expanded, setExpanded] = useState({});
 
   const cachedGroup = useSelector((state) => selectCachedChatGroup(state, chatGroupId));
-  const chatName = cachedGroup?.title ?? '';
-  const isPublic = cachedGroup ? !!cachedGroup.isPublic : true;
-  const owner = !!cachedGroup?.owner;
+
+  useEffect(() => {
+    lastScrolledMessageIdRef.current = null;
+    isNearBottomRef.current = true;
+    exitHandledRef.current = false;
+    setUnseenCount(0);
+    setComposerInputHeight(null);
+    setStagedAttachments([]);
+  }, [chatGroupId]);
+
+  useEffect(() => {
+    const showEventName = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEventName = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(showEventName, (event) => {
+      setKeyboardVisible(true);
+      keyboardVisibleRef.current = true;
+      const keyboardHeight = event && event.endCoordinates ? event.endCoordinates.height : 0;
+      setKeyboardHeightState(keyboardHeight);
+      if (Platform.OS === 'ios') {
+        Animated.timing(keyboardSpacerAnim, {
+          toValue: keyboardHeight + scaleHeight(6),
+          duration: Math.min(250, (event && event.duration) || 250),
+          easing: Easing.bezier(0.17, 0.59, 0.4, 0.77),
+          useNativeDriver: false,
+        }).start();
+      }
+      scrollToBottomRef.current?.(true);
+    });
+    const hideSubscription = Keyboard.addListener(hideEventName, (event) => {
+      setKeyboardVisible(false);
+      keyboardVisibleRef.current = false;
+      setKeyboardHeightState(0);
+      if (Platform.OS === 'ios') {
+        Animated.timing(keyboardSpacerAnim, {
+          toValue: bottomSafeHeight,
+          duration: Math.min(250, (event && event.duration) || 200),
+          easing: Easing.bezier(0.17, 0.59, 0.4, 0.77),
+          useNativeDriver: false,
+        }).start();
+      }
+    });
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [bottomSafeHeight, keyboardSpacerAnim]);
+
+  useEffect(() => {
+    if (!keyboardVisibleRef.current) {
+      keyboardSpacerAnim.setValue(bottomSafeHeight);
+    }
+  }, [bottomSafeHeight, keyboardSpacerAnim]);
+
+  const composerPanResponder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponderCapture: (event, gestureState) => keyboardVisibleRef.current && gestureState.dy > 12 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx) * 2,
+    onPanResponderGrant: () => {
+      Keyboard.dismiss();
+    },
+  })).current;
 
   useEffect(() => {
     let cancelled = false;
@@ -1741,6 +2199,7 @@ export default function ChatGroup() {
     sendersById,
     callerUserAccountId,
     typingUserIds,
+    groupState,
     hasOlder,
     loadingOlder,
     loadOlder,
@@ -1751,16 +2210,27 @@ export default function ChatGroup() {
     reactTo,
     deleteOwn,
     report,
+    retrySend,
+    deleteFailed,
     notifyTyping,
     isViewedByEveryoneElse,
     reload,
+    refreshNow,
   } = useChatMessages({ authToken, chatGroupId, focused });
 
   const membersQuery = useListMembersQuery(
     { authToken, chatGroupId },
-    { skip: !authToken || !chatGroupId }
+    { skip: !authToken || !chatGroupId, pollingInterval: focused ? 3000 : 0 }
   );
-  const activeMemberEntries = membersQuery.data?.members ?? [];
+  const chatName = groupState?.title ?? cachedGroup?.title ?? '';
+  const isPublic = groupState ? !!groupState.isPublic : (cachedGroup ? !!cachedGroup.isPublic : true);
+  const ownerFromGroupState = useMemo(() => {
+    if (!groupState || !callerUserAccountId) return null;
+    const callerEntry = (groupState.members || []).find((member) => member.userAccountId === callerUserAccountId);
+    return callerEntry ? !!callerEntry.isOwner : false;
+  }, [groupState, callerUserAccountId]);
+  const owner = ownerFromGroupState ?? !!cachedGroup?.owner;
+  const activeMemberEntries = groupState?.members ?? membersQuery.data?.members ?? [];
   const pendingMemberEntries = owner ? (membersQuery.data?.pendingMembers ?? []) : [];
   const firstPendingMember = pendingMemberEntries.length > 0 ? pendingMemberEntries[0] : null;
 
@@ -1819,15 +2289,12 @@ export default function ChatGroup() {
   }, []);
 
   const groupedMessages = useMemo(() => {
-    const now = new Date();
-    const todayKey = now.toISOString().split('T')[0];
-    const yesterday = new Date(now.getTime() - 86400000);
-    const yesterdayKey = yesterday.toISOString().split('T')[0];
+    const todayKey = localDateKeyForDaysAgo(0);
+    const yesterdayKey = localDateKeyForDaysAgo(1);
 
     const groups = {};
     orderedMessages.forEach((entry) => {
-      const createdAt = new Date(entry.createdAtUtc);
-      const dateKey = createdAt.toISOString().split('T')[0];
+      const dateKey = localDateKey(entry.createdAtUtc);
       if (!groups[dateKey]) {
         groups[dateKey] = [];
       }
@@ -1842,8 +2309,7 @@ export default function ChatGroup() {
       } else if (key === yesterdayKey) {
         title = 'Yesterday';
       } else {
-        const date = new Date(key);
-        title = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        title = formatDayHeader(key);
       }
       return {
         title,
@@ -1852,27 +2318,67 @@ export default function ChatGroup() {
     });
   }, [orderedMessages]);
 
-  const newestMessageId = orderedMessages.length > 0 ? orderedMessages[orderedMessages.length - 1].id : null;
+  const newestMessage = orderedMessages.length > 0 ? orderedMessages[orderedMessages.length - 1] : null;
 
-  useEffect(() => {
-    if (!newestMessageId || groupedMessages.length === 0) return undefined;
-    if (lastScrolledMessageIdRef.current === newestMessageId) return undefined;
-    lastScrolledMessageIdRef.current = newestMessageId;
-    const timer = setTimeout(() => {
-      const lastSection = groupedMessages[groupedMessages.length - 1];
-      const lastItemIndex = lastSection.data.length > 0 ? lastSection.data.length - 1 : 0;
+  const scrollToBottom = useCallback((animated) => {
+    if (groupedMessages.length === 0) return;
+    const scrollResponder = sectionListRef.current?.getScrollResponder?.();
+    if (scrollResponder && scrollResponder.scrollToEnd) {
       try {
-        sectionListRef.current?.scrollToLocation({
-          animated: false,
-          sectionIndex: groupedMessages.length - 1,
-          itemIndex: lastItemIndex,
-          viewPosition: 1,
-        });
+        scrollResponder.scrollToEnd({ animated });
+        return;
       } catch (error) {
       }
-    }, 300);
+    }
+    const lastSection = groupedMessages[groupedMessages.length - 1];
+    const lastItemIndex = lastSection.data.length > 0 ? lastSection.data.length - 1 : 0;
+    try {
+      sectionListRef.current?.scrollToLocation({
+        animated,
+        sectionIndex: groupedMessages.length - 1,
+        itemIndex: lastItemIndex,
+        viewPosition: 1,
+      });
+    } catch (error) {
+    }
+  }, [groupedMessages]);
+
+  useEffect(() => {
+    scrollToBottomRef.current = scrollToBottom;
+  }, [scrollToBottom]);
+
+  useEffect(() => {
+    if (!newestMessage || groupedMessages.length === 0) return undefined;
+    if (lastScrolledMessageIdRef.current === newestMessage.id) return undefined;
+    const previousNewestId = lastScrolledMessageIdRef.current;
+    const isFirstFill = previousNewestId === null;
+    lastScrolledMessageIdRef.current = newestMessage.id;
+    const mine = !!newestMessage.pending || (!!newestMessage.senderUserAccountId && newestMessage.senderUserAccountId === callerUserAccountId);
+    if (!isFirstFill && !mine && !isNearBottomRef.current) {
+      const previousIndex = orderedMessages.findIndex((entry) => entry.id === previousNewestId);
+      const newlyArrived = previousIndex === -1 ? 1 : orderedMessages.slice(previousIndex + 1).filter((entry) => !entry.pending && entry.senderUserAccountId !== callerUserAccountId).length;
+      setUnseenCount((current) => current + Math.max(1, newlyArrived));
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      scrollToBottom(!isFirstFill);
+    }, isFirstFill ? 300 : 80);
     return () => clearTimeout(timer);
-  }, [newestMessageId, groupedMessages]);
+  }, [newestMessage, orderedMessages, groupedMessages, callerUserAccountId, scrollToBottom]);
+
+  const handleListScroll = useCallback((event) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+    const nearBottom = distanceFromBottom < scaleHeight(120);
+    isNearBottomRef.current = nearBottom;
+    if (nearBottom) setUnseenCount(0);
+  }, []);
+
+  const handleListContentSizeChange = useCallback(() => {
+    if (lastScrolledMessageIdRef.current !== null && isNearBottomRef.current) {
+      scrollToBottomRef.current?.(true);
+    }
+  }, []);
 
   const openMessageActions = useCallback((entry) => {
     if (entry.pending || entry.isDeleted) return;
@@ -1984,13 +2490,13 @@ export default function ChatGroup() {
     if (entry.kind === 2 && (entry.mediaUrl || entry.localUri)) {
       const aspectRatio = entry.mediaWidth && entry.mediaHeight ? entry.mediaWidth / entry.mediaHeight : 1;
       return (
-        <View style={styles.chatSingleImageView}>
+        <TouchableOpacity style={styles.chatSingleImageView} activeOpacity={0.85} onPress={() => handleOpenViewer(entry)}>
           {entry.localUri ? (
             <Image source={{ uri: entry.localUri }} style={[styles.chatSingleImage, { aspectRatio }]} fadeDuration={0} />
           ) : (
             <RemoteImage uri={entry.mediaUrl} style={[styles.chatSingleImage, { aspectRatio }]} />
           )}
-        </View>
+        </TouchableOpacity>
       );
     }
     if (entry.kind === 3) {
@@ -2001,35 +2507,27 @@ export default function ChatGroup() {
           </CustomText>
         );
       }
-      if (Video && playingVideoId === entry.id) {
-        return (
-          <Video
-            source={{ uri: baseService.getMediaUrl(entry.mediaUrl) }}
-            style={styles.videoPlayer}
-            controls
-            paused={false}
-            resizeMode="contain"
-            onEnd={() => setPlayingVideoId(null)}
-            onError={() => {
-              setPlayingVideoId(null);
-              showToast("Couldn't play that video", 'info');
-            }}
-          />
-        );
-      }
       return (
         <TouchableOpacity
           style={styles.videoBubbleBox}
-          onPress={() => {
-            if (!Video) {
-              showToast('Video playback is unavailable on this build', 'info');
-              return;
-            }
-            setPlayingVideoId(entry.id);
-          }}
+          activeOpacity={0.85}
+          onPress={() => handleOpenViewer(entry)}
         >
-          <CustomText style={styles.videoPlayGlyphTxt}>{'\u25B6'}</CustomText>
-          <CustomText style={styles.videoDurationTxt}>{formatDuration(entry.mediaDurationSeconds)}</CustomText>
+          {Video ? (
+            <Video
+              source={{ uri: baseService.getMediaUrl(entry.mediaUrl) }}
+              style={styles.videoPreviewFill}
+              paused
+              muted
+              resizeMode="cover"
+              onError={() => {}}
+            />
+          ) : null}
+          <View style={styles.videoPreviewScrim} />
+          <View style={styles.videoPreviewPlayCircle}>
+            <PlayGlyph size={scaleWidth(22)} color={White} />
+          </View>
+          <CustomText style={styles.videoPreviewDurationTxt}>{formatDuration(entry.mediaDurationSeconds)}</CustomText>
         </TouchableOpacity>
       );
     }
@@ -2041,17 +2539,17 @@ export default function ChatGroup() {
           </CustomText>
         );
       }
-      const isPlayingThisVoice = playingVoiceId === entry.id;
-      const voiceLabel = isPlayingThisVoice
-        ? formatDuration(voicePositionMs / 1000) + ' / ' + formatDuration(entry.mediaDurationSeconds)
-        : formatDuration(entry.mediaDurationSeconds);
       return (
-        <View style={styles.voiceRow}>
-          <TouchableOpacity style={styles.voicePlayBtn} onPress={() => handleToggleVoice(entry)}>
-            <CustomText style={styles.voicePlayGlyphTxt}>{isPlayingThisVoice ? '\u23F8' : '\u25B6'}</CustomText>
-          </TouchableOpacity>
-          <CustomText style={mine ? styles.myChatText : styles.helperChatText}>{voiceLabel}</CustomText>
-        </View>
+        <VoiceBubble
+          entry={entry}
+          styles={styles}
+          mine={mine}
+          active={playingVoiceId === entry.id}
+          paused={voicePaused}
+          positionMs={voicePositionMs}
+          onToggle={handleToggleVoice}
+          onSeek={handleSeekVoice}
+        />
       );
     }
     const body = entry.body || '';
@@ -2071,11 +2569,11 @@ export default function ChatGroup() {
         )}
       </CustomText>
     );
-  }, [styles, expanded, toggleExpanded, playingVideoId, playingVoiceId, voicePositionMs, handleToggleVoice]);
+  }, [styles, expanded, toggleExpanded, playingVoiceId, voicePaused, voicePositionMs, handleToggleVoice, handleSeekVoice, handleOpenViewer]);
 
   const renderChatItem = useCallback(({ item }) => {
     const mine = !!item.senderUserAccountId && item.senderUserAccountId === callerUserAccountId;
-    const timeStamp = formatTimeStamp(item.createdAtUtc);
+    const timeStamp = formatMessageTime(item.createdAtUtc);
 
     if (!mine) {
       const sender = sendersById[item.senderUserAccountId];
@@ -2114,14 +2612,18 @@ export default function ChatGroup() {
 
     const viewed = !item.pending && isViewedByEveryoneElse(item.sequence);
     return (
-      <Pressable style={styles.myChatMessageView} onLongPress={() => openMessageActions(item)}>
+      <Pressable style={styles.myChatMessageView} onLongPress={() => openMessageActions(item)} onPress={item.failed ? () => setFailedTarget(item) : undefined}>
         <View style={styles.myChatTextBox}>
           <View>
             {renderMessageBody(item, true)}
           </View>
           <View style={styles.myTimeStamp}>
             <CustomText style={styles.myTimeStampTxt}>{timeStamp}</CustomText>
-            {item.pending ? (
+            {item.failed ? (
+              <View style={styles.failedIndicator}>
+                <CustomText style={styles.failedIndicatorTxt}>!</CustomText>
+              </View>
+            ) : item.pending ? (
               <ClockIcon {...styles.sentIndicatorAndClockIcon} />
             ) : viewed ? (
               <ViewedMessageIcon {...styles.sentIndicatorAndClockIcon} />
@@ -2130,6 +2632,9 @@ export default function ChatGroup() {
             )}
           </View>
         </View>
+        {item.failed && (
+          <CustomText style={styles.notDeliveredTxt}>Not Delivered</CustomText>
+        )}
         {renderReactions(item, true)}
       </Pressable>
     );
@@ -2143,34 +2648,101 @@ export default function ChatGroup() {
 
   const ChatMessageSeparator = useCallback(() => <View style={styles.ChatMessageSeparator} />, [styles]);
 
+  const deliverAttachment = useCallback(async (attachment) => {
+    if (attachment.kind === 2) {
+      const result = await sendImage(attachment.file);
+      if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone') {
+        if (result.status === 'tooLarge') {
+          showToast('That image is too large', 'info');
+        } else if (result.status === 'invalidMedia') {
+          showToast("That file isn't a supported image", 'info');
+        } else if (result.status !== 'unreachable') {
+          showToast("Couldn't send your photo", 'info');
+        }
+      }
+      return;
+    }
+    if (attachment.kind === 3) {
+      const result = await sendVideo(attachment.file, attachment.durationSeconds);
+      if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone') {
+        if (result.status === 'tooLarge') {
+          showToast('That video is too large to send', 'info');
+        } else if (result.status === 'invalidMedia' || result.status === 'invalidDuration') {
+          showToast("That video can't be sent", 'info');
+        } else if (result.status !== 'unreachable') {
+          showToast("Couldn't send your video", 'info');
+        }
+      }
+      return;
+    }
+    const result = await sendVoice(attachment.file, attachment.durationSeconds);
+    if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone') {
+      if (result.status === 'tooLarge') {
+        showToast('That voice message is too large to send', 'info');
+      } else if (result.status === 'invalidMedia' || result.status === 'invalidDuration') {
+        showToast("That recording can't be sent", 'info');
+      } else if (result.status !== 'unreachable') {
+        showToast("Couldn't send your voice message", 'info');
+      }
+    }
+  }, [sendImage, sendVideo, sendVoice]);
+
   const handleSend = useCallback(async () => {
     const body = chatText.trim();
+    const attachments = stagedAttachments;
+    if (!body && attachments.length === 0) return;
+    if (attachments.length > 0) setStagedAttachments([]);
+    if (body) {
+      setChatText('');
+      setComposerInputHeight(null);
+    }
+    for (const attachment of attachments) {
+      await deliverAttachment(attachment);
+    }
     if (!body) return;
-    setChatText('');
     const result = await send(body);
-    if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone') {
+    if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone' && result.status !== 'unreachable') {
       showToast("Couldn't send your message", 'info');
       setChatText(body);
     }
-  }, [chatText, send]);
+  }, [chatText, stagedAttachments, deliverAttachment, send]);
 
   const handleChangeChatText = useCallback((text) => {
     setChatText(text);
     if (text.trim()) notifyTyping();
   }, [notifyTyping]);
 
-  const handleLoginPressIn = useCallback(() => {
-    navigation.navigate('LoginOptions');
-  }, [navigation]);
+  const handleComposerContentSizeChange = useCallback((event) => {
+    setComposerInputHeight(event.nativeEvent.contentSize.height);
+  }, []);
+
+  const handleChatNamePress = useCallback(() => {
+    setShowViewChatNameModal(true);
+  }, []);
+
+  const handleRetryFailed = useCallback(() => {
+    if (!failedTarget) return;
+    const messageId = failedTarget.id;
+    setFailedTarget(null);
+    retrySend(messageId);
+  }, [failedTarget, retrySend]);
+
+  const handleDeleteFailed = useCallback(() => {
+    if (!failedTarget) return;
+    const messageId = failedTarget.id;
+    setFailedTarget(null);
+    deleteFailed(messageId);
+  }, [failedTarget, deleteFailed]);
 
   const handleConfirmEditName = useCallback(async (newName) => {
     setShowEditChatNameModal(false);
     try {
       await renameChatGroup({ authToken, chatGroupId, name: newName }).unwrap();
+      refreshNow();
     } catch (error) {
       showToast("Couldn't rename the group", 'info');
     }
-  }, [authToken, chatGroupId, renameChatGroup]);
+  }, [authToken, chatGroupId, renameChatGroup, refreshNow]);
 
   const handleConfirmDeleteChatGroup = useCallback(async () => {
     setShowDeleteChatGroupModal(false);
@@ -2200,37 +2772,45 @@ export default function ChatGroup() {
     if (!firstPendingMember) return;
     try {
       await approveMember({ authToken, chatGroupId, memberUserAccountId: firstPendingMember.userAccountId }).unwrap();
+      refreshNow();
     } catch (error) {
       showToast("Couldn't approve the request", 'info');
     }
-  }, [authToken, chatGroupId, firstPendingMember, approveMember]);
+  }, [authToken, chatGroupId, firstPendingMember, approveMember, refreshNow]);
 
   const handleDeclineRequest = useCallback(async () => {
     if (!firstPendingMember) return;
     try {
       await rejectMember({ authToken, chatGroupId, memberUserAccountId: firstPendingMember.userAccountId }).unwrap();
+      refreshNow();
     } catch (error) {
       showToast("Couldn't decline the request", 'info');
     }
-  }, [authToken, chatGroupId, firstPendingMember, rejectMember]);
+  }, [authToken, chatGroupId, firstPendingMember, rejectMember, refreshNow]);
+
+  const appendStagedAttachment = useCallback((attachment) => {
+    setStagedAttachments((current) => {
+      if (current.length >= MAX_STAGED_ATTACHMENTS) return current;
+      return [...current, { ...attachment, stagedId: 'staged-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8) }];
+    });
+  }, []);
+
+  const handleRemoveStaged = useCallback((stagedId) => {
+    setStagedAttachments((current) => current.filter((attachment) => attachment.stagedId !== stagedId));
+  }, []);
 
   const handleSendImage = useCallback(async (image) => {
-    const result = await sendImage({ uri: image.path, type: image.mime, name: 'photo.jpg', width: image.width, height: image.height });
-    if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone') {
-      if (result.status === 'tooLarge') {
-        showToast('That image is too large', 'info');
-      } else if (result.status === 'invalidMedia') {
-        showToast("That file isn't a supported image", 'info');
-      } else {
-        showToast("Couldn't send your photo", 'info');
-      }
+    if (stagedAttachments.length >= MAX_STAGED_ATTACHMENTS) {
+      showToast('You can attach up to 10 items', 'info');
+      return;
     }
-  }, [sendImage]);
+    appendStagedAttachment({ kind: 2, file: { uri: image.path, type: image.mime, name: 'photo.jpg', width: image.width, height: image.height }, durationSeconds: 0 });
+  }, [stagedAttachments, appendStagedAttachment]);
 
   const handlePickFromCamera = useCallback(async () => {
     setShowAttachSheet(false);
     try {
-      const image = await ImagePicker.openCamera({ mediaType: 'photo', compressImageQuality: 0.9 });
+      const image = await ImagePicker.openCamera({ mediaType: 'photo', forceJpg: true, compressImageQuality: 0.9 });
       await handleSendImage(image);
     } catch (error) {
     }
@@ -2239,11 +2819,18 @@ export default function ChatGroup() {
   const handlePickFromLibrary = useCallback(async () => {
     setShowAttachSheet(false);
     try {
-      const image = await ImagePicker.openPicker({ mediaType: 'photo', compressImageQuality: 0.9 });
-      await handleSendImage(image);
+      const picked = await ImagePicker.openPicker({ mediaType: 'photo', forceJpg: true, compressImageQuality: 0.9, multiple: true, maxFiles: MAX_STAGED_ATTACHMENTS });
+      const images = Array.isArray(picked) ? picked : [picked];
+      const room = MAX_STAGED_ATTACHMENTS - stagedAttachments.length;
+      if (room <= 0 || images.length > room) {
+        showToast('You can attach up to 10 items', 'info');
+      }
+      images.slice(0, Math.max(0, room)).forEach((image) => {
+        appendStagedAttachment({ kind: 2, file: { uri: image.path, type: image.mime, name: 'photo.jpg', width: image.width, height: image.height }, durationSeconds: 0 });
+      });
     } catch (error) {
     }
-  }, [handleSendImage]);
+  }, [stagedAttachments, appendStagedAttachment]);
 
   const handleSendVideo = useCallback(async (video) => {
     const durationSeconds = Math.max(1, Math.round((video.duration || 0) / 1000));
@@ -2255,17 +2842,12 @@ export default function ChatGroup() {
       showToast('That video is too large to send', 'info');
       return;
     }
-    const result = await sendVideo({ uri: video.path, type: video.mime, name: 'video.mp4', width: video.width, height: video.height }, durationSeconds);
-    if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone') {
-      if (result.status === 'tooLarge') {
-        showToast('That video is too large to send', 'info');
-      } else if (result.status === 'invalidMedia' || result.status === 'invalidDuration') {
-        showToast("That video can't be sent", 'info');
-      } else {
-        showToast("Couldn't send your video", 'info');
-      }
+    if (stagedAttachments.length >= MAX_STAGED_ATTACHMENTS) {
+      showToast('You can attach up to 10 items', 'info');
+      return;
     }
-  }, [sendVideo]);
+    appendStagedAttachment({ kind: 3, file: { uri: video.path, type: video.mime, name: 'video.mp4', width: video.width, height: video.height }, durationSeconds });
+  }, [stagedAttachments, appendStagedAttachment]);
 
   const handleRecordVideo = useCallback(async () => {
     setShowAttachSheet(false);
@@ -2288,6 +2870,7 @@ export default function ChatGroup() {
   const stopVoicePlayback = useCallback(async () => {
     setPlayingVoiceId(null);
     setVoicePositionMs(0);
+    setVoicePaused(false);
     if (!Sound) return;
     Sound.removePlayBackListener();
     Sound.removePlaybackEndListener();
@@ -2297,6 +2880,81 @@ export default function ChatGroup() {
     }
   }, []);
 
+  const beginVoicePlayback = useCallback(async (entry, startRatio) => {
+    await stopVoicePlayback();
+    try {
+      Sound.addPlayBackListener((event) => {
+        const bucketedPosition = Math.floor(event.currentPosition / 250) * 250;
+        setVoicePositionMs((current) => (current === bucketedPosition ? current : bucketedPosition));
+      });
+      Sound.addPlaybackEndListener(() => {
+        setPlayingVoiceId(null);
+        setVoicePositionMs(0);
+        setVoicePaused(false);
+        Sound.removePlayBackListener();
+        Sound.removePlaybackEndListener();
+      });
+      await Sound.startPlayer(baseService.getMediaUrl(entry.mediaUrl));
+      if (startRatio > 0 && typeof Sound.seekToPlayer === 'function') {
+        const targetMs = Math.round((entry.mediaDurationSeconds || 0) * 1000 * startRatio);
+        if (targetMs > 0) {
+          await Sound.seekToPlayer(targetMs);
+          setVoicePositionMs(targetMs);
+        }
+      }
+      setPlayingVoiceId(entry.id);
+      setVoicePaused(false);
+    } catch (error) {
+      await stopVoicePlayback();
+      showToast("Couldn't play that voice message", 'info');
+    }
+  }, [stopVoicePlayback]);
+
+  const handleSeekVoice = useCallback(async (entry, ratio) => {
+    if (!Sound || isRecordingRef.current) return;
+    if (playingVoiceId === entry.id && typeof Sound.seekToPlayer === 'function') {
+      const targetMs = Math.round((entry.mediaDurationSeconds || 0) * 1000 * ratio);
+      try {
+        await Sound.seekToPlayer(targetMs);
+        setVoicePositionMs(targetMs);
+      } catch (error) {
+      }
+      return;
+    }
+    await beginVoicePlayback(entry, ratio);
+  }, [playingVoiceId, beginVoicePlayback]);
+
+  const viewerItems = useMemo(() => orderedMessages
+    .filter((entry) => (entry.kind === 2 || entry.kind === 3) && !entry.isDeleted && (entry.mediaUrl || entry.localUri))
+    .map((entry) => ({ key: entry.id, kind: entry.kind, mediaUrl: entry.mediaUrl || null, localUri: entry.localUri || null })), [orderedMessages]);
+  const viewerItemsRef = useRef([]);
+  viewerItemsRef.current = viewerItems;
+  const stagedAttachmentsRef = useRef([]);
+  stagedAttachmentsRef.current = stagedAttachments;
+
+  const openViewerAt = useCallback((anchorKey, fallbackItem) => {
+    stopVoicePlayback();
+    const stagedViewerItems = stagedAttachmentsRef.current
+      .filter((item) => item.kind === 2 || item.kind === 3)
+      .map((item) => ({ key: item.stagedId, kind: item.kind, mediaUrl: null, localUri: item.file.uri }));
+    const combinedItems = [...viewerItemsRef.current, ...stagedViewerItems];
+    const index = combinedItems.findIndex((item) => item.key === anchorKey);
+    if (index === -1) {
+      if (!fallbackItem) return;
+      setViewerTarget({ items: [fallbackItem], index: 0, nonce: Date.now() });
+      return;
+    }
+    setViewerTarget({ items: combinedItems, index, nonce: Date.now() });
+  }, [stopVoicePlayback]);
+
+  const handleOpenViewer = useCallback((entry) => {
+    openViewerAt(entry.id, { key: entry.id, kind: entry.kind, mediaUrl: entry.mediaUrl || null, localUri: entry.localUri || null });
+  }, [openViewerAt]);
+
+  const handleOpenStagedPreview = useCallback((attachment) => {
+    openViewerAt(attachment.stagedId, null);
+  }, [openViewerAt]);
+
   const handleToggleVoice = useCallback(async (entry) => {
     if (!Sound) {
       showToast('Voice playback is unavailable on this build', 'info');
@@ -2304,27 +2962,29 @@ export default function ChatGroup() {
     }
     if (isRecordingRef.current) return;
     if (playingVoiceId === entry.id) {
-      await stopVoicePlayback();
+      try {
+        if (voicePaused) {
+          if (typeof Sound.resumePlayer === 'function') {
+            await Sound.resumePlayer();
+            setVoicePaused(false);
+          } else {
+            await beginVoicePlayback(entry, clampRatio((voicePositionMs / 1000) / Math.max(1, entry.mediaDurationSeconds || 1)));
+          }
+        } else {
+          if (typeof Sound.pausePlayer === 'function') {
+            await Sound.pausePlayer();
+            setVoicePaused(true);
+          } else {
+            await stopVoicePlayback();
+          }
+        }
+      } catch (error) {
+        await stopVoicePlayback();
+      }
       return;
     }
-    await stopVoicePlayback();
-    try {
-      Sound.addPlayBackListener((event) => {
-        setVoicePositionMs(event.currentPosition);
-      });
-      Sound.addPlaybackEndListener(() => {
-        setPlayingVoiceId(null);
-        setVoicePositionMs(0);
-        Sound.removePlayBackListener();
-        Sound.removePlaybackEndListener();
-      });
-      await Sound.startPlayer(baseService.getMediaUrl(entry.mediaUrl));
-      setPlayingVoiceId(entry.id);
-    } catch (error) {
-      await stopVoicePlayback();
-      showToast("Couldn't play that voice message", 'info');
-    }
-  }, [playingVoiceId, stopVoicePlayback]);
+    await beginVoicePlayback(entry, 0);
+  }, [playingVoiceId, voicePaused, voicePositionMs, stopVoicePlayback, beginVoicePlayback]);
 
   const finishRecording = useCallback(async (sendIt) => {
     if (!Sound || !isRecordingRef.current || recorderBusy) return;
@@ -2341,30 +3001,42 @@ export default function ChatGroup() {
         const file = Platform.OS === 'ios'
           ? { uri: path, type: 'audio/mp4', name: 'voice.m4a' }
           : { uri: path, type: 'audio/mp4', name: 'voice.mp4' };
-        const result = await sendVoice(file, seconds);
-        if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone') {
-          if (result.status === 'tooLarge') {
-            showToast('That voice message is too large to send', 'info');
-          } else if (result.status === 'invalidMedia' || result.status === 'invalidDuration') {
-            showToast("That recording can't be sent", 'info');
-          } else {
-            showToast("Couldn't send your voice message", 'info');
-          }
-        }
+        appendStagedAttachment({ kind: 4, file, durationSeconds: seconds });
       }
     } catch (error) {
       setIsRecording(false);
       setRecordSeconds(0);
       recordSecondsRef.current = 0;
       Sound.removeRecordBackListener();
+      try {
+        await Sound.stopRecorder();
+      } catch (finalizeError) {
+      }
     } finally {
       setRecorderBusy(false);
     }
-  }, [recorderBusy, sendVoice]);
+  }, [recorderBusy, appendStagedAttachment]);
 
   useEffect(() => {
     finishRecordingRef.current = finishRecording;
   }, [finishRecording]);
+
+  useEffect(() => {
+    if (!focused && isRecordingRef.current) {
+      finishRecordingRef.current?.(false);
+    }
+  }, [focused]);
+
+  useEffect(() => {
+    const appStateSubscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState !== 'active' && isRecordingRef.current) {
+        finishRecordingRef.current?.(false);
+      }
+    });
+    return () => {
+      appStateSubscription.remove();
+    };
+  }, []);
 
   const handleMicPress = useCallback(async () => {
     if (!Sound) {
@@ -2382,6 +3054,11 @@ export default function ChatGroup() {
         }
       }
       await stopVoicePlayback();
+      try {
+        await Sound.stopRecorder();
+      } catch (resetError) {
+      }
+      Sound.removeRecordBackListener();
       recordSecondsRef.current = 0;
       setRecordSeconds(0);
       Sound.addRecordBackListener((event) => {
@@ -2392,12 +3069,21 @@ export default function ChatGroup() {
           finishRecordingRef.current(true);
         }
       });
-      await Sound.startRecorder();
+      try {
+        await Sound.startRecorder();
+      } catch (startError) {
+        try {
+          await Sound.stopRecorder();
+        } catch (retryResetError) {
+        }
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        await Sound.startRecorder();
+      }
       isRecordingRef.current = true;
       setIsRecording(true);
     } catch (error) {
       Sound.removeRecordBackListener();
-      showToast("Couldn't start recording. Check microphone permission.", 'info');
+      showToast("Couldn't start recording. Try again in a moment.", 'info');
     } finally {
       setRecorderBusy(false);
     }
@@ -2463,28 +3149,30 @@ export default function ChatGroup() {
 
   const handleMembersPressIn = useCallback(() => {
     swallowNextCloseRef.current = true;
-    navigation.navigate('Members');
-  }, [navigation]);
+    navigation.navigate('Members', { chatGroupId, isOwner: owner });
+  }, [navigation, chatGroupId, owner]);
 
   const handleMakeChatPrivatePressIn = useCallback(async () => {
     swallowNextCloseRef.current = true;
     closeDropdown();
     try {
       await setChatGroupVisibility({ authToken, chatGroupId, isPublic: false }).unwrap();
+      refreshNow();
     } catch (error) {
       showToast("Couldn't make the chat private", 'info');
     }
-  }, [authToken, chatGroupId, setChatGroupVisibility, closeDropdown]);
+  }, [authToken, chatGroupId, setChatGroupVisibility, closeDropdown, refreshNow]);
 
   const handleMakeChatPublicPressIn = useCallback(async () => {
     swallowNextCloseRef.current = true;
     closeDropdown();
     try {
       await setChatGroupVisibility({ authToken, chatGroupId, isPublic: true }).unwrap();
+      refreshNow();
     } catch (error) {
       showToast("Couldn't make the chat public", 'info');
     }
-  }, [authToken, chatGroupId, setChatGroupVisibility, closeDropdown]);
+  }, [authToken, chatGroupId, setChatGroupVisibility, closeDropdown, refreshNow]);
 
   const handleDeleteChatPressIn = useCallback(() => {
     swallowNextCloseRef.current = true;
@@ -2519,8 +3207,9 @@ export default function ChatGroup() {
   const rootStyle = {
     ...styles.root,
     paddingTop: statusBarHeight,
-    paddingBottom: bottomSafeHeight
+    paddingBottom: 0
   };
+  const listBottomInset = composerBarHeight + (keyboardVisible ? keyboardHeightState + scaleHeight(6) : bottomSafeHeight);
 
   const renderedMembers = useMemo(() => {
     const memberNames = activeMemberEntries.map((member) => member.name || member.username || 'Member');
@@ -2532,11 +3221,11 @@ export default function ChatGroup() {
       elements.push(
         <CustomText
           key="you-and-member"
-          style={[styles.membersTxt, styles.lightMembersColor]}
+          style={[styles.membersTxt, styles.lightMembersColor, styles.memberNameShrink]}
           numberOfLines={1}
           ellipsizeMode="tail"
         >
-          {memberNames[0].slice(0, 6)}
+          {memberNames[0].length > 6 ? memberNames[0].slice(0, 6) + '\u2026' : memberNames[0]}
         </CustomText>
       );
     } else {
@@ -2546,11 +3235,11 @@ export default function ChatGroup() {
         elements.push(
           <CustomText
             key={`member-${index}`}
-            style={[styles.membersTxt, styles.lightMembersColor]}
+            style={[styles.membersTxt, styles.lightMembersColor, styles.memberNameShrink]}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {member.slice(0, 6)}
+            {member.length > 6 ? member.slice(0, 6) + '\u2026' : member}
           </CustomText>
         );
         if (index < displayedMembers.length - 1) {
@@ -2586,7 +3275,7 @@ export default function ChatGroup() {
       }
     }
     return elements;
-  }, [activeMemberEntries, styles.membersTxt, styles.lightMembersColor, styles.blackMembersColor]);
+  }, [activeMemberEntries, styles.membersTxt, styles.lightMembersColor, styles.blackMembersColor, styles.memberNameShrink]);
 
   const typingMembersText = useMemo(() => {
     if (typingUserIds.length === 0) return '';
@@ -2612,37 +3301,9 @@ export default function ChatGroup() {
 
   return (
     <>
-        <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={statusBarHeight}
-        >
+        <View style={{ flex: 1 }}>
             <View style={rootStyle} onTouchEndCapture={handleRootTouchEndCapture}>
                 <View style={styles.topNav}>
-                {cameFromLogin ? (
-                        <View style={styles.profileAndLogin}>
-                        <CustomText style={styles.welcomeBackTxt}>Welcome Back!</CustomText>
-                        <View>
-                            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-                            <Image source={Image1} style={styles.profileImage} fadeDuration={0} />
-                            </TouchableOpacity>
-                        </View>
-                        </View>
-                ) : (
-                        <View style={[styles.profileAndLogin, styles.loginBg]}>
-                        <View>
-                            <CustomText style={styles.unlockAllFeaturesTxt}>Login to unlock all features!</CustomText>
-                        </View>
-                        <View style={styles.loginView}>
-                            <TouchableOpacity
-                            style={styles.loginBtn}
-                            onPressIn={handleLoginPressIn}
-                            >
-                            <CustomText style={styles.loginBtnTxt}>Login</CustomText>
-                            </TouchableOpacity>
-                        </View>
-                        </View>
-                )}
                 <View style={styles.chatHeaderRow}>
                     <View style={styles.backArrowAndChatNameRow}>
                         <View>
@@ -2653,12 +3314,12 @@ export default function ChatGroup() {
                                 <BackArrow {...styles.largeIcons}/>
                             </TouchableOpacity>
                         </View>
-                        <View style={styles.chatNameAndMembers}>
+                        <TouchableOpacity style={styles.chatNameAndMembers} onPress={handleChatNamePress}>
                             <CustomText style={styles.chatNameTxt} numberOfLines={1} ellipsizeMode="tail">{chatName}</CustomText>
                             <View style={styles.membersRow}>
                             {renderedMembers}
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     </View>
                     <View style={styles.privacyLabelAndEllipsisRow}>
                         <View style={[styles.privacyLabel, isPublic ? styles.publicBackgroundColor : styles.privateBackgroundColor]}>
@@ -2702,6 +3363,11 @@ export default function ChatGroup() {
                             ItemSeparatorComponent={ChatMessageSeparator}
                             showsVerticalScrollIndicator={false}
                             stickySectionHeadersEnabled={false}
+                            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+                            contentContainerStyle={{ paddingBottom: listBottomInset + scaleHeight(10) }}
+                            onScroll={handleListScroll}
+                            onContentSizeChange={handleListContentSizeChange}
+                            scrollEventThrottle={100}
                             onScrollToIndexFailed={() => {}}
                             onStartReached={hasOlder ? loadOlder : undefined}
                             onStartReachedThreshold={0.2}
@@ -2711,53 +3377,15 @@ export default function ChatGroup() {
                             ) : null}
                         />
                     )}
-                    {typingMembersText !== '' && (
-                        <View style={styles.peopleTyping}>
-                            <CustomText style={styles.peopleTypingTxt} numberOfLines={1} ellipsizeMode="tail">
-                                {typingMembersText}
+                    {unseenCount > 0 && (
+                        <TouchableOpacity
+                            style={[styles.scrollToBottomPill, { bottom: listBottomInset + scaleHeight(8) }]}
+                            onPress={() => { setUnseenCount(0); scrollToBottom(true); }}
+                        >
+                            <CustomText style={styles.scrollToBottomPillTxt}>
+                                {(unseenCount > 99 ? '99+' : String(unseenCount)) + ' new ' + (unseenCount === 1 ? 'message' : 'messages')}
                             </CustomText>
-                        </View>
-                    )}
-                    {showRequestToJoin && (
-                    <Pressable style={styles.requestToJoin}>
-                        <View style={styles.requestToJoinRow}>
-                            <View style={styles.requestToJoinImageAndNames}>
-                                <Avatar
-                                    uri={firstPendingMember.profilePhotoUrl}
-                                    color={firstPendingMember.avatarColor}
-                                    initial={firstPendingMember.name ? firstPendingMember.name.charAt(0).toUpperCase() : '?'}
-                                    style={styles.requestToJoinProfilePicture}
-                                    initialStyle={styles.avatarInitialTxt}
-                                />
-                                <View>
-                                    <CustomText
-                                        style={styles.requestToJoinNameTxt}
-                                        numberOfLines={1}
-                                        ellipsizeMode="tail"
-                                    >{firstPendingMember.name}</CustomText>
-                                    <CustomText
-                                        style={styles.requestToJoinusernameTxt}
-                                        numberOfLines={1}
-                                        ellipsizeMode="tail"
-                                    >@{firstPendingMember.username}</CustomText>
-                                </View>
-                            </View>
-                            <View style={styles.requestToJoinOptions}>
-                                <TouchableOpacity
-                                    style={styles.requestToJoinAcceptBtn}
-                                    onPress={handleAcceptRequest}
-                                >
-                                    <CustomText style={styles.requestToJoinAcceptTxt}>Accept</CustomText>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={styles.requestToJoinXBtn}
-                                    onPress={handleDeclineRequest}
-                                >
-                                    <XIcon {...styles.xIcon}/>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </Pressable>
+                        </TouchableOpacity>
                     )}
                     {isActive && (
                         <Pressable
@@ -2775,19 +3403,15 @@ export default function ChatGroup() {
                                     <EditIcon {...styles.dropdownIcons} />
                                 </TouchableOpacity>
                             )}
-                            {owner &&
-                                (
-                                    <TouchableOpacity
-                                        onPressIn={handleMembersPressIn}
-                                        onPressOut={closeDropdown}
-                                        style={[styles.chatGroupDropdownOptions, styles.chatGroupDropdownOptionsBorderBottom]}
-                                    >
-                                        <CustomText style={styles.dropdownBlackTxt}>Members</CustomText>
-                                        <MembersIcon {...styles.dropdownIcons} />
-                                        {pendingMemberEntries.length > 0 && <PendingMembersCircle {...styles.pendingMembersCircle} />}
-                                    </TouchableOpacity>
-                                )
-                            }
+                            <TouchableOpacity
+                                onPressIn={handleMembersPressIn}
+                                onPressOut={closeDropdown}
+                                style={[styles.chatGroupDropdownOptions, styles.chatGroupDropdownOptionsBorderBottom]}
+                            >
+                                <CustomText style={styles.dropdownBlackTxt}>Members</CustomText>
+                                <MembersIcon {...styles.dropdownIcons} />
+                                {pendingMemberEntries.length > 0 && <PendingMembersCircle {...styles.pendingMembersCircle} />}
+                            </TouchableOpacity>
                             {owner && isPublic &&
                                 (
                                     <TouchableOpacity
@@ -2835,8 +3459,11 @@ export default function ChatGroup() {
                         </Pressable>
                     )}
                 </View>
+<View style={styles.composerOverlay} pointerEvents="box-none">
+<View pointerEvents="none" style={styles.composerBackdrop} />
 <Pressable
     style={styles.textBoxContainer}
+    onLayout={(event) => setComposerBarHeight(event.nativeEvent.layout.height)}
     onPress={() => {
         if (isInputFocused) {
             Keyboard.dismiss();
@@ -2845,6 +3472,83 @@ export default function ChatGroup() {
         }
     }}
 >
+    {showRequestToJoin && (
+    <Pressable style={styles.requestToJoin}>
+        <View style={styles.requestToJoinRow}>
+            <View style={styles.requestToJoinImageAndNames}>
+                <Avatar
+                    uri={firstPendingMember.profilePhotoUrl}
+                    color={firstPendingMember.avatarColor}
+                    initial={firstPendingMember.name ? firstPendingMember.name.charAt(0).toUpperCase() : '?'}
+                    style={styles.requestToJoinProfilePicture}
+                    initialStyle={styles.avatarInitialTxt}
+                />
+                <View>
+                    <CustomText
+                        style={styles.requestToJoinNameTxt}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                    >{firstPendingMember.name}</CustomText>
+                    <CustomText
+                        style={styles.requestToJoinusernameTxt}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                    >@{firstPendingMember.username}</CustomText>
+                </View>
+            </View>
+            <View style={styles.requestToJoinOptions}>
+                <TouchableOpacity
+                    style={styles.requestToJoinAcceptBtn}
+                    onPress={handleAcceptRequest}
+                >
+                    <CustomText style={styles.requestToJoinAcceptTxt}>Accept</CustomText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.requestToJoinXBtn}
+                    onPress={handleDeclineRequest}
+                >
+                    <XIcon {...styles.xIcon}/>
+                </TouchableOpacity>
+            </View>
+        </View>
+    </Pressable>
+    )}
+    {typingMembersText !== '' && (
+        <View style={styles.peopleTyping}>
+            <CustomText style={styles.peopleTypingTxt} numberOfLines={1} ellipsizeMode="tail">
+                {typingMembersText}
+            </CustomText>
+        </View>
+    )}
+    {stagedAttachments.length > 0 && !isRecording && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stagedAttachmentBar} contentContainerStyle={styles.stagedAttachmentBarContent} keyboardShouldPersistTaps="handled">
+            {stagedAttachments.map((attachment) => (
+                <View key={attachment.stagedId} style={styles.stagedItem}>
+                    {attachment.kind === 2 ? (
+                        <TouchableOpacity activeOpacity={0.85} onPress={() => handleOpenStagedPreview(attachment)}>
+                            <Image source={{ uri: attachment.file.uri }} style={styles.stagedThumb} fadeDuration={0} />
+                        </TouchableOpacity>
+                    ) : attachment.kind === 3 ? (
+                        <TouchableOpacity style={styles.stagedThumb} activeOpacity={0.85} onPress={() => handleOpenStagedPreview(attachment)}>
+                            {Video ? (
+                                <Video source={{ uri: attachment.file.uri }} style={styles.stagedThumbFill} paused muted resizeMode="cover" onError={() => {}} />
+                            ) : null}
+                            <View style={styles.stagedThumbScrim} />
+                            <PlayGlyph size={scaleWidth(16)} color={White} />
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={styles.stagedVoiceChip}>
+                            <PlayGlyph size={scaleWidth(12)} color={Black} />
+                            <CustomText style={styles.stagedVoiceTxt}>{formatDuration(attachment.durationSeconds)}</CustomText>
+                        </View>
+                    )}
+                    <TouchableOpacity style={styles.stagedRemoveBtn} onPress={() => handleRemoveStaged(attachment.stagedId)}>
+                        <CustomText style={styles.stagedRemoveTxt}>{'\u00D7'}</CustomText>
+                    </TouchableOpacity>
+                </View>
+            ))}
+        </ScrollView>
+    )}
     {isRecording ? (
         <View style={styles.recordingBar}>
             <TouchableOpacity style={styles.recordingCancelBtn} onPress={() => finishRecording(false)} disabled={recorderBusy}>
@@ -2859,11 +3563,11 @@ export default function ChatGroup() {
             </TouchableOpacity>
         </View>
     ) : (
-    <View style={styles.inputRow}>
+    <View style={styles.inputRow} {...composerPanResponder.panHandlers}>
         <View style={styles.inputView}>
             <CustomTextInput
                 ref={inputRef}
-                style={styles.input}
+                style={[styles.input, composerInputHeight != null && { height: composerInputHeight }]}
                 keyboardType="default"
                 autoCapitalize="sentences"
                 autoCorrect={false}
@@ -2872,9 +3576,8 @@ export default function ChatGroup() {
                 maxLength={MAX_MESSAGE_LENGTH}
                 placeholderTextColor="rgba(35, 35, 35, 0.50)"
                 placeholder="Message"
-                returnKeyType="done"
-                onSubmitEditing={handleSend}
-                blurOnSubmit
+                multiline
+                onContentSizeChange={handleComposerContentSizeChange}
                 onFocus={() => setIsInputFocused(true)}
                 onBlur={() => setIsInputFocused(false)}
             />
@@ -2884,7 +3587,7 @@ export default function ChatGroup() {
                 <PlusIcon {...styles.largeIcons}/>
             </TouchableOpacity>
         </View>
-        {!chatText.trim() ?
+        {!chatText.trim() && stagedAttachments.length === 0 ?
             (
                 <View style={[styles.microphoneAndSendView, styles.textBoxBtnViews]}>
                     <TouchableOpacity style={styles.textBoxBtns} onPress={handleMicPress}>
@@ -2925,8 +3628,27 @@ export default function ChatGroup() {
                         </Pressable>
                     </Pressable>
                 )}
+<Animated.View style={{ height: keyboardSpacerAnim }} />
+</View>
             </View>
-        </KeyboardAvoidingView>
+        </View>
+      {!!failedTarget && (
+      <Modal visible transparent animationType="fade" onRequestClose={() => setFailedTarget(null)}>
+        <Pressable style={styles.actionSheetOverlay} onPress={() => setFailedTarget(null)}>
+          <Pressable style={styles.actionSheetCard} onPress={() => {}}>
+            <TouchableOpacity style={styles.actionSheetOption} onPress={handleRetryFailed}>
+              <CustomText style={styles.actionSheetBlackTxt}>Try Again</CustomText>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionSheetOption, styles.actionSheetOptionBorderTop]} onPress={handleDeleteFailed}>
+              <CustomText style={styles.actionSheetRedTxt}>Delete Message</CustomText>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionSheetOption, styles.actionSheetOptionBorderTop]} onPress={() => setFailedTarget(null)}>
+              <CustomText style={styles.actionSheetBlackTxt}>Cancel</CustomText>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+      )}
       {!!actionTarget && (
       <Modal visible transparent animationType="fade" onRequestClose={closeMessageActions}>
         <Pressable style={styles.actionSheetOverlay} onPress={closeMessageActions}>
@@ -2981,6 +3703,18 @@ export default function ChatGroup() {
         onCancel={() => setReportTarget(null)}
       />
       )}
+      <MediaViewerModal
+        visible={!!viewerTarget}
+        items={viewerTarget ? viewerTarget.items : null}
+        initialIndex={viewerTarget ? viewerTarget.index : 0}
+        sessionKey={viewerTarget ? viewerTarget.nonce : 0}
+        onClose={() => { setViewerTarget(null); }}
+      />
+      <ViewChatNameModal
+        visible={showViewChatNameModal}
+        chatName={chatName}
+        onClose={() => { setShowViewChatNameModal(false); }}
+      />
       <EditChatNameModal
         visible={showEditChatNameModal}
         initialName={chatName}

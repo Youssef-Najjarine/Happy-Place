@@ -1,0 +1,1336 @@
+
+===== HappyPlace/App.jsx =====
+import React from 'react';
+import { StatusBar, useColorScheme } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Provider } from 'react-redux';
+import store from 'store';
+import navigationRef from 'src/services/navigationService';
+import usePushNotifications from 'src/hooks/usePushNotifications';
+import useUserHydration from 'src/hooks/useUserHydration';
+import ErrorBoundary from 'components/ErrorBoundary';
+import LoadingModal from 'components/LoadingModal';
+import ToastHost from 'src/components/Toast';
+import BottomTabBar from 'src/components/BottomTabBar';
+import Home from 'screens/Home';
+import Help from 'screens/Help';
+import ChatGroups from 'screens/ChatGroups';
+import ChatGroup from 'screens/ChatGroup';
+import CreateAccount from 'screens/CreateAccount';
+import FinishAccount from 'screens/FinishAccount';
+import VerifyCode from 'screens/VerifyCode';
+import AccountVerified from 'screens/AccountVerified';
+import LoginOptions from 'screens/LoginOptions';
+import Login from 'screens/Login';
+import ForgotPassword from 'screens/ForgotPassword';
+import SetupPassword from 'screens/SetupPassword';
+import PasswordReset from 'screens/PasswordReset';
+import Profile from 'screens/Profile';
+import EditProfile from 'screens/EditProfile';
+import AddNewEmailOrPhone from 'screens/AddNewEmailOrPhone';
+import EditEmailOrPhone from 'screens/EditEmailOrPhone';
+import Friends from 'screens/Friends';
+import AddFriends from 'screens/AddFriends';
+import BlockedUsers from 'screens/BlockedUsers';
+import Members from 'screens/Members';
+import TermsAndPrivacyInformation from 'screens/TermsAndPrivacyInformation';
+
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+function PushNotificationsManager() {
+  usePushNotifications();
+  return null;
+}
+
+function UserHydrationManager() {
+  useUserHydration();
+  return null;
+}
+
+function MainTabs() {
+  return (
+    <Tab.Navigator initialRouteName="ChatGroups" backBehavior="initialRoute" screenOptions={{ headerShown: false }} tabBar={(tabBarProps) => <BottomTabBar {...tabBarProps} />}>
+      <Tab.Screen name="Help" component={Help} options={{ tabBarLabel: 'Help' }} />
+      <Tab.Screen name="ChatGroups" component={ChatGroups} options={{ tabBarLabel: 'Chats' }} />
+      <Tab.Screen name="MyFriends" component={Friends} options={{ tabBarLabel: 'Friends' }} />
+      <Tab.Screen name="MyProfile" component={Profile} options={{ tabBarLabel: 'Profile' }} />
+    </Tab.Navigator>
+  );
+}
+
+const App = () => {
+  const isDarkMode = useColorScheme() === 'dark';
+
+  return (
+    <Provider store={store}>
+      <SafeAreaProvider>
+        <ErrorBoundary>
+          <NavigationContainer ref={navigationRef}>
+            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+            <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
+              <Stack.Screen
+                name="Home"
+                component={Home}
+                options={{
+                  animation: 'slide_from_right',
+                }}
+              />
+              <Stack.Screen name="CreateAccount" component={CreateAccount} />
+              <Stack.Screen name="FinishAccount" component={FinishAccount} />
+              <Stack.Screen name="VerifyCode" component={VerifyCode} />
+              <Stack.Screen name="AccountVerified" component={AccountVerified} />
+              <Stack.Screen name="MainTabs" component={MainTabs} />
+              <Stack.Screen name="ChatGroup" component={ChatGroup} />
+              <Stack.Screen name="LoginOptions" component={LoginOptions} />
+              <Stack.Screen name="Login" component={Login} />
+              <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+              <Stack.Screen name="SetupPassword" component={SetupPassword} />
+              <Stack.Screen name="PasswordReset" component={PasswordReset} />
+              <Stack.Screen name="Profile" component={Profile} />
+              <Stack.Screen name="EditProfile" component={EditProfile} />
+              <Stack.Screen name="AddNewEmailOrPhone" component={AddNewEmailOrPhone} />
+              <Stack.Screen name="EditEmailOrPhone" component={EditEmailOrPhone} />
+              <Stack.Screen name="Friends" component={Friends} />
+              <Stack.Screen name="AddFriends" component={AddFriends} />
+              <Stack.Screen name="BlockedUsers" component={BlockedUsers} />
+              <Stack.Screen name="Members" component={Members} />
+              <Stack.Screen name="TermsAndPrivacyInformation" component={TermsAndPrivacyInformation} />
+            </Stack.Navigator>
+            <LoadingModal />
+          </NavigationContainer>
+          <PushNotificationsManager />
+          <UserHydrationManager />
+          <ToastHost />
+        </ErrorBoundary>
+      </SafeAreaProvider>
+    </Provider>
+  );
+};
+
+export default App;
+===== HappyPlace/src/components/BottomTabBar.jsx =====
+import React from 'react';
+import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { useSelector } from 'react-redux';
+import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
+import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
+import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
+import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
+import CustomText from 'src/components/FontFamilyText';
+import Avatar from 'src/components/Avatar';
+import { HappyColor, White, Black, Graphite, LightGray } from 'src/constants/colors';
+import HelpTabIcon from 'assets/images/tabBar/help-tab-icon.svg';
+import ChatsTabIcon from 'assets/images/tabBar/chats-tab-icon.svg';
+import FriendsTabIcon from 'assets/images/tabBar/friends-tab-icon.svg';
+import ProfileTabIcon from 'assets/images/tabBar/profile-tab-icon.svg';
+
+const tabIcons = {
+  Help: HelpTabIcon,
+  ChatGroups: ChatsTabIcon,
+  MyFriends: FriendsTabIcon,
+  MyProfile: ProfileTabIcon
+};
+
+const phoneStyles = StyleSheet.create({
+  bar: {
+    flexDirection: 'row',
+    backgroundColor: White,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: LightGray,
+    ...Platform.select({
+      ios: {
+        shadowColor: Black,
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8
+      },
+      android: {
+        elevation: 8
+      }
+    })
+  },
+  tabItem: {
+    flex: 1,
+    gap: scaleHeight(4),
+    paddingTop: scaleHeight(8),
+    paddingBottom: scaleHeight(8),
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  tabIcon: {
+    width: scaleWidth(24),
+    height: scaleHeight(24)
+  },
+  iconSlot: {
+    height: scaleHeight(28),
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  tabAvatarRing: {
+    width: scaleWidth(28),
+    height: scaleHeight(28),
+    borderRadius: scaleWidth(99),
+    borderWidth: scaleWidth(1.5),
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  tabAvatar: {
+    width: scaleWidth(24),
+    height: scaleHeight(24),
+    borderRadius: scaleWidth(99)
+  },
+  tabAvatarInitial: {
+    fontSize: scaleFont(12),
+    fontWeight: 700,
+    color: White
+  },
+  tabLabel: {
+    fontSize: scaleFont(11),
+    lineHeight: scaleLineHeight(13),
+    letterSpacing: scaleLetterSpacing(-0.11),
+    fontWeight: 600
+  }
+});
+
+const tabletStyles = StyleSheet.create({
+  bar: {
+    flexDirection: 'row',
+    backgroundColor: White,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: LightGray,
+    ...Platform.select({
+      ios: {
+        shadowColor: Black,
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8
+      },
+      android: {
+        elevation: 8
+      }
+    })
+  },
+  tabItem: {
+    flex: 1,
+    gap: scaleHeight(5),
+    paddingTop: scaleHeight(10),
+    paddingBottom: scaleHeight(10),
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  tabIcon: {
+    width: scaleWidth(28),
+    height: scaleHeight(28)
+  },
+  iconSlot: {
+    height: scaleHeight(32),
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  tabAvatarRing: {
+    width: scaleWidth(32),
+    height: scaleHeight(32),
+    borderRadius: scaleWidth(99),
+    borderWidth: scaleWidth(1.5),
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  tabAvatar: {
+    width: scaleWidth(28),
+    height: scaleHeight(28),
+    borderRadius: scaleWidth(99)
+  },
+  tabAvatarInitial: {
+    fontSize: scaleFont(14),
+    fontWeight: 700,
+    color: White
+  },
+  tabLabel: {
+    fontSize: scaleFont(13),
+    lineHeight: scaleLineHeight(16),
+    letterSpacing: scaleLetterSpacing(-0.13),
+    fontWeight: 600
+  }
+});
+
+export default function BottomTabBar({ state, descriptors, navigation }) {
+  const { bottomSafeHeight } = useSafeAreaPadding();
+  const styles = useResponsiveStyles(phoneStyles, tabletStyles);
+  const user = useSelector((storeState) => storeState.user);
+
+  const handleTabPress = (route, isFocused) => {
+    if (user.isAnonymous && (route.name === 'MyProfile' || route.name === 'MyFriends')) {
+      navigation.navigate('FinishAccount');
+      return;
+    }
+    const pressEvent = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+    if (!isFocused && !pressEvent.defaultPrevented) {
+      navigation.navigate(route.name, route.params);
+    }
+  };
+
+  const handleTabLongPress = (route) => {
+    navigation.emit({ type: 'tabLongPress', target: route.key });
+  };
+
+  return (
+    <View style={[styles.bar, { paddingBottom: bottomSafeHeight }]}>
+      {state.routes.map((route, routeIndex) => {
+        const isFocused = state.index === routeIndex;
+        const { options } = descriptors[route.key];
+        const label = options.tabBarLabel || route.name;
+        const TabIcon = tabIcons[route.name];
+        const tintColor = isFocused ? HappyColor : Graphite;
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            style={styles.tabItem}
+            onPress={() => handleTabPress(route, isFocused)}
+            onLongPress={() => handleTabLongPress(route)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isFocused }}
+            accessibilityLabel={label}
+          >
+            <View style={styles.iconSlot}>
+              {route.name === 'MyProfile' && user.isLoggedIn ? (
+                <View style={[styles.tabAvatarRing, { borderColor: isFocused ? HappyColor : 'transparent' }]}>
+                  <Avatar
+                    uri={user.profilePhotoUrl}
+                    color={user.avatarColor}
+                    initial={user.displayName ? user.displayName[0].toUpperCase() : '?'}
+                    style={styles.tabAvatar}
+                    initialStyle={styles.tabAvatarInitial}
+                  />
+                </View>
+              ) : (
+                TabIcon && <TabIcon {...styles.tabIcon} color={tintColor} />
+              )}
+            </View>
+            <CustomText style={[styles.tabLabel, { color: tintColor }]}>{label}</CustomText>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+===== HappyPlace/src/hooks/useAutoSignIn.js =====
+import { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { setUser } from 'store/userSlice';
+import tokenStorage from 'services/tokenStorage';
+import authenticationService from 'services/authenticationService';
+import pendingInvite from 'services/pendingInvite';
+import pendingNotificationRoute from 'services/pendingNotificationRoute';
+const VALIDATION_TIMEOUT_MS = 8000;
+export default function useAutoSignIn(navigation) {
+    const dispatch = useDispatch();
+    const [isCheckingToken, setIsCheckingToken] = useState(true);
+    useEffect(() => {
+        let settled = false;
+        let timeoutId = null;
+        const finishToHome = () => {
+            if (settled) return;
+            settled = true;
+            if (timeoutId) clearTimeout(timeoutId);
+            setIsCheckingToken(false);
+        };
+        const checkStoredToken = async () => {
+            try {
+                const storedToken = await tokenStorage.getToken();
+                if (!storedToken) {
+                    finishToHome();
+                    return;
+                }
+                const response = await authenticationService.validateToken(storedToken);
+                if (settled) return;
+                if (response.ok) {
+                    const profileData = await response.json();
+                    if (settled) return;
+                    settled = true;
+                    if (timeoutId) clearTimeout(timeoutId);
+                    dispatch(setUser(profileData));
+                    const hasPendingInvite = pendingInvite.peek() || pendingInvite.wasHandled();
+                    const hasPendingNotificationRoute = pendingNotificationRoute.peek() || pendingNotificationRoute.wasHandled();
+                    if (!hasPendingInvite && !hasPendingNotificationRoute) {
+                        navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
+                        return;
+                    }
+                    setIsCheckingToken(false);
+                    return;
+                }
+                if (response.status === 401) {
+                    await tokenStorage.clearToken();
+                }
+                finishToHome();
+            } catch {
+                if (settled) return;
+                finishToHome();
+            }
+        };
+        timeoutId = setTimeout(finishToHome, VALIDATION_TIMEOUT_MS);
+        checkStoredToken();
+        return () => {
+            settled = true;
+            if (timeoutId) clearTimeout(timeoutId);
+        };
+    }, [navigation, dispatch]);
+    return isCheckingToken;
+}
+===== HappyPlace/src/hooks/useUserHydration.js =====
+import { useEffect, useRef } from 'react';
+import { useDispatch } from 'react-redux';
+import { setUser, clearUser } from 'store/userSlice';
+import tokenStorage from 'services/tokenStorage';
+import authenticationService from 'services/authenticationService';
+
+export default function useUserHydration() {
+    const dispatch = useDispatch();
+    const hydrationSeqRef = useRef(0);
+
+    useEffect(() => {
+        const unsubscribe = tokenStorage.subscribe((authToken) => {
+            const seq = hydrationSeqRef.current + 1;
+            hydrationSeqRef.current = seq;
+            if (!authToken) {
+                dispatch(clearUser());
+                return;
+            }
+            const hydrate = async () => {
+                try {
+                    const response = await authenticationService.validateToken(authToken);
+                    if (hydrationSeqRef.current !== seq) return;
+                    if (!response.ok) {
+                        dispatch(clearUser());
+                        return;
+                    }
+                    const profileData = await response.json();
+                    if (hydrationSeqRef.current !== seq) return;
+                    dispatch(setUser(profileData));
+                } catch {
+                }
+            };
+            hydrate();
+        });
+        return unsubscribe;
+    }, [dispatch]);
+}
+===== HappyPlace/src/screens/Home.jsx =====
+import React from 'react';
+import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
+import { HappyColor, White, Black } from 'src/constants/colors';
+import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
+import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
+import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
+import { useNavigation } from '@react-navigation/native';
+import useAutoSignIn from 'src/hooks/useAutoSignIn';
+import CustomText from 'src/components/FontFamilyText';
+import AccountLoading from 'src/components/AccountLoading';
+import Logo from 'assets/images/global/logo.png';
+import HappyEmoji from 'assets/images/global/happy-emoji.svg';
+import SadEmoji from 'assets/images/global/sad-emoji.svg';
+
+const phoneStyles = StyleSheet.create({
+  root: {
+    backgroundColor: HappyColor,
+    height: '100%',
+    width: '100%'
+  },
+  topSection: {
+    height: '34.5%',
+    width: '100%'
+  },
+  logoBox: {
+    height: '100%',
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  logoImg: {
+    width: scaleWidth(188),
+    height: scaleHeight(188),
+    resizeMode: 'contain'
+  },
+  card: {
+    height: '65.5%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: scaleHeight(24),
+    backgroundColor: White,
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  header: {
+    height: scaleHeight(73),
+    justifyContent: 'space-between'
+  },
+  helpButtons: {
+    height: scaleHeight(168),
+    width: scaleWidth(311),
+    justifyContent: 'space-between'
+  },
+  signUpLogIn: {
+    width: scaleWidth(271),
+    height: scaleHeight(92),
+    justifyContent: 'space-between'
+  },
+  heading: {
+    fontSize: scaleFont(32),
+    lineHeight: scaleLineHeight(38.4),
+    letterSpacing: scaleLetterSpacing(-0.32),
+    color: HappyColor,
+    fontWeight: 800
+  },
+  subhead: {
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    color: Black,
+    textAlign: 'center',
+    fontWeight: 600
+  },
+  helpMeBtn: {
+    gap: scaleWidth(10),
+    borderWidth: scaleWidth(1.5),
+    borderRadius: scaleWidth(99),
+    height: scaleHeight(76),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderColor: Black,
+    backgroundColor: White
+  },
+  emojis: {
+    width: scaleWidth(32),
+    height: scaleHeight(32),
+    resizeMode: 'contain'
+  },
+  helpMeBtnText: {
+    fontSize: scaleFont(24),
+    lineHeight: scaleLineHeight(36),
+    letterSpacing: scaleLetterSpacing(-0.48),
+    color: Black,
+    fontWeight: 700
+  },
+  iCanHelpBtn: {
+    gap: scaleWidth(10),
+    borderWidth: scaleWidth(0),
+    borderRadius: scaleWidth(99),
+    height: scaleHeight(76),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: HappyColor
+  },
+  iCanHelpBtnText: {
+    fontSize: scaleFont(24),
+    lineHeight: scaleLineHeight(36),
+    letterSpacing: scaleLetterSpacing(-0.48),
+    color: White,
+    fontWeight: 700,
+  },
+  signUp: {
+    height: scaleHeight(31),
+    width: '100%',
+    alignItems: 'center'
+  },
+  signUpBtn: {
+    width: scaleWidth(112),
+    borderRadius: scaleWidth(99),
+    backgroundColor: Black,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  signUpBtnText: {
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    color: White,
+    fontWeight: 800
+  },
+  divider: {
+    gap: scaleWidth(8),
+    height: scaleHeight(21),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  line: {
+    width: scaleWidth(121),
+    height: scaleHeight(1),
+    backgroundColor: Black,
+    opacity: 0.6
+  },
+  or: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    color: Black,
+    fontWeight: 600,
+    opacity: 0.8
+  },
+  alreadyHaveAccount: {
+    height: scaleHeight(24),
+    gap: scaleWidth(5),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  loginText: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    color: Black,
+    fontWeight: 600
+  },
+  loginLink: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    color: HappyColor,
+    fontWeight: 600
+  }
+});
+
+const tabletStyles = StyleSheet.create({
+  root: {
+    backgroundColor: HappyColor,
+    height: '100%',
+    width: '100%'
+  },
+  topSection: {
+    height: '35.4%',
+    width: '100%'
+  },
+  logoBox: {
+    height: '100%',
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  logoImg: {
+    width: scaleWidth(252.17),
+    height: scaleHeight(252.17),
+    resizeMode: 'contain'
+  },
+  card: {
+    paddingTop: scaleHeight(32),
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    height: '64.6%',
+    backgroundColor: White,
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  header: {
+    height: scaleHeight(91.73),
+    justifyContent: 'space-between'
+  },
+  helpButtons: {
+    width: scaleWidth(696),
+    height: scaleHeight(224.76668),
+    justifyContent: 'space-between'
+  },
+  signUpLogIn: {
+    width: scaleWidth(584),
+    height: scaleHeight(103.09533),
+    justifyContent: 'space-between'
+  },
+  heading: {
+    fontSize: scaleFont(40),
+    lineHeight: scaleLineHeight(48),
+    letterSpacing: scaleLetterSpacing(-0.4),
+    color: HappyColor,
+    fontWeight: 800
+  },
+  subhead: {
+    fontSize: scaleFont(22),
+    lineHeight: scaleLineHeight(33),
+    letterSpacing: scaleLetterSpacing(-0.22),
+    color: Black,
+    textAlign: 'center',
+    fontWeight: 500
+  },
+  helpMeBtn: {
+    height: scaleHeight(101.65334),
+    gap: scaleWidth(13.41),
+    borderWidth: scaleWidth(2.012),
+    borderRadius: scaleWidth(132.792),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderColor: Black,
+    backgroundColor: White
+  },
+  emojis: {
+    width: scaleWidth(42.92267,696),
+    height: scaleHeight(42.92267),
+    resizeMode: 'contain'
+  },
+  helpMeBtnText: {
+    fontSize: scaleFont(32),
+    lineHeight: scaleLineHeight(48),
+    letterSpacing: scaleLetterSpacing(-0.64),
+    color: Black,
+    fontWeight: 700
+  },
+  iCanHelpBtn: {
+    height: scaleHeight(101.65334),
+    gap: scaleWidth(13.41),
+    borderRadius: scaleWidth(132.792),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 0,
+    backgroundColor: HappyColor
+  },
+  iCanHelpBtnText: {
+    fontSize: scaleFont(32),
+    lineHeight: scaleLineHeight(48),
+    letterSpacing: scaleLetterSpacing(-0.64),
+    color: White,
+    fontWeight: 700
+  },
+  signUp: {
+    height: scaleHeight(38.6533),
+    width: '100%',
+    alignItems: 'center'
+  },
+  signUpBtn: {
+    width: scaleWidth(142.384),
+    borderRadius: scaleWidth(132.792),
+    backgroundColor: Black,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  signUpBtnText: {
+    fontSize: scaleFont(22),
+    lineHeight: scaleLineHeight(33),
+    letterSpacing: scaleLetterSpacing(-0.22),
+    color: White,
+    fontWeight: 800
+  },
+  divider: {
+    gap: scaleWidth(10.73),
+    height: scaleHeight(24),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  line: {
+    width: scaleWidth(273.6935),
+    height: scaleHeight(1.341),
+    backgroundColor: Black,
+    opacity: 0.6
+  },
+  or: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    color: Black,
+    fontWeight: 600,
+    opacity: 0.8
+  },
+  alreadyHaveAccount: {
+    height: scaleHeight(30),
+    gap: scaleWidth(5),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  loginText: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    color: Black,
+    fontWeight: 600
+  },
+  loginLink: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    color: HappyColor,
+    fontWeight: 600
+  }
+});
+
+export default function Home() {
+  const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
+  const styles = useResponsiveStyles(phoneStyles, tabletStyles);
+  const navigation = useNavigation();
+  const isCheckingToken = useAutoSignIn(navigation);
+
+  if (isCheckingToken) {
+    return <AccountLoading />;
+  }
+
+  const handleHelpMe = () => {
+    navigation.navigate('MainTabs', { screen: 'Help', params: { startSearching: true, searchRole: 'Seeker' } });
+  };
+
+  const handleICanHelp = () => {
+    navigation.navigate('MainTabs', { screen: 'Help', params: { startHelping: true } });
+  };
+
+  const handleSignUp = () => {
+    navigation.navigate('CreateAccount');
+  };
+
+  const handleLogin = () => {
+    navigation.navigate('LoginOptions');
+  };
+
+  const rootStyle = {
+    ...styles.root,
+    paddingTop: statusBarHeight
+  };
+  const cardStyle = {
+    ...styles.card,
+    paddingBottom: bottomSafeHeight
+  };
+
+  return (
+    <View style={rootStyle}>
+      <View style={styles.topSection}>
+        <View style={styles.logoBox}>
+          <Image
+            source={Logo}
+            style={styles.logoImg}
+            accessible={true}
+            accessibilityLabel="App logo"
+          />
+        </View>
+      </View>
+      <View style={cardStyle}>
+        <View style={styles.header}>
+          <CustomText style={styles.heading}>What's your issue?</CustomText>
+          <CustomText style={styles.subhead}>Someone is here to help.</CustomText>
+        </View>
+        <View style={styles.helpButtons}>
+          <TouchableOpacity style={styles.helpMeBtn} onPress={handleHelpMe}>
+            <SadEmoji {...styles.emojis}/>
+            <CustomText style={styles.helpMeBtnText}>HELP ME</CustomText>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iCanHelpBtn} onPress={handleICanHelp}>
+            <HappyEmoji {...styles.emojis}/>
+            <CustomText style={styles.iCanHelpBtnText}>I CAN HELP</CustomText>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.signUpLogIn}>
+          <View style={styles.signUp}>
+            <TouchableOpacity style={styles.signUpBtn} onPress={handleSignUp}>
+              <CustomText style={styles.signUpBtnText}>Sign Up</CustomText>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.divider}>
+            <View style={styles.line} />
+            <CustomText style={styles.or}>or</CustomText>
+            <View style={styles.line} />
+          </View>
+          <View style={styles.alreadyHaveAccount}>
+            <CustomText style={styles.loginText}>
+              Already have an account?
+            </CustomText>
+            <CustomText style={styles.loginLink} onPress={handleLogin}>Login</CustomText>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+===== HappyPlace/src/screens/FinishAccount.jsx =====
+import React from 'react';
+import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
+import { HappyColor, White, Black, VeryLightGray } from 'src/constants/colors';
+import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
+import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
+import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
+import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
+import { useNavigation } from '@react-navigation/native';
+import CustomText from 'src/components/FontFamilyText';
+import Logo from 'assets/images/global/logo.png';
+
+const phoneStyles = StyleSheet.create({
+  root: {
+    backgroundColor: HappyColor,
+    height: '100%',
+    width: '100%'
+  },
+  topSection: {
+    height: '34.5%',
+    width: '100%'
+  },
+  BackArrowView: {
+    paddingHorizontal: scaleWidth(20),
+  },  
+  BackArrow: {
+    width: scaleWidth(42),
+    height: scaleHeight(42),
+    borderRadius: scaleWidth(99),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: VeryLightGray
+  },
+  backArrowIcon: {
+    width: scaleWidth(28),
+    height: scaleHeight(28),
+  },  
+  logoBox: {
+    height: '100%',
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  logoImg: {
+    width: scaleWidth(188),
+    height: scaleHeight(188),
+    resizeMode: 'contain'
+  },
+  card: {
+    height: '65.5%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: scaleWidth(20),
+    backgroundColor: White,
+    alignItems: 'center'
+  },
+  content: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: scaleHeight(40)
+  },
+  header: {
+    gap: scaleHeight(8),
+    alignItems: 'center'
+  },
+  heading: {
+    fontSize: scaleFont(32),
+    lineHeight: scaleLineHeight(38.4),
+    letterSpacing: scaleLetterSpacing(-0.32),
+    color: HappyColor,
+    fontWeight: 800,
+    textAlign: 'center'
+  },
+  subhead: {
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    color: Black,
+    textAlign: 'center',
+    fontWeight: 600
+  },
+  signUpLogIn: {
+    width: scaleWidth(271),
+    alignItems: 'center',
+    gap: scaleHeight(16)
+  },
+  signUp: {
+    height: scaleHeight(31),
+    width: '100%',
+    alignItems: 'center'
+  },
+  signUpBtn: {
+    width: scaleWidth(112),
+    borderRadius: scaleWidth(99),
+    backgroundColor: Black,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  signUpBtnText: {
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    color: White,
+    fontWeight: 800
+  },
+  divider: {
+    gap: scaleWidth(8),
+    height: scaleHeight(21),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  line: {
+    width: scaleWidth(121),
+    height: scaleHeight(1),
+    backgroundColor: Black,
+    opacity: 0.6
+  },
+  or: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    color: Black,
+    fontWeight: 600,
+    opacity: 0.8
+  },
+  alreadyHaveAccount: {
+    height: scaleHeight(24),
+    gap: scaleWidth(5),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  loginText: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    color: Black,
+    fontWeight: 600
+  },
+  loginLink: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    color: HappyColor,
+    fontWeight: 600
+  }
+});
+
+const tabletStyles = StyleSheet.create({
+  root: {
+    backgroundColor: HappyColor,
+    height: '100%',
+    width: '100%'
+  },
+  topSection: {
+    height: '35.4%',
+    width: '100%'
+  },
+  BackArrowView: {
+    paddingHorizontal: scaleWidth(24),
+  },   
+  BackArrow: {
+      borderRadius: scaleWidth(132.792),
+      width: 78.14,
+      height: 78.14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: VeryLightGray
+  },
+  backArrowIcon: {
+    width: scaleWidth(37.557),
+    height: scaleHeight(37.557),
+  },  
+  logoBox: {
+    height: '100%',
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  logoImg: {
+    width: scaleWidth(252.17),
+    height: scaleHeight(252.17),
+    resizeMode: 'contain'
+  },
+  card: {
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    height: '64.6%',
+    paddingHorizontal: scaleWidth(24),
+    backgroundColor: White,
+    alignItems: 'center'
+  },
+  content: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: scaleHeight(48)
+  },
+  header: {
+    gap: scaleHeight(12),
+    alignItems: 'center'
+  },
+  heading: {
+    fontSize: scaleFont(40),
+    lineHeight: scaleLineHeight(48),
+    letterSpacing: scaleLetterSpacing(-0.4),
+    color: HappyColor,
+    fontWeight: 800,
+    textAlign: 'center'
+  },
+  subhead: {
+    fontSize: scaleFont(22),
+    lineHeight: scaleLineHeight(33),
+    letterSpacing: scaleLetterSpacing(-0.22),
+    color: Black,
+    textAlign: 'center',
+    fontWeight: 500
+  },
+  signUpLogIn: {
+    width: scaleWidth(584),
+    alignItems: 'center',
+    gap: scaleHeight(20)
+  },
+  signUp: {
+    height: scaleHeight(38.6533),
+    width: '100%',
+    alignItems: 'center'
+  },
+  signUpBtn: {
+    width: scaleWidth(142.384),
+    borderRadius: scaleWidth(132.792),
+    backgroundColor: Black,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  signUpBtnText: {
+    fontSize: scaleFont(22),
+    lineHeight: scaleLineHeight(33),
+    letterSpacing: scaleLetterSpacing(-0.22),
+    color: White,
+    fontWeight: 800
+  },
+  divider: {
+    gap: scaleWidth(10.73),
+    height: scaleHeight(24),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  line: {
+    width: scaleWidth(273.6935),
+    height: scaleHeight(1.341),
+    backgroundColor: Black,
+    opacity: 0.6
+  },
+  or: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    color: Black,
+    fontWeight: 600,
+    opacity: 0.8
+  },
+  alreadyHaveAccount: {
+    height: scaleHeight(30),
+    gap: scaleWidth(5),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  loginText: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    color: Black,
+    fontWeight: 600
+  },
+  loginLink: {
+    fontSize: scaleFont(20),
+    lineHeight: scaleLineHeight(30),
+    letterSpacing: scaleLetterSpacing(-0.2),
+    color: HappyColor,
+    fontWeight: 600
+  }
+});
+
+export default function FinishAccount() {
+  const { statusBarHeight, bottomSafeHeight } = useSafeAreaPadding();
+  const styles = useResponsiveStyles(phoneStyles, tabletStyles);
+  const navigation = useNavigation();
+
+  const handleSignUp = () => {
+    navigation.navigate('CreateAccount');
+  };
+
+  const handleLogin = () => {
+    navigation.navigate('LoginOptions');
+  };
+
+  const rootStyle = {
+    ...styles.root,
+    paddingTop: statusBarHeight
+  };
+  const cardStyle = {
+    ...styles.card,
+    paddingBottom: bottomSafeHeight
+  };
+
+  return (
+    <View style={rootStyle}>
+        <View style={styles.BackArrowView}>
+        <TouchableOpacity
+            style={styles.BackArrow}
+            onPress={() => navigation.goBack()}
+        >
+            <BackArrow {...styles.backArrowIcon}/>
+        </TouchableOpacity>
+        </View>
+
+      <View style={styles.topSection}>
+        <View style={styles.logoBox}>
+          <Image
+            source={Logo}
+            style={styles.logoImg}
+            accessible={true}
+            accessibilityLabel="App logo"
+          />
+        </View>
+      </View>
+      <View style={cardStyle}>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <CustomText style={styles.heading}>Finish creating your account</CustomText>
+            <CustomText style={styles.subhead}>Save your progress and unlock all of Happy Place.</CustomText>
+          </View>
+          <View style={styles.signUpLogIn}>
+            <View style={styles.signUp}>
+              <TouchableOpacity style={styles.signUpBtn} onPress={handleSignUp}>
+                <CustomText style={styles.signUpBtnText}>Sign Up</CustomText>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.divider}>
+              <View style={styles.line} />
+              <CustomText style={styles.or}>or</CustomText>
+              <View style={styles.line} />
+            </View>
+            <View style={styles.alreadyHaveAccount}>
+              <CustomText style={styles.loginText}>Already have an account?</CustomText>
+              <CustomText style={styles.loginLink} onPress={handleLogin}>Login</CustomText>
+            </View>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+===== HappyPlace/src/services/navigationService.js =====
+import { createNavigationContainerRef } from '@react-navigation/native';
+
+const navigationRef = createNavigationContainerRef();
+
+export default navigationRef;
+===== HappyPlace/src/services/tokenStorage.js =====
+import EncryptedStorage from 'react-native-encrypted-storage';
+import pushNotificationService from './pushNotificationService';
+import authenticationService from './authenticationService';
+
+const TOKEN_KEY = 'auth_token';
+let sessionToken = null;
+let pendingGuestCreation = null;
+const listeners = new Set();
+
+function notifyListeners(authToken) {
+    listeners.forEach((listener) => {
+        try { listener(authToken); } catch {}
+    });
+}
+
+const tokenStorage = {
+    saveToken: async function(authToken) {
+        sessionToken = authToken;
+        await EncryptedStorage.setItem(TOKEN_KEY, authToken);
+        notifyListeners(authToken);
+        Promise.resolve(pushNotificationService.registerDevice(authToken)).catch(() => {});
+    },
+
+    setSessionToken: function(authToken) {
+        sessionToken = authToken;
+        notifyListeners(authToken);
+        Promise.resolve(pushNotificationService.registerDevice(authToken)).catch(() => {});
+    },
+
+    getToken: async function() {
+        if (sessionToken) return sessionToken;
+        const storedToken = await EncryptedStorage.getItem(TOKEN_KEY);
+        if (storedToken) sessionToken = storedToken;
+        return storedToken || null;
+    },
+
+    peekToken: function() {
+        return sessionToken;
+    },
+
+    ensureGuestToken: async function() {
+        const existingToken = await tokenStorage.getToken();
+        if (existingToken) return existingToken;
+        if (!pendingGuestCreation) {
+            pendingGuestCreation = (async () => {
+                try {
+                    const recheckedToken = await tokenStorage.getToken();
+                    if (recheckedToken) return recheckedToken;
+                    const response = await authenticationService.createGuest();
+                    if (!response.ok) return null;
+                    const data = await response.json();
+                    await tokenStorage.saveToken(data.authToken);
+                    return data.authToken;
+                } finally {
+                    pendingGuestCreation = null;
+                }
+            })();
+        }
+        return pendingGuestCreation;
+    },
+
+    clearToken: async function() {
+        sessionToken = null;
+        try {
+            await EncryptedStorage.removeItem(TOKEN_KEY);
+        } catch {}
+        notifyListeners(null);
+    },
+
+    subscribe: function(listener) {
+        listeners.add(listener);
+        return function() {
+            listeners.delete(listener);
+        };
+    }
+};
+
+export default tokenStorage;
+===== HappyPlace/src/store/userSlice.js =====
+import { createSlice } from '@reduxjs/toolkit';
+const userSlice = createSlice({
+  name: 'user',
+  initialState: {
+    displayName: null,
+    username: null,
+    avatarColor: null,
+    profilePhotoUrl: null,
+    isLoggedIn: false,
+    isAnonymous: false,
+  },
+  reducers: {
+    setUser: (state, action) => {
+      state.displayName = action.payload.displayName;
+      state.username = action.payload.username;
+      state.avatarColor = action.payload.avatarColor;
+      state.profilePhotoUrl = action.payload.profilePhotoUrl;
+      state.isAnonymous = !!action.payload.isAnonymous;
+      state.isLoggedIn = true;
+    },
+    clearUser: (state) => {
+      state.displayName = null;
+      state.username = null;
+      state.avatarColor = null;
+      state.profilePhotoUrl = null;
+      state.isAnonymous = false;
+      state.isLoggedIn = false;
+    },
+  },
+});
+export const { setUser, clearUser } = userSlice.actions;
+export default userSlice.reducer;

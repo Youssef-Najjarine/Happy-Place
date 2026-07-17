@@ -3,6 +3,7 @@ import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
+import { shouldRedirectToFinishAccount } from 'src/utils/guestGate';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
 import { scaleWidth, scaleHeight } from 'src/utils/scaleLayout';
 import CustomText from 'src/components/FontFamilyText';
@@ -148,7 +149,7 @@ export default function BottomTabBar({ state, descriptors, navigation }) {
   const user = useSelector((storeState) => storeState.user);
 
   const handleTabPress = (route, isFocused) => {
-    if (user.isAnonymous && (route.name === 'MyProfile' || route.name === 'MyFriends')) {
+    if (shouldRedirectToFinishAccount(route.name, user)) {
       navigation.navigate('FinishAccount');
       return;
     }

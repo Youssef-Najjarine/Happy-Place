@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { AppState } from 'react-native';
 import baseService from 'src/services/baseService';
+import { createClientMessageId, upsertEntries, mergeSenders, createPendingEntry, markPendingFailed, markPendingRetrying, setPendingMediaId, removePendingById, reconcilePending, orderMessages } from 'src/utils/chatMessageStore';
 import {
     useLazyListMessagesPageQuery,
     useLazyPollMessagesQuery,
@@ -16,31 +17,6 @@ const POLL_INTERVAL_MS = 2000;
 const TYPING_PING_INTERVAL_MS = 3000;
 const MARK_READ_DEBOUNCE_MS = 600;
 
-function createClientMessageId() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
-        const randomNibble = (Math.random() * 16) | 0;
-        const value = character === 'x' ? randomNibble : (randomNibble & 0x3) | 0x8;
-        return value.toString(16);
-    });
-}
-
-function upsertEntries(byId, entries) {
-    const next = { ...byId };
-    entries.forEach((entry) => {
-        next[entry.id] = entry;
-    });
-    return next;
-}
-
-function mergeSenders(sendersById, senders) {
-    if (!senders || senders.length === 0) return sendersById;
-    const next = { ...sendersById };
-    senders.forEach((sender) => {
-        next[sender.id] = sender;
-    });
-    return next;
-}
-
 export default function useChatMessages({ authToken, chatGroupId, focused }) {
     const [status, setStatus] = useState('loading');
     const [messagesById, setMessagesById] = useState({});
@@ -48,6 +24,7 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
     const [sendersById, setSendersById] = useState({});
     const [readPointers, setReadPointers] = useState([]);
     const [typingUserIds, setTypingUserIds] = useState([]);
+    const [groupState, setGroupState] = useState(null);
     const [callerUserAccountId, setCallerUserAccountId] = useState(null);
     const [nextCursor, setNextCursor] = useState(null);
     const [loadingOlder, setLoadingOlder] = useState(false);
@@ -73,10 +50,15 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
         setSendersById((current) => mergeSenders(current, response.senders));
         if (Array.isArray(response.readPointers)) setReadPointers(response.readPointers);
         if (Array.isArray(response.typing)) setTypingUserIds(response.typing);
+        if (response.group) setGroupState(response.group);
     }, []);
 
     const loadFirstPage = useCallback(async () => {
-        if (!authToken || !chatGroupId) return;
+        if (!chatGroupId) {
+            setStatus('groupGone');
+            return;
+        }
+        if (!authToken) return;
         try {
             const response = await triggerListPage({ authToken, chatGroupId }).unwrap();
             if (response.status !== 'ok') {
@@ -87,6 +69,7 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
             watermarkRef.current = response.changeSequence;
             setCallerUserAccountId(response.callerUserAccountId);
             setMessagesById(upsertEntries({}, response.items || []));
+            setPendingMessages((current) => reconcilePending(current, response.items || []));
             setNextCursor(response.nextCursor);
             applySharedBlocks(response);
             setStatus('ok');
@@ -100,6 +83,7 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
         setStatus('loading');
         setMessagesById({});
         setPendingMessages([]);
+        setGroupState(null);
         watermarkRef.current = 0;
         markReadLastRef.current = 0;
         loadFirstPage();
@@ -115,6 +99,7 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
                 return;
             }
             setMessagesById((current) => upsertEntries(current, response.items || []));
+            setPendingMessages((current) => reconcilePending(current, response.items || []));
             setNextCursor(response.nextCursor);
             setSendersById((current) => mergeSenders(current, response.senders));
         } catch (error) {
@@ -130,34 +115,35 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
         return () => subscription.remove();
     }, []);
 
+    const pollOnce = useCallback(async () => {
+        if (pollBusyRef.current || !appActiveRef.current || !loadedRef.current) return;
+        pollBusyRef.current = true;
+        try {
+            const response = await triggerPoll({ authToken, chatGroupId, sinceChangeSequence: watermarkRef.current }).unwrap();
+            if (response.status !== 'ok') {
+                setStatus(response.status);
+                return;
+            }
+            watermarkRef.current = response.changeSequence;
+            if (Array.isArray(response.changes) && response.changes.length > 0) {
+                setMessagesById((current) => upsertEntries(current, response.changes));
+                setPendingMessages((current) => reconcilePending(current, response.changes));
+            }
+            applySharedBlocks(response);
+        } catch (error) {
+        } finally {
+            pollBusyRef.current = false;
+        }
+    }, [authToken, chatGroupId, triggerPoll, applySharedBlocks]);
+
     useEffect(() => {
         if (status !== 'ok' || !focused || !authToken) return undefined;
-        const interval = setInterval(async () => {
-            if (pollBusyRef.current || !appActiveRef.current || !loadedRef.current) return;
-            pollBusyRef.current = true;
-            try {
-                const response = await triggerPoll({ authToken, chatGroupId, sinceChangeSequence: watermarkRef.current }).unwrap();
-                if (response.status !== 'ok') {
-                    setStatus(response.status);
-                    return;
-                }
-                watermarkRef.current = response.changeSequence;
-                if (Array.isArray(response.changes) && response.changes.length > 0) {
-                    setMessagesById((current) => upsertEntries(current, response.changes));
-                }
-                applySharedBlocks(response);
-            } catch (error) {
-            } finally {
-                pollBusyRef.current = false;
-            }
-        }, POLL_INTERVAL_MS);
+        pollOnce();
+        const interval = setInterval(pollOnce, POLL_INTERVAL_MS);
         return () => clearInterval(interval);
-    }, [status, focused, authToken, chatGroupId, triggerPoll, applySharedBlocks]);
+    }, [status, focused, authToken, pollOnce]);
 
-    const orderedMessages = useMemo(() => {
-        const serverMessages = Object.values(messagesById).sort((first, second) => first.sequence - second.sequence);
-        return [...serverMessages, ...pendingMessages];
-    }, [messagesById, pendingMessages]);
+    const orderedMessages = useMemo(() => orderMessages(messagesById, pendingMessages), [messagesById, pendingMessages]);
 
     const newestSequence = useMemo(() => {
         let newest = 0;
@@ -197,86 +183,83 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
         sendTypingPing({ authToken, chatGroupId }).unwrap().catch(() => {});
     }, [authToken, chatGroupId, sendTypingPing]);
 
-    const send = useCallback(async (body) => {
-        const clientMessageId = createClientMessageId();
-        const pendingEntry = {
-            id: 'pending-' + clientMessageId,
-            sequence: null,
-            senderUserAccountId: callerUserAccountId,
-            kind: 1,
-            body,
-            isDeleted: false,
-            reactions: [],
-            mediaUrl: null,
-            mediaWidth: null,
-            mediaHeight: null,
-            mediaDurationSeconds: null,
-            createdAtUtc: new Date().toISOString(),
-            pending: true,
-        };
-        setPendingMessages((current) => [...current, pendingEntry]);
-        try {
-            const response = await sendChatMessage({ authToken, chatGroupId, clientMessageId, body }).unwrap();
-            setPendingMessages((current) => current.filter((entry) => entry.id !== pendingEntry.id));
-            if (response.status === 'sent' || response.status === 'duplicate') {
-                setMessagesById((current) => upsertEntries(current, [response.message]));
-                return { ok: true };
-            }
-            setStatus((current) => (response.status === 'notMember' || response.status === 'groupGone' ? response.status : current));
+    const applySendOutcome = useCallback((pendingId, response) => {
+        if (response.status === 'sent' || response.status === 'duplicate') {
+            setPendingMessages((current) => removePendingById(current, pendingId));
+            setMessagesById((current) => upsertEntries(current, [response.message]));
+            return { ok: true };
+        }
+        if (response.status === 'notMember' || response.status === 'groupGone') {
+            setPendingMessages((current) => removePendingById(current, pendingId));
+            setStatus(response.status);
             return { ok: false, status: response.status };
+        }
+        setPendingMessages((current) => removePendingById(current, pendingId));
+        return { ok: false, status: response.status };
+    }, []);
+
+    const attemptDelivery = useCallback(async (pendingEntry) => {
+        const pendingId = pendingEntry.id;
+        const payload = pendingEntry.retryPayload;
+        try {
+            if (payload.body !== undefined) {
+                const response = await sendChatMessage({ authToken, chatGroupId, clientMessageId: pendingEntry.clientMessageId, body: payload.body }).unwrap();
+                return applySendOutcome(pendingId, response);
+            }
+            let mediaId = payload.mediaId;
+            if (!mediaId) {
+                const formData = new FormData();
+                formData.append('AuthToken', authToken);
+                formData.append('ChatGroupId', chatGroupId);
+                formData.append('Kind', String(pendingEntry.kind));
+                formData.append('DurationSeconds', String(payload.durationSeconds || 0));
+                formData.append('Media', { uri: payload.file.uri, type: payload.file.type, name: payload.file.name });
+                const uploadResponse = await baseService.postMultipart('chatMedia/upload', formData);
+                const uploadText = await uploadResponse.text();
+                const upload = uploadText ? JSON.parse(uploadText) : null;
+                if (!uploadResponse.ok || !upload || upload.status !== 'uploaded') {
+                    const uploadStatus = upload && upload.status ? upload.status : 'unreachable';
+                    if (uploadStatus === 'unreachable') {
+                        setPendingMessages((current) => markPendingFailed(current, pendingId));
+                        return { ok: false, status: uploadStatus };
+                    }
+                    setPendingMessages((current) => removePendingById(current, pendingId));
+                    setStatus((current) => (uploadStatus === 'notMember' || uploadStatus === 'groupGone' ? uploadStatus : current));
+                    return { ok: false, status: uploadStatus };
+                }
+                mediaId = upload.mediaId;
+                setPendingMessages((current) => setPendingMediaId(current, pendingId, mediaId));
+            }
+            const response = await sendChatMessage({ authToken, chatGroupId, clientMessageId: pendingEntry.clientMessageId, mediaId }).unwrap();
+            return applySendOutcome(pendingId, response);
         } catch (error) {
-            setPendingMessages((current) => current.filter((entry) => entry.id !== pendingEntry.id));
+            setPendingMessages((current) => markPendingFailed(current, pendingId));
             return { ok: false, status: 'unreachable' };
         }
-    }, [authToken, chatGroupId, callerUserAccountId, sendChatMessage]);
+    }, [authToken, chatGroupId, sendChatMessage, applySendOutcome]);
+
+    const send = useCallback(async (body) => {
+        const pendingEntry = createPendingEntry({ clientMessageId: createClientMessageId(), callerUserAccountId, kind: 1, body, nowIso: new Date().toISOString() });
+        setPendingMessages((current) => [...current, pendingEntry]);
+        return attemptDelivery(pendingEntry);
+    }, [callerUserAccountId, attemptDelivery]);
 
     const sendMedia = useCallback(async (kind, file, durationSeconds) => {
-        const clientMessageId = createClientMessageId();
-        const pendingEntry = {
-            id: 'pending-' + clientMessageId,
-            sequence: null,
-            senderUserAccountId: callerUserAccountId,
-            kind,
-            body: null,
-            isDeleted: false,
-            reactions: [],
-            mediaUrl: null,
-            mediaWidth: file.width || null,
-            mediaHeight: file.height || null,
-            mediaDurationSeconds: durationSeconds || null,
-            localUri: kind === 2 ? file.uri : null,
-            createdAtUtc: new Date().toISOString(),
-            pending: true,
-        };
+        const pendingEntry = createPendingEntry({ clientMessageId: createClientMessageId(), callerUserAccountId, kind, file, durationSeconds, nowIso: new Date().toISOString() });
         setPendingMessages((current) => [...current, pendingEntry]);
-        const removePending = () => setPendingMessages((current) => current.filter((entry) => entry.id !== pendingEntry.id));
-        try {
-            const formData = new FormData();
-            formData.append('AuthToken', authToken);
-            formData.append('ChatGroupId', chatGroupId);
-            formData.append('Kind', String(kind));
-            formData.append('DurationSeconds', String(durationSeconds || 0));
-            formData.append('Media', { uri: file.uri, type: file.type, name: file.name });
-            const uploadResponse = await baseService.postMultipart('chatMedia/upload', formData);
-            const uploadText = await uploadResponse.text();
-            const upload = uploadText ? JSON.parse(uploadText) : null;
-            if (!uploadResponse.ok || !upload || upload.status !== 'uploaded') {
-                removePending();
-                return { ok: false, status: upload && upload.status ? upload.status : 'unreachable' };
-            }
-            const response = await sendChatMessage({ authToken, chatGroupId, clientMessageId, mediaId: upload.mediaId }).unwrap();
-            removePending();
-            if (response.status === 'sent' || response.status === 'duplicate') {
-                setMessagesById((current) => upsertEntries(current, [response.message]));
-                return { ok: true };
-            }
-            setStatus((current) => (response.status === 'notMember' || response.status === 'groupGone' ? response.status : current));
-            return { ok: false, status: response.status };
-        } catch (error) {
-            removePending();
-            return { ok: false, status: 'unreachable' };
-        }
-    }, [authToken, chatGroupId, callerUserAccountId, sendChatMessage]);
+        return attemptDelivery(pendingEntry);
+    }, [callerUserAccountId, attemptDelivery]);
+
+    const retrySend = useCallback(async (messageId) => {
+        const pendingEntry = pendingMessages.find((entry) => entry.id === messageId);
+        if (!pendingEntry || !pendingEntry.failed) return { ok: false, status: 'missing' };
+        setPendingMessages((current) => markPendingRetrying(current, messageId));
+        return attemptDelivery(pendingEntry);
+    }, [pendingMessages, attemptDelivery]);
+
+    const deleteFailed = useCallback((messageId) => {
+        setPendingMessages((current) => removePendingById(current, messageId));
+    }, []);
 
     const sendImage = useCallback((file) => sendMedia(2, { ...file, type: file.type || 'image/jpeg', name: file.name || 'photo.jpg' }, 0), [sendMedia]);
 
@@ -336,6 +319,7 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
         sendersById,
         callerUserAccountId,
         typingUserIds,
+        groupState,
         hasOlder: !!nextCursor,
         loadingOlder,
         loadOlder,
@@ -346,8 +330,11 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
         reactTo,
         deleteOwn,
         report,
+        retrySend,
+        deleteFailed,
         notifyTyping,
         isViewedByEveryoneElse,
         reload: loadFirstPage,
+        refreshNow: pollOnce,
     };
 }

@@ -16,7 +16,7 @@ export default function useUserHydration() {
                 dispatch(clearUser());
                 return;
             }
-            const hydrate = async () => {
+            const hydrate = async (attempt) => {
                 try {
                     const response = await authenticationService.validateToken(authToken);
                     if (hydrationSeqRef.current !== seq) return;
@@ -28,9 +28,15 @@ export default function useUserHydration() {
                     if (hydrationSeqRef.current !== seq) return;
                     dispatch(setUser(profileData));
                 } catch {
+                    if (hydrationSeqRef.current !== seq) return;
+                    if (attempt === 1) {
+                        setTimeout(() => {
+                            if (hydrationSeqRef.current === seq) hydrate(2);
+                        }, 1500);
+                    }
                 }
             };
-            hydrate();
+            hydrate(1);
         });
         return unsubscribe;
     }, [dispatch]);

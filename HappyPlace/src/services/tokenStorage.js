@@ -40,12 +40,18 @@ const tokenStorage = {
 
     ensureGuestToken: async function() {
         const existingToken = await tokenStorage.getToken();
-        if (existingToken) return existingToken;
+        if (existingToken) {
+            notifyListeners(existingToken);
+            return existingToken;
+        }
         if (!pendingGuestCreation) {
             pendingGuestCreation = (async () => {
                 try {
                     const recheckedToken = await tokenStorage.getToken();
-                    if (recheckedToken) return recheckedToken;
+                    if (recheckedToken) {
+                        notifyListeners(recheckedToken);
+                        return recheckedToken;
+                    }
                     const response = await authenticationService.createGuest();
                     if (!response.ok) return null;
                     const data = await response.json();
