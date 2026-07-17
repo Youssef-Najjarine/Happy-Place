@@ -204,6 +204,199 @@ public class PollMessagesTest {
         Assert.Equal(memberUserAccountId.ToString(), root.GetProperty("senders")[0].GetProperty("id").GetString());
     }
 
+    [Fact]
+    public void PollChangeEntriesEchoClientMessageId() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "My Group", true);
+        Guid clientMessageId = Guid.NewGuid();
+        SendWithClientMessageId(testingMockProvidersContainer, ownerAuthToken, groupId, clientMessageId, "hello");
+
+        JsonElement root = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0);
+
+        Assert.Equal(clientMessageId.ToString(), root.GetProperty("changes")[0].GetProperty("clientMessageId").GetString());
+    }
+
+    // Tests - Group State
+
+    [Fact]
+    public void PollReturnsGroupStateWithTitleVisibilityAndMembers() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid ownerUserAccountId = ResolveUserAccountId(ownerAuthToken);
+        Guid groupId = CreateActiveGroup(ownerUserAccountId, "Support After Loss", false);
+
+        JsonElement group = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0).GetProperty("group");
+
+        Assert.Equal("Support After Loss", group.GetProperty("title").GetString());
+        Assert.False(group.GetProperty("isPublic").GetBoolean());
+        Assert.True(ContainsUser(group.GetProperty("members"), ownerUserAccountId));
+    }
+
+    [Fact]
+    public void GroupStateContainsExactlyExpectedProperties() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "My Group", true);
+
+        JsonElement group = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0).GetProperty("group");
+        List<string> actualGroupProperties = [.. group.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
+        List<string> expectedGroupProperties = ["isPublic", "members", "title"];
+        JsonElement memberEntry = group.GetProperty("members")[0];
+        List<string> actualMemberProperties = [.. memberEntry.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
+        List<string> expectedMemberProperties = ["avatarColor", "isOwner", "name", "profilePhotoUrl", "userAccountId", "username"];
+
+        Assert.Equal(expectedGroupProperties, actualGroupProperties);
+        Assert.Equal(expectedMemberProperties, actualMemberProperties);
+    }
+
+    [Fact]
+    public void GroupStateMembersOrderedByJoinTimeOwnerFirst() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "My Group", true);
+        AddActiveMemberAt(groupId, SeedUser("Member One", null), DateTime.UtcNow.AddMinutes(1));
+        AddActiveMemberAt(groupId, SeedUser("Member Two", null), DateTime.UtcNow.AddMinutes(2));
+
+        JsonElement members = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0).GetProperty("group").GetProperty("members");
+
+        Assert.True(members[0].GetProperty("isOwner").GetBoolean());
+        Assert.Equal("Member One", members[1].GetProperty("name").GetString());
+        Assert.Equal("Member Two", members[2].GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public void MemberJoiningAfterEarlierPollAppearsInNextPoll() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "My Group", true);
+        JsonElement firstGroupState = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0).GetProperty("group");
+        Guid joinerUserAccountId = SeedUser("Joiner", null);
+        AddActiveMember(groupId, joinerUserAccountId);
+
+        JsonElement secondRoot = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0);
+
+        Assert.Equal(1, firstGroupState.GetProperty("members").GetArrayLength());
+        Assert.Equal(2, secondRoot.GetProperty("group").GetProperty("members").GetArrayLength());
+        Assert.True(ContainsUser(secondRoot.GetProperty("group").GetProperty("members"), joinerUserAccountId));
+        Assert.Equal(0, secondRoot.GetProperty("changes").GetArrayLength());
+    }
+
+    [Fact]
+    public void PendingRequesterNeverAppearsInGroupState() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "Private Group", false);
+        Guid pendingUserAccountId = SeedUser("Pending", null);
+        AddPendingMember(groupId, pendingUserAccountId);
+
+        JsonElement members = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0).GetProperty("group").GetProperty("members");
+
+        Assert.Equal(1, members.GetArrayLength());
+        Assert.False(ContainsUser(members, pendingUserAccountId));
+    }
+
+    [Fact]
+    public void ApprovedRequesterAppearsInGroupStateAfterApproval() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "Private Group", false);
+        Guid pendingUserAccountId = SeedUser("Pending", null);
+        AddPendingMember(groupId, pendingUserAccountId);
+
+        ApproveMember(testingMockProvidersContainer, ownerAuthToken, groupId, pendingUserAccountId);
+        JsonElement members = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0).GetProperty("group").GetProperty("members");
+
+        Assert.Equal(2, members.GetArrayLength());
+        Assert.True(ContainsUser(members, pendingUserAccountId));
+    }
+
+    [Fact]
+    public void RemovedMemberDisappearsFromGroupState() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "My Group", true);
+        Guid memberUserAccountId = SeedUser("Member", null);
+        AddActiveMember(groupId, memberUserAccountId);
+
+        RemoveMember(testingMockProvidersContainer, ownerAuthToken, groupId, memberUserAccountId);
+        JsonElement members = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0).GetProperty("group").GetProperty("members");
+
+        Assert.Equal(1, members.GetArrayLength());
+        Assert.False(ContainsUser(members, memberUserAccountId));
+    }
+
+    [Fact]
+    public void LeftMemberDisappearsFromGroupState() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        string memberAuthToken = CreateUser(testingMockProvidersContainer, "Member");
+        Guid memberUserAccountId = ResolveUserAccountId(memberAuthToken);
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "My Group", true);
+        AddActiveMember(groupId, memberUserAccountId);
+
+        Leave(testingMockProvidersContainer, memberAuthToken, groupId);
+        JsonElement members = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0).GetProperty("group").GetProperty("members");
+
+        Assert.Equal(1, members.GetArrayLength());
+        Assert.False(ContainsUser(members, memberUserAccountId));
+    }
+
+    [Fact]
+    public void RenameReflectsInGroupStateForOtherMembers() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        string memberAuthToken = CreateUser(testingMockProvidersContainer, "Member");
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "Original Title", true);
+        AddActiveMember(groupId, ResolveUserAccountId(memberAuthToken));
+
+        Rename(testingMockProvidersContainer, ownerAuthToken, groupId, "A Better Title");
+        JsonElement group = Poll(testingMockProvidersContainer, memberAuthToken, groupId, 0).GetProperty("group");
+
+        Assert.Equal("A Better Title", group.GetProperty("title").GetString());
+    }
+
+    [Fact]
+    public void VisibilityChangeReflectsInGroupState() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "My Group", true);
+
+        SetVisibility(testingMockProvidersContainer, ownerAuthToken, groupId, false);
+        JsonElement group = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0).GetProperty("group");
+
+        Assert.False(group.GetProperty("isPublic").GetBoolean());
+    }
+
+    [Fact]
+    public void OwnershipTransferReflectsInGroupState() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        string memberAuthToken = CreateUser(testingMockProvidersContainer, "Member");
+        Guid ownerUserAccountId = ResolveUserAccountId(ownerAuthToken);
+        Guid memberUserAccountId = ResolveUserAccountId(memberAuthToken);
+        Guid groupId = CreateActiveGroup(ownerUserAccountId, "My Group", true);
+        AddActiveMemberAt(groupId, memberUserAccountId, DateTime.UtcNow.AddMinutes(1));
+
+        Leave(testingMockProvidersContainer, ownerAuthToken, groupId);
+        JsonElement members = Poll(testingMockProvidersContainer, memberAuthToken, groupId, 0).GetProperty("group").GetProperty("members");
+
+        Assert.False(ContainsUser(members, ownerUserAccountId));
+        Assert.True(GetEntry(members, memberUserAccountId).GetProperty("isOwner").GetBoolean());
+    }
+
+    [Fact]
+    public void GroupIsNullWhenCallerIsNotMember() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string strangerAuthToken = CreateUser(testingMockProvidersContainer, "Stranger");
+        Guid groupId = CreateActiveGroup(SeedUser("Owner", null), "My Group", true);
+
+        JsonElement root = Poll(testingMockProvidersContainer, strangerAuthToken, groupId, 0);
+
+        Assert.Equal("notMember", root.GetProperty("status").GetString());
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("group").ValueKind);
+    }
+
     // Tests - Response Shape
 
     [Fact]
@@ -216,9 +409,23 @@ public class PollMessagesTest {
 
         JsonElement root = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0);
         List<string> actualProperties = [.. root.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
-        List<string> expectedProperties = ["changeSequence", "changes", "readPointers", "senders", "status", "typing"];
+        List<string> expectedProperties = ["changeSequence", "changes", "group", "readPointers", "senders", "status", "typing"];
 
         Assert.Equal(expectedProperties, actualProperties);
+    }
+
+    [Fact]
+    public void PollChangeEntryContainsExactlyExpectedProperties() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "My Group", true);
+        Send(testingMockProvidersContainer, ownerAuthToken, groupId, "hello");
+
+        JsonElement entry = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0).GetProperty("changes")[0];
+        List<string> actualEntryProperties = [.. entry.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
+        List<string> expectedEntryProperties = ["body", "clientMessageId", "createdAtUtc", "id", "isDeleted", "kind", "mediaDurationSeconds", "mediaHeight", "mediaUrl", "mediaWidth", "reactions", "senderUserAccountId", "sequence"];
+
+        Assert.Equal(expectedEntryProperties, actualEntryProperties);
     }
 
     // Helpers - Acting
@@ -233,6 +440,30 @@ public class PollMessagesTest {
 
     private static void Send(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId, string body) {
         testingMockProvidersContainer.WebClient.PostJson("api/chatMessage/send", new { AuthToken = authToken, ChatGroupId = chatGroupId, ClientMessageId = Guid.NewGuid(), Body = body }).EnsureSuccessStatusCode();
+    }
+
+    private static void SendWithClientMessageId(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId, Guid clientMessageId, string body) {
+        testingMockProvidersContainer.WebClient.PostJson("api/chatMessage/send", new { AuthToken = authToken, ChatGroupId = chatGroupId, ClientMessageId = clientMessageId, Body = body }).EnsureSuccessStatusCode();
+    }
+
+    private static void Rename(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId, string name) {
+        testingMockProvidersContainer.WebClient.PostJson("api/chatGroup/rename", new { AuthToken = authToken, ChatGroupId = chatGroupId, Name = name }).EnsureSuccessStatusCode();
+    }
+
+    private static void SetVisibility(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId, bool isPublic) {
+        testingMockProvidersContainer.WebClient.PostJson("api/chatGroup/setVisibility", new { AuthToken = authToken, ChatGroupId = chatGroupId, IsPublic = isPublic }).EnsureSuccessStatusCode();
+    }
+
+    private static void ApproveMember(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId, Guid memberUserAccountId) {
+        testingMockProvidersContainer.WebClient.PostJson("api/chatGroup/approveMember", new { AuthToken = authToken, ChatGroupId = chatGroupId, MemberUserAccountId = memberUserAccountId }).EnsureSuccessStatusCode();
+    }
+
+    private static void RemoveMember(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId, Guid memberUserAccountId) {
+        testingMockProvidersContainer.WebClient.PostJson("api/chatGroup/removeMember", new { AuthToken = authToken, ChatGroupId = chatGroupId, MemberUserAccountId = memberUserAccountId }).EnsureSuccessStatusCode();
+    }
+
+    private static void Leave(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId) {
+        testingMockProvidersContainer.WebClient.PostJson("api/chatGroup/leave", new { AuthToken = authToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
     }
 
     // Helpers - Seeding
@@ -273,6 +504,12 @@ public class PollMessagesTest {
         dbContext.SaveChanges();
     }
 
+    private static void AddActiveMemberAt(Guid groupId, Guid userAccountId, DateTime joinedAtUtc) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        dbContext.ChatGroupMembers.Add(new ChatGroupMember { Id = Guid.NewGuid(), ChatGroupId = groupId, UserAccountId = userAccountId, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = joinedAtUtc });
+        dbContext.SaveChanges();
+    }
+
     private static void SeedMessages(Guid groupId, Guid senderUserAccountId, int count) {
         using var dbContext = HappyPlaceDbContext.Create();
         DateTime now = DateTime.UtcNow;
@@ -287,5 +524,23 @@ public class PollMessagesTest {
         dbContext.ChatMessages.Add(new ChatMessage { Id = Guid.NewGuid(), ChatGroupId = groupId, SenderUserAccountId = senderUserAccountId, ClientMessageId = Guid.NewGuid(), Kind = ChatMessageKind.Text, BodyCipher = MessageCipher.Encrypt("deleted message"), CipherVersion = MessageCipher.CurrentVersion, Sequence = sequence, ChangeSequence = sequence, IsDeleted = true, CreatedAtUtc = DateTime.UtcNow });
         dbContext.SaveChanges();
         dbContext.ChatGroups.Where(field => field.Id == groupId).ExecuteUpdate(setters => setters.SetProperty(field => field.LastMessageSequence, sequence).SetProperty(field => field.LastChangeSequence, sequence));
+    }
+
+    // Helpers - Reading
+
+    private static bool ContainsUser(JsonElement arrayElement, Guid userAccountId) {
+        string target = userAccountId.ToString();
+        foreach (JsonElement entry in arrayElement.EnumerateArray())
+            if (entry.GetProperty("userAccountId").GetString() == target)
+                return true;
+        return false;
+    }
+
+    private static JsonElement GetEntry(JsonElement arrayElement, Guid userAccountId) {
+        string target = userAccountId.ToString();
+        foreach (JsonElement entry in arrayElement.EnumerateArray())
+            if (entry.GetProperty("userAccountId").GetString() == target)
+                return entry;
+        throw new InvalidOperationException("Member was not present in the response.");
     }
 }

@@ -1,3 +1,4 @@
+using HappyWorld.HappyPlace.Web.Json;
 using HappyWorld.HappyPlace.Web.Services;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.Threading.RateLimiting;
@@ -13,7 +14,7 @@ namespace HappyWorld.HappyPlace.WebApp {
         public static void Main(string[] args) {
             ThreadPool.SetMinThreads(MinWorkerThreads, MinCompletionPortThreads);
             var builder = WebApplication.CreateBuilder(args);
-            builder.Services.AddControllers();
+            builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new UtcDateTimeJsonConverter()));
             builder.Services.AddOpenApi();
             builder.Services.AddResponseCompression(options => {
                 options.EnableForHttps = true;

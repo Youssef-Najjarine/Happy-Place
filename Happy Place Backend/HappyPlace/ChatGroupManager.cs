@@ -162,12 +162,14 @@ public static class ChatGroupManager {
 
         List<ChatGroupMember> activeMembers = [.. dbContext.ChatGroupMembers
             .Where(field => field.ChatGroupId == chatGroupId && field.Status == ChatGroupMemberStatus.Active)
-            .OrderBy(field => field.JoinedAtUtc)];
+            .OrderBy(field => field.JoinedAtUtc)
+            .ThenBy(field => field.Id)];
         List<ChatGroupMember> pendingMembers = [];
         if (chatGroup.OwnerUserAccountId == userAccountId.Value)
             pendingMembers = [.. dbContext.ChatGroupMembers
                 .Where(field => field.ChatGroupId == chatGroupId && field.Status == ChatGroupMemberStatus.Pending)
-                .OrderBy(field => field.JoinedAtUtc)];
+                .OrderBy(field => field.JoinedAtUtc)
+                .ThenBy(field => field.Id)];
 
         List<Guid> neededUserAccountIds = [.. activeMembers.Select(field => field.UserAccountId)];
         neededUserAccountIds.AddRange(pendingMembers.Select(field => field.UserAccountId));
@@ -175,9 +177,9 @@ public static class ChatGroupManager {
             .Where(field => neededUserAccountIds.Contains(field.Id))
             .ToDictionary(field => field.Id);
 
-        List<ChatGroupMemberEntry> memberEntries = BuildMemberEntries(activeMembers, usersById, chatGroup.OwnerUserAccountId);
-        List<ChatGroupMemberEntry> pendingEntries = BuildMemberEntries(pendingMembers, usersById, chatGroup.OwnerUserAccountId);
-        return new ChatGroupMembersResult(memberEntries, pendingEntries);
+        List<ChatGroupMemberEntry> memberEntries = ChatGroupMemberEntry.FromMembers(activeMembers, usersById, chatGroup.OwnerUserAccountId);
+        List<ChatGroupMemberEntry> pendingEntries = ChatGroupMemberEntry.FromMembers(pendingMembers, usersById, chatGroup.OwnerUserAccountId);
+        return new ChatGroupMembersResult(userAccountId.Value.ToString(), memberEntries, pendingEntries);
     }
 
     // Methods - Owner Controls
@@ -551,16 +553,6 @@ public static class ChatGroupManager {
     }
 
     // Helpers
-
-    private static List<ChatGroupMemberEntry> BuildMemberEntries(List<ChatGroupMember> members, Dictionary<Guid, UserAccount> usersById, Guid? ownerUserAccountId) {
-        List<ChatGroupMemberEntry> entries = [];
-        foreach (ChatGroupMember member in members) {
-            if (!usersById.TryGetValue(member.UserAccountId, out UserAccount user))
-                continue;
-            entries.Add(new ChatGroupMemberEntry(user.Id.ToString(), user.DisplayName, user.Username, user.ProfilePhotoUrl, UserAccountRegistrar.GetAvatarColor(user.Id), user.Id == ownerUserAccountId));
-        }
-        return entries;
-    }
 
     private static int FeedBucketRank(ChatGroup group, Guid userAccountId, HashSet<Guid> activeGroupIds, HashSet<Guid> pendingGroupIds) {
         if (group.OwnerUserAccountId == userAccountId)

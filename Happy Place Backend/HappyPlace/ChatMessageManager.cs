@@ -118,7 +118,7 @@ public static class ChatMessageManager {
             .OrderBy(field => field.ChangeSequence)
             .Take(PollChangeCap)];
         long changeSequence = changedMessages.Count == 0 ? sinceChangeSequence : changedMessages[^1].ChangeSequence;
-        return ChatMessagePollResult.Ok(BuildEntries(dbContext, changedMessages), BuildSenderEntries(dbContext, changedMessages), BuildReadPointerEntries(activeMembers), BuildTypingUserIds(activeMembers, callerUserAccountId.Value), changeSequence);
+        return ChatMessagePollResult.Ok(BuildGroupState(dbContext, chatGroup, activeMembers), BuildEntries(dbContext, changedMessages), BuildSenderEntries(dbContext, changedMessages), BuildReadPointerEntries(activeMembers), BuildTypingUserIds(activeMembers, callerUserAccountId.Value), changeSequence);
     }
 
     public static ChatMessageMarkReadResult MarkRead(string authToken, Guid chatGroupId, long upToSequence) {
@@ -298,6 +298,13 @@ public static class ChatMessageManager {
             .Where(field => field.ChatGroupId == chatGroupId && field.Status == ChatGroupMemberStatus.Active)];
     }
 
+    private static ChatGroupStateEntry BuildGroupState(HappyPlaceDbContext dbContext, ChatGroup chatGroup, List<ChatGroupMember> activeMembers) {
+        List<ChatGroupMember> orderedMembers = [.. activeMembers.OrderBy(field => field.JoinedAtUtc).ThenBy(field => field.Id)];
+        List<Guid> memberUserAccountIds = [.. orderedMembers.Select(field => field.UserAccountId)];
+        Dictionary<Guid, UserAccount> usersById = dbContext.UserAccounts.Where(field => memberUserAccountIds.Contains(field.Id)).ToDictionary(field => field.Id);
+        return ChatGroupStateEntry.FromGroup(chatGroup, ChatGroupMemberEntry.FromMembers(orderedMembers, usersById, chatGroup.OwnerUserAccountId));
+    }
+
     private static List<ChatMessageReadPointerEntry> BuildReadPointerEntries(List<ChatGroupMember> activeMembers) {
         return [.. activeMembers
             .OrderBy(field => field.UserAccountId)
@@ -355,7 +362,7 @@ public static class ChatMessageManager {
             mediaHeight = mediaAsset.Height;
             mediaDurationSeconds = mediaAsset.DurationSeconds;
         }
-        return new ChatMessageEntry(message.Id.ToString(), message.Sequence, senderUserAccountId, (byte)message.Kind, body, message.IsDeleted, reactions, mediaUrl, mediaWidth, mediaHeight, mediaDurationSeconds, message.CreatedAtUtc);
+        return new ChatMessageEntry(message.Id.ToString(), message.ClientMessageId.ToString(), message.Sequence, senderUserAccountId, (byte)message.Kind, body, message.IsDeleted, reactions, mediaUrl, mediaWidth, mediaHeight, mediaDurationSeconds, message.CreatedAtUtc);
     }
 
     private static List<ChatMessageSenderEntry> BuildSenderEntries(HappyPlaceDbContext dbContext, List<ChatMessage> messages) {

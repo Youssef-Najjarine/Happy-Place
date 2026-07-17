@@ -277,6 +277,19 @@ public class ListMessagesPageTest {
         Assert.Equal(7, root.GetProperty("changeSequence").GetInt64());
     }
 
+    [Fact]
+    public void ListPageEntriesEchoClientMessageId() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "My Group", true);
+        Guid clientMessageId = Guid.NewGuid();
+        SendWithClientMessageId(testingMockProvidersContainer, ownerAuthToken, groupId, clientMessageId, "hello");
+
+        JsonElement root = ListPage(testingMockProvidersContainer, ownerAuthToken, groupId, null);
+
+        Assert.Equal(clientMessageId.ToString(), root.GetProperty("items")[0].GetProperty("clientMessageId").GetString());
+    }
+
     // Tests - Response Shape
 
     [Fact]
@@ -291,7 +304,7 @@ public class ListMessagesPageTest {
         List<string> actualProperties = [.. root.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
         List<string> expectedProperties = ["callerUserAccountId", "changeSequence", "items", "nextCursor", "readPointers", "senders", "status", "typing"];
         List<string> actualItemProperties = [.. root.GetProperty("items")[0].EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
-        List<string> expectedItemProperties = ["body", "createdAtUtc", "id", "isDeleted", "kind", "mediaDurationSeconds", "mediaHeight", "mediaUrl", "mediaWidth", "reactions", "senderUserAccountId", "sequence"];
+        List<string> expectedItemProperties = ["body", "clientMessageId", "createdAtUtc", "id", "isDeleted", "kind", "mediaDurationSeconds", "mediaHeight", "mediaUrl", "mediaWidth", "reactions", "senderUserAccountId", "sequence"];
         List<string> actualSenderProperties = [.. root.GetProperty("senders")[0].EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
         List<string> expectedSenderProperties = ["displayName", "id", "profilePhotoUrl"];
 
@@ -312,6 +325,10 @@ public class ListMessagesPageTest {
 
     private static void Send(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId, string body) {
         testingMockProvidersContainer.WebClient.PostJson("api/chatMessage/send", new { AuthToken = authToken, ChatGroupId = chatGroupId, ClientMessageId = Guid.NewGuid(), Body = body }).EnsureSuccessStatusCode();
+    }
+
+    private static void SendWithClientMessageId(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId, Guid clientMessageId, string body) {
+        testingMockProvidersContainer.WebClient.PostJson("api/chatMessage/send", new { AuthToken = authToken, ChatGroupId = chatGroupId, ClientMessageId = clientMessageId, Body = body }).EnsureSuccessStatusCode();
     }
 
     // Helpers - Seeding

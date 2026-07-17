@@ -245,6 +245,35 @@ public class ListMembersTest {
         Assert.False(ContainsUser(root.GetProperty("members"), pendingUserAccountId));
     }
 
+    // Tests - Caller Echo
+
+    [Fact]
+    public void ListMembersEchoesCallerUserAccountId() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        string memberAuthToken = CreateUser(testingMockProvidersContainer, "Member");
+        Guid ownerUserAccountId = ResolveUserAccountId(ownerAuthToken);
+        Guid memberUserAccountId = ResolveUserAccountId(memberAuthToken);
+        Guid groupId = CreateActiveGroup(ownerUserAccountId, "Private Group", false);
+        AddActiveMember(groupId, memberUserAccountId);
+
+        JsonElement ownerRoot = ListMembers(testingMockProvidersContainer, ownerAuthToken, groupId);
+        JsonElement memberRoot = ListMembers(testingMockProvidersContainer, memberAuthToken, groupId);
+
+        Assert.Equal(ownerUserAccountId.ToString(), ownerRoot.GetProperty("callerUserAccountId").GetString());
+        Assert.Equal(memberUserAccountId.ToString(), memberRoot.GetProperty("callerUserAccountId").GetString());
+    }
+
+    [Fact]
+    public void UnknownGroupResponseHasNullCallerUserAccountId() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string callerAuthToken = CreateUser(testingMockProvidersContainer, "Caller");
+
+        JsonElement root = ListMembers(testingMockProvidersContainer, callerAuthToken, Guid.NewGuid());
+
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("callerUserAccountId").ValueKind);
+    }
+
     // Tests - Ordering
 
     [Fact]
@@ -302,7 +331,7 @@ public class ListMembersTest {
 
         JsonElement root = ListMembers(testingMockProvidersContainer, ownerAuthToken, groupId);
         List<string> actualProperties = [.. root.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
-        List<string> expectedProperties = ["members", "pendingMembers"];
+        List<string> expectedProperties = ["callerUserAccountId", "members", "pendingMembers"];
 
         Assert.Equal(expectedProperties, actualProperties);
     }

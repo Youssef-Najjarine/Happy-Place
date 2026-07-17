@@ -263,6 +263,39 @@ public class SendMessageTest {
     }
 
     [Fact]
+    public void SentAndDuplicateResponsesEchoClientMessageId() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "My Group", true);
+        Guid clientMessageId = Guid.NewGuid();
+
+        JsonElement firstRoot = Send(testingMockProvidersContainer, ownerAuthToken, groupId, clientMessageId, "hello");
+        JsonElement secondRoot = Send(testingMockProvidersContainer, ownerAuthToken, groupId, clientMessageId, "hello");
+
+        Assert.Equal(clientMessageId.ToString(), firstRoot.GetProperty("message").GetProperty("clientMessageId").GetString());
+        Assert.Equal(clientMessageId.ToString(), secondRoot.GetProperty("message").GetProperty("clientMessageId").GetString());
+    }
+
+    [Fact]
+    public void DuplicateOfDeletedMessageReturnsOriginalWithIsDeleted() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string ownerAuthToken = CreateUser(testingMockProvidersContainer, "Owner");
+        Guid groupId = CreateActiveGroup(ResolveUserAccountId(ownerAuthToken), "My Group", true);
+        Guid clientMessageId = Guid.NewGuid();
+        JsonElement firstRoot = Send(testingMockProvidersContainer, ownerAuthToken, groupId, clientMessageId, "hello");
+        Guid messageId = Guid.Parse(firstRoot.GetProperty("message").GetProperty("id").GetString());
+        DeleteOwn(testingMockProvidersContainer, ownerAuthToken, groupId, messageId);
+
+        JsonElement secondRoot = Send(testingMockProvidersContainer, ownerAuthToken, groupId, clientMessageId, "hello");
+
+        Assert.Equal("duplicate", secondRoot.GetProperty("status").GetString());
+        Assert.Equal(messageId.ToString(), secondRoot.GetProperty("message").GetProperty("id").GetString());
+        Assert.True(secondRoot.GetProperty("message").GetProperty("isDeleted").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, secondRoot.GetProperty("message").GetProperty("body").ValueKind);
+        Assert.Equal(1, CountMessages(groupId));
+    }
+
+    [Fact]
     public void ConcurrentDuplicateClientMessageIdSendsCollapseToOneRow() {
         for (int trial = 0; trial < 5; trial++) {
             using var testingMockProvidersContainer = new TestingMockProvidersContainer();
@@ -389,7 +422,7 @@ public class SendMessageTest {
         List<string> actualProperties = [.. root.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
         List<string> expectedProperties = ["message", "status"];
         List<string> actualMessageProperties = [.. root.GetProperty("message").EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
-        List<string> expectedMessageProperties = ["body", "createdAtUtc", "id", "isDeleted", "kind", "mediaDurationSeconds", "mediaHeight", "mediaUrl", "mediaWidth", "reactions", "senderUserAccountId", "sequence"];
+        List<string> expectedMessageProperties = ["body", "clientMessageId", "createdAtUtc", "id", "isDeleted", "kind", "mediaDurationSeconds", "mediaHeight", "mediaUrl", "mediaWidth", "reactions", "senderUserAccountId", "sequence"];
 
         Assert.Equal(expectedProperties, actualProperties);
         Assert.Equal(expectedMessageProperties, actualMessageProperties);
@@ -403,6 +436,10 @@ public class SendMessageTest {
 
     private static JsonElement Send(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId, Guid clientMessageId, string body) {
         return testingMockProvidersContainer.WebClient.PostJson("api/chatMessage/send", new { AuthToken = authToken, ChatGroupId = chatGroupId, ClientMessageId = clientMessageId, Body = body }).ReadContentAsJsonDocument().RootElement.Clone();
+    }
+
+    private static void DeleteOwn(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, Guid chatGroupId, Guid messageId) {
+        testingMockProvidersContainer.WebClient.PostJson("api/chatMessage/deleteOwn", new { AuthToken = authToken, ChatGroupId = chatGroupId, MessageId = messageId }).EnsureSuccessStatusCode();
     }
 
     // Helpers - Seeding
