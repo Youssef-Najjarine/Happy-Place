@@ -85,4 +85,34 @@ public class ChatGroupController : ControllerBase {
         if (!model.IsAuthenticated()) return this.Unauthorized();
         return this.Ok(model.RemoveMember());
     }
+
+    [HttpPost]
+    public IActionResult OpenDirect(ChatGroupOpenDirectModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        return this.Ok(model.OpenDirect());
+    }
+
+    [HttpPost]
+    public IActionResult Hide(ChatGroupHideModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        return this.Ok(model.Hide());
+    }
+
+    [HttpPost]
+    public IActionResult SetMuted(ChatGroupSetMutedModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        return this.Ok(model.SetMuted());
+    }
+
+    [HttpPost]
+    public IActionResult UnreadTotal(ChatGroupUnreadTotalModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        return this.Ok(model.UnreadTotal());
+    }
+
+    [HttpPost]
+    public IActionResult CreateWithFriends(ChatGroupCreateWithFriendsModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        return this.Ok(model.CreateWithFriends());
+    }
 }

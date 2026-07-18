@@ -34,6 +34,8 @@ public static class ChatMessageManager {
         bool callerIsActiveMember = dbContext.ChatGroupMembers.Any(field => field.ChatGroupId == chatGroupId && field.UserAccountId == senderUserAccountId.Value && field.Status == ChatGroupMemberStatus.Active);
         if (!callerIsActiveMember)
             return ChatMessageSendResult.NotMember();
+        if (DirectSendIsBlocked(dbContext, chatGroup, senderUserAccountId.Value))
+            return ChatMessageSendResult.NotFriends();
         ChatMediaAsset mediaAsset = null;
         if (isMediaSend) {
             mediaAsset = dbContext.ChatMediaAssets.SingleOrDefault(field => field.Id == mediaId);
@@ -73,6 +75,10 @@ public static class ChatMessageManager {
             }
         }
         transaction.Commit();
+        if (chatGroup.DirectPairLowId != null)
+            dbContext.ChatGroupMembers
+                .Where(field => field.ChatGroupId == chatGroupId && field.HiddenAtUtc != null)
+                .ExecuteUpdate(setters => setters.SetProperty(field => field.HiddenAtUtc, (DateTime?)null));
         NotificationDispatchManager.MarkMessagesDirty(chatGroupId, senderUserAccountId.Value);
         return ChatMessageSendResult.Sent(BuildEntry(message, [], mediaAsset));
     }
@@ -118,7 +124,7 @@ public static class ChatMessageManager {
             .OrderBy(field => field.ChangeSequence)
             .Take(PollChangeCap)];
         long changeSequence = changedMessages.Count == 0 ? sinceChangeSequence : changedMessages[^1].ChangeSequence;
-        return ChatMessagePollResult.Ok(BuildGroupState(dbContext, chatGroup, activeMembers), BuildEntries(dbContext, changedMessages), BuildSenderEntries(dbContext, changedMessages), BuildReadPointerEntries(activeMembers), BuildTypingUserIds(activeMembers, callerUserAccountId.Value), changeSequence);
+        return ChatMessagePollResult.Ok(BuildGroupState(dbContext, chatGroup, activeMembers, callerUserAccountId.Value), BuildEntries(dbContext, changedMessages), BuildSenderEntries(dbContext, changedMessages), BuildReadPointerEntries(activeMembers), BuildTypingUserIds(activeMembers, callerUserAccountId.Value), changeSequence);
     }
 
     public static ChatMessageMarkReadResult MarkRead(string authToken, Guid chatGroupId, long upToSequence) {
@@ -155,6 +161,8 @@ public static class ChatMessageManager {
         ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId);
         if (chatGroup == null || chatGroup.Status != ChatGroupStatus.Active)
             return ChatMessageTypingResult.GroupGone();
+        if (DirectSendIsBlocked(dbContext, chatGroup, callerUserAccountId.Value))
+            return ChatMessageTypingResult.NotFriends();
         int stamped = dbContext.ChatGroupMembers
             .Where(field => field.ChatGroupId == chatGroupId && field.UserAccountId == callerUserAccountId.Value && field.Status == ChatGroupMemberStatus.Active)
             .ExecuteUpdate(setters => setters.SetProperty(field => field.LastTypingAtUtc, (DateTime?)DateTime.UtcNow));
@@ -177,6 +185,8 @@ public static class ChatMessageManager {
         bool callerIsActiveMember = dbContext.ChatGroupMembers.Any(field => field.ChatGroupId == chatGroupId && field.UserAccountId == callerUserAccountId.Value && field.Status == ChatGroupMemberStatus.Active);
         if (!callerIsActiveMember)
             return ChatMessageReactResult.NotMember();
+        if (DirectSendIsBlocked(dbContext, chatGroup, callerUserAccountId.Value))
+            return ChatMessageReactResult.NotFriends();
         ChatMessage message = dbContext.ChatMessages.SingleOrDefault(field => field.Id == messageId && field.ChatGroupId == chatGroupId);
         if (message == null || message.IsDeleted)
             return ChatMessageReactResult.MessageGone();
@@ -298,11 +308,27 @@ public static class ChatMessageManager {
             .Where(field => field.ChatGroupId == chatGroupId && field.Status == ChatGroupMemberStatus.Active)];
     }
 
-    private static ChatGroupStateEntry BuildGroupState(HappyPlaceDbContext dbContext, ChatGroup chatGroup, List<ChatGroupMember> activeMembers) {
+    private static bool DirectSendIsBlocked(HappyPlaceDbContext dbContext, ChatGroup chatGroup, Guid callerUserAccountId) {
+        if (chatGroup.DirectPairLowId == null)
+            return false;
+        bool callerIsInPair = chatGroup.DirectPairLowId.Value == callerUserAccountId || chatGroup.DirectPairHighId.Value == callerUserAccountId;
+        if (!callerIsInPair)
+            return false;
+        Guid partnerUserAccountId = chatGroup.DirectPairLowId.Value == callerUserAccountId ? chatGroup.DirectPairHighId.Value : chatGroup.DirectPairLowId.Value;
+        return !FriendshipManager.CanDirectMessage(dbContext, callerUserAccountId, partnerUserAccountId);
+    }
+
+    private static ChatGroupStateEntry BuildGroupState(HappyPlaceDbContext dbContext, ChatGroup chatGroup, List<ChatGroupMember> activeMembers, Guid callerUserAccountId) {
         List<ChatGroupMember> orderedMembers = [.. activeMembers.OrderBy(field => field.JoinedAtUtc).ThenBy(field => field.Id)];
         List<Guid> memberUserAccountIds = [.. orderedMembers.Select(field => field.UserAccountId)];
         Dictionary<Guid, UserAccount> usersById = dbContext.UserAccounts.Where(field => memberUserAccountIds.Contains(field.Id)).ToDictionary(field => field.Id);
-        return ChatGroupStateEntry.FromGroup(chatGroup, ChatGroupMemberEntry.FromMembers(orderedMembers, usersById, chatGroup.OwnerUserAccountId));
+        ChatGroupDirectContact directContact = null;
+        if (chatGroup.DirectPairLowId != null) {
+            Guid partnerUserAccountId = chatGroup.DirectPairLowId.Value == callerUserAccountId ? chatGroup.DirectPairHighId.Value : chatGroup.DirectPairLowId.Value;
+            if (usersById.TryGetValue(partnerUserAccountId, out UserAccount partnerAccount))
+                directContact = ChatGroupDirectContact.FromUserAccount(partnerAccount);
+        }
+        return ChatGroupStateEntry.FromGroup(chatGroup, ChatGroupMemberEntry.FromMembers(orderedMembers, usersById, chatGroup.OwnerUserAccountId), directContact);
     }
 
     private static List<ChatMessageReadPointerEntry> BuildReadPointerEntries(List<ChatGroupMember> activeMembers) {

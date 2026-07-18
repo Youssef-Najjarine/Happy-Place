@@ -11,6 +11,10 @@ public record ChatMessageTypingResult(string Status) {
         return new ChatMessageTypingResult("notMember");
     }
 
+    public static ChatMessageTypingResult NotFriends() {
+        return new ChatMessageTypingResult("notFriends");
+    }
+
     public static ChatMessageTypingResult GroupGone() {
         return new ChatMessageTypingResult("groupGone");
     }

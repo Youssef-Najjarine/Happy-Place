@@ -15,4 +15,6 @@ public class ChatGroup {
     public DateTime LastSeenAtUtc { get; set; }
     public Int64 LastMessageSequence { get; set; }
     public Int64 LastChangeSequence { get; set; }
+    public Guid? DirectPairLowId { get; set; }
+    public Guid? DirectPairHighId { get; set; }
 }

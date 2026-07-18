@@ -26,4 +26,8 @@ public record ChatGroupLeaveResult(string Status) {
     public static ChatGroupLeaveResult NotMember() {
         return new ChatGroupLeaveResult("notMember");
     }
+
+    public static ChatGroupLeaveResult NotAllowed() {
+        return new ChatGroupLeaveResult("notAllowed");
+    }
 }

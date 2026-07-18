@@ -1,3 +1,4 @@
+using System.Data.SqlTypes;
 using HappyWorld.HappyPlace.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,7 @@ public static class ChatGroupManager {
     private static readonly int MaxHelperAvatars = 5;
     private static readonly int MaxAvailableHelpers = 50;
     private static readonly int MaxChatGroupNameLength = 100;
+    private static readonly int MaxFriendsGroupMembers = 20;
     private static readonly int MaxOwnerLeaveAttempts = 5;
     private static readonly int FeedPageSize = 50;
     private static readonly byte DefaultFeedCursorMarker = 1;
@@ -30,15 +32,14 @@ public static class ChatGroupManager {
         Dictionary<Guid, DateTime> myJoinedAtByGroup = myMemberships.ToDictionary(field => field.ChatGroupId, field => field.JoinedAtUtc);
 
         ChatGroupSortMode sortMode = ParseSortMode(sortBy);
+        List<Guid> blockRelatedIds = LoadBlockRelatedIds(dbContext, userAccountId.Value);
+        List<Guid> hiddenGroupIds = LoadHiddenGroupIds(dbContext, userAccountId.Value);
+        HashSet<Guid> mutedGroupIds = LoadMutedGroupIds(dbContext, userAccountId.Value);
         IQueryable<ChatGroup> matchingQuery = dbContext.ChatGroups
             .Where(field => field.Status == ChatGroupStatus.Active);
-        if (sortMode == ChatGroupSortMode.Public)
-            matchingQuery = matchingQuery.Where(field => field.IsPublic);
-        else if (sortMode == ChatGroupSortMode.Private)
-            matchingQuery = matchingQuery.Where(field => !field.IsPublic);
+        matchingQuery = ApplyFeedVisibility(matchingQuery, sortMode, activeGroupIds, blockRelatedIds, hiddenGroupIds);
         string searchPattern = BuildSearchPattern(search);
-        if (searchPattern != null)
-            matchingQuery = matchingQuery.Where(field => EF.Functions.Like(field.Name, searchPattern));
+        matchingQuery = ApplySearch(matchingQuery, dbContext, userAccountId.Value, searchPattern);
 
         List<ChatGroup> matchingGroups = [.. matchingQuery];
         if (matchingGroups.Count == 0)
@@ -62,6 +63,8 @@ public static class ChatGroupManager {
         Dictionary<Guid, int> unreadCounts = LoadUnreadCounts(dbContext, userAccountId.Value, matchingGroupIdList);
 
         List<ChatGroup> orderedGroups = OrderGroups(matchingGroups, sortMode, userAccountId.Value, activeGroupIds, pendingGroupIds, myJoinedAtByGroup, memberCounts);
+        Dictionary<Guid, ChatGroupDirectContact> directContactsByGroup = LoadDirectContacts(dbContext, orderedGroups, userAccountId.Value);
+        Dictionary<Guid, LastMessageEntry> lastMessagesByGroup = LoadLastMessages(dbContext, orderedGroups);
 
         List<ChatGroupSummaryResult> results = [];
         foreach (ChatGroup group in orderedGroups) {
@@ -72,7 +75,9 @@ public static class ChatGroupManager {
             int memberCount = memberCounts.TryGetValue(group.Id, out int count) ? count : 0;
             List<ChatGroupHelperAvatar> helpers = helpersByGroup.TryGetValue(group.Id, out List<ChatGroupHelperAvatar> avatars) ? avatars : [];
             int unreadCount = unreadCounts.TryGetValue(group.Id, out int unread) ? unread : 0;
-            results.Add(new ChatGroupSummaryResult(group.Id.ToString(), group.Name, group.IsPublic, owner, joined, joinRequest, pendingMembers, memberCount, helpers, unreadCount));
+            ChatGroupDirectContact directContact = directContactsByGroup.TryGetValue(group.Id, out ChatGroupDirectContact contact) ? contact : null;
+            LastMessageEntry lastMessageEntry = lastMessagesByGroup.TryGetValue(group.Id, out LastMessageEntry lastMessage) ? lastMessage : null;
+            results.Add(new ChatGroupSummaryResult(group.Id.ToString(), group.Name, group.IsPublic, owner, joined, joinRequest, pendingMembers, memberCount, helpers, unreadCount, group.DirectPairLowId != null, directContact, joined ? lastMessageEntry?.Preview : null, joined ? lastMessageEntry?.CreatedAtUtc : null, mutedGroupIds.Contains(group.Id)));
         }
         return results;
     }
@@ -126,14 +131,12 @@ public static class ChatGroupManager {
 
         ChatGroupSortMode sortMode = ParseSortMode(sortBy);
         string searchPattern = BuildSearchPattern(search);
+        List<Guid> blockRelatedIds = LoadBlockRelatedIds(dbContext, userAccountId.Value);
+        List<Guid> hiddenGroupIds = LoadHiddenGroupIds(dbContext, userAccountId.Value);
         IQueryable<ChatGroup> matchingQuery = dbContext.ChatGroups
             .Where(field => field.Status == ChatGroupStatus.Active);
-        if (sortMode == ChatGroupSortMode.Public)
-            matchingQuery = matchingQuery.Where(field => field.IsPublic);
-        else if (sortMode == ChatGroupSortMode.Private)
-            matchingQuery = matchingQuery.Where(field => !field.IsPublic);
-        if (searchPattern != null)
-            matchingQuery = matchingQuery.Where(field => EF.Functions.Like(field.Name, searchPattern));
+        matchingQuery = ApplyFeedVisibility(matchingQuery, sortMode, activeGroupIds, blockRelatedIds, hiddenGroupIds);
+        matchingQuery = ApplySearch(matchingQuery, dbContext, userAccountId.Value, searchPattern);
 
         List<ChatGroup> pageGroups;
         string nextCursor;
@@ -180,6 +183,160 @@ public static class ChatGroupManager {
         List<ChatGroupMemberEntry> memberEntries = ChatGroupMemberEntry.FromMembers(activeMembers, usersById, chatGroup.OwnerUserAccountId);
         List<ChatGroupMemberEntry> pendingEntries = ChatGroupMemberEntry.FromMembers(pendingMembers, usersById, chatGroup.OwnerUserAccountId);
         return new ChatGroupMembersResult(userAccountId.Value.ToString(), memberEntries, pendingEntries);
+    }
+
+    // Methods - Creation
+
+    public static ChatGroupCreateWithFriendsResult CreateWithFriends(string authToken, string name, List<string> usernames) {
+        var caller = UserAccountResolver.Resolve(authToken);
+        if (caller == null)
+            return ChatGroupCreateWithFriendsResult.None();
+        if (caller.IsAnonymous)
+            return ChatGroupCreateWithFriendsResult.AccountRequired();
+        string normalizedName = NormalizeName(name);
+        if (normalizedName == null)
+            return ChatGroupCreateWithFriendsResult.InvalidName();
+        using var dbContext = HappyPlaceDbContext.Create();
+        HashSet<Guid> friendUserAccountIds = [];
+        foreach (string username in usernames ?? []) {
+            UserAccount friendAccount = ResolveDirectPartner(dbContext, username);
+            if (friendAccount == null || friendAccount.Id == caller.Id)
+                return ChatGroupCreateWithFriendsResult.NotFriends();
+            if (!FriendshipManager.CanDirectMessage(dbContext, caller.Id, friendAccount.Id))
+                return ChatGroupCreateWithFriendsResult.NotFriends();
+            friendUserAccountIds.Add(friendAccount.Id);
+        }
+        if (friendUserAccountIds.Count == 0 || friendUserAccountIds.Count > MaxFriendsGroupMembers)
+            return ChatGroupCreateWithFriendsResult.NotFriends();
+        DateTime now = DateTime.UtcNow;
+        Guid chatGroupId = Guid.NewGuid();
+        dbContext.ChatGroups.Add(new ChatGroup { Id = chatGroupId, Name = normalizedName, OwnerUserAccountId = caller.Id, IsPublic = false, Status = ChatGroupStatus.Active, CreatedAtUtc = now, LastSeenAtUtc = now });
+        dbContext.ChatGroupMembers.Add(new ChatGroupMember { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, UserAccountId = caller.Id, MemberRole = ChatGroupMemberRole.Owner, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = now });
+        foreach (Guid friendUserAccountId in friendUserAccountIds)
+            dbContext.ChatGroupMembers.Add(new ChatGroupMember { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, UserAccountId = friendUserAccountId, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = now });
+        dbContext.SaveChanges();
+        return ChatGroupCreateWithFriendsResult.Created(chatGroupId);
+    }
+
+    // Methods - Direct Messages
+
+    public static ChatGroupOpenDirectResult OpenDirect(string authToken, string username) {
+        var caller = UserAccountResolver.Resolve(authToken);
+        if (caller == null)
+            return ChatGroupOpenDirectResult.None();
+        if (caller.IsAnonymous)
+            return ChatGroupOpenDirectResult.AccountRequired();
+        using var dbContext = HappyPlaceDbContext.Create();
+        UserAccount partner = ResolveDirectPartner(dbContext, username);
+        if (partner == null || partner.Id == caller.Id)
+            return ChatGroupOpenDirectResult.NotFriends();
+        if (!FriendshipManager.CanDirectMessage(dbContext, caller.Id, partner.Id))
+            return ChatGroupOpenDirectResult.NotFriends();
+        (Guid pairLowId, Guid pairHighId) = ComputeDirectPair(caller.Id, partner.Id);
+        ChatGroup existingGroup = dbContext.ChatGroups.SingleOrDefault(field => field.DirectPairLowId == pairLowId && field.DirectPairHighId == pairHighId);
+        if (existingGroup != null)
+            return OpenExistingDirectGroup(dbContext, existingGroup, caller.Id, partner.Id);
+        DateTime now = DateTime.UtcNow;
+        Guid chatGroupId = Guid.NewGuid();
+        dbContext.ChatGroups.Add(new ChatGroup { Id = chatGroupId, Name = "", OwnerUserAccountId = null, IsPublic = false, Status = ChatGroupStatus.Active, CreatedAtUtc = now, LastSeenAtUtc = now, DirectPairLowId = pairLowId, DirectPairHighId = pairHighId });
+        dbContext.ChatGroupMembers.Add(new ChatGroupMember { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, UserAccountId = caller.Id, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = now });
+        dbContext.ChatGroupMembers.Add(new ChatGroupMember { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, UserAccountId = partner.Id, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = now });
+        try {
+            dbContext.SaveChanges();
+        }
+        catch (DbUpdateException) {
+            return LoadDirectGroupAfterRace(pairLowId, pairHighId, caller.Id, partner.Id);
+        }
+        return ChatGroupOpenDirectResult.Opened(chatGroupId);
+    }
+
+    public static (Guid PairLowId, Guid PairHighId) ComputeDirectPair(Guid firstUserAccountId, Guid secondUserAccountId) {
+        bool firstIsLow = new SqlGuid(firstUserAccountId).CompareTo(new SqlGuid(secondUserAccountId)) < 0;
+        return firstIsLow ? (firstUserAccountId, secondUserAccountId) : (secondUserAccountId, firstUserAccountId);
+    }
+
+    private static ChatGroupOpenDirectResult OpenExistingDirectGroup(HappyPlaceDbContext dbContext, ChatGroup existingGroup, Guid callerUserAccountId, Guid partnerUserAccountId) {
+        if (existingGroup.Status != ChatGroupStatus.Active)
+            return ChatGroupOpenDirectResult.None();
+        EnsureDirectMemberships(dbContext, existingGroup.Id, callerUserAccountId, partnerUserAccountId);
+        return ChatGroupOpenDirectResult.Opened(existingGroup.Id);
+    }
+
+    private static ChatGroupOpenDirectResult LoadDirectGroupAfterRace(Guid pairLowId, Guid pairHighId, Guid callerUserAccountId, Guid partnerUserAccountId) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        ChatGroup existingGroup = dbContext.ChatGroups.SingleOrDefault(field => field.DirectPairLowId == pairLowId && field.DirectPairHighId == pairHighId);
+        if (existingGroup == null)
+            return ChatGroupOpenDirectResult.None();
+        return OpenExistingDirectGroup(dbContext, existingGroup, callerUserAccountId, partnerUserAccountId);
+    }
+
+    private static void EnsureDirectMemberships(HappyPlaceDbContext dbContext, Guid chatGroupId, Guid callerUserAccountId, Guid partnerUserAccountId) {
+        List<Guid> existingMemberIds = [.. dbContext.ChatGroupMembers
+            .Where(field => field.ChatGroupId == chatGroupId)
+            .Select(field => field.UserAccountId)];
+        DateTime now = DateTime.UtcNow;
+        if (!existingMemberIds.Contains(callerUserAccountId))
+            dbContext.ChatGroupMembers.Add(new ChatGroupMember { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, UserAccountId = callerUserAccountId, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = now });
+        if (!existingMemberIds.Contains(partnerUserAccountId))
+            dbContext.ChatGroupMembers.Add(new ChatGroupMember { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, UserAccountId = partnerUserAccountId, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = now });
+        dbContext.ChatGroupMembers
+            .Where(field => field.ChatGroupId == chatGroupId && field.UserAccountId == callerUserAccountId && field.HiddenAtUtc != null)
+            .ExecuteUpdate(setters => setters.SetProperty(field => field.HiddenAtUtc, (DateTime?)null));
+        TrySaveChanges(dbContext);
+    }
+
+    private static UserAccount ResolveDirectPartner(HappyPlaceDbContext dbContext, string username) {
+        string normalizedUsername = (username ?? "").Trim().ToLowerInvariant();
+        if (normalizedUsername.Length == 0)
+            return null;
+        UserAccount partner = dbContext.UserAccounts.SingleOrDefault(field => field.Username == normalizedUsername);
+        if (partner == null || partner.IsAnonymous)
+            return null;
+        return partner;
+    }
+
+    // Methods - Membership Preferences
+
+    public static ChatGroupHideResult Hide(string authToken, Guid chatGroupId) {
+        Guid? callerUserAccountId = HelpParticipant.ResolveUserAccountId(authToken);
+        if (callerUserAccountId == null)
+            return ChatGroupHideResult.None();
+        using var dbContext = HappyPlaceDbContext.Create();
+        ChatGroupMember membership = dbContext.ChatGroupMembers.SingleOrDefault(field => field.ChatGroupId == chatGroupId && field.UserAccountId == callerUserAccountId.Value && field.Status == ChatGroupMemberStatus.Active);
+        if (membership == null)
+            return ChatGroupHideResult.NotMember();
+        ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId);
+        if (chatGroup == null)
+            return ChatGroupHideResult.NotMember();
+        if (chatGroup.DirectPairLowId == null)
+            return ChatGroupHideResult.NotAllowed();
+        membership.HiddenAtUtc = DateTime.UtcNow;
+        dbContext.SaveChanges();
+        return ChatGroupHideResult.Hidden();
+    }
+
+    public static ChatGroupMuteResult SetMuted(string authToken, Guid chatGroupId, bool isMuted) {
+        Guid? callerUserAccountId = HelpParticipant.ResolveUserAccountId(authToken);
+        if (callerUserAccountId == null)
+            return ChatGroupMuteResult.None();
+        using var dbContext = HappyPlaceDbContext.Create();
+        ChatGroupMember membership = dbContext.ChatGroupMembers.SingleOrDefault(field => field.ChatGroupId == chatGroupId && field.UserAccountId == callerUserAccountId.Value && field.Status == ChatGroupMemberStatus.Active);
+        if (membership == null)
+            return ChatGroupMuteResult.NotMember();
+        membership.IsMuted = isMuted;
+        dbContext.SaveChanges();
+        return isMuted ? ChatGroupMuteResult.Muted() : ChatGroupMuteResult.Unmuted();
+    }
+
+    public static ChatGroupUnreadTotalResult UnreadTotal(string authToken) {
+        Guid? callerUserAccountId = HelpParticipant.ResolveUserAccountId(authToken);
+        if (callerUserAccountId == null)
+            return ChatGroupUnreadTotalResult.None();
+        using var dbContext = HappyPlaceDbContext.Create();
+        int total = dbContext.ChatGroupMembers
+            .Where(field => field.UserAccountId == callerUserAccountId.Value && field.Status == ChatGroupMemberStatus.Active && field.HiddenAtUtc == null)
+            .Sum(field => dbContext.ChatMessages.Count(message => message.ChatGroupId == field.ChatGroupId && !message.IsDeleted && message.SenderUserAccountId != callerUserAccountId.Value && message.Sequence > field.LastReadSequence));
+        return ChatGroupUnreadTotalResult.Ok(total);
     }
 
     // Methods - Owner Controls
@@ -249,6 +406,11 @@ public static class ChatGroupManager {
             ChatGroupMember membership = dbContext.ChatGroupMembers.SingleOrDefault(field => field.ChatGroupId == chatGroupId && field.UserAccountId == userAccountId.Value && field.Status == ChatGroupMemberStatus.Active);
             if (membership == null)
                 return ChatGroupLeaveResult.NotMember();
+            ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId);
+            if (chatGroup == null)
+                return ChatGroupLeaveResult.NotMember();
+            if (chatGroup.DirectPairLowId != null)
+                return ChatGroupLeaveResult.NotAllowed();
             if (membership.MemberRole != ChatGroupMemberRole.Owner) {
                 dbContext.ChatGroupMembers.Where(field => field.Id == membership.Id).ExecuteDelete();
                 ReleaseConnectedOffer(dbContext, chatGroupId, userAccountId.Value);
@@ -268,7 +430,7 @@ public static class ChatGroupManager {
             return ChatGroupJoinRequestResult.None();
         using var dbContext = HappyPlaceDbContext.Create();
         ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId);
-        if (chatGroup == null || chatGroup.Status != ChatGroupStatus.Active || chatGroup.IsPublic)
+        if (chatGroup == null || chatGroup.Status != ChatGroupStatus.Active || chatGroup.IsPublic || chatGroup.DirectPairLowId != null)
             return ChatGroupJoinRequestResult.None();
         ChatGroupMember existingMembership = dbContext.ChatGroupMembers.SingleOrDefault(field => field.ChatGroupId == chatGroupId && field.UserAccountId == userAccountId.Value);
         if (existingMembership != null) {
@@ -383,6 +545,16 @@ public static class ChatGroupManager {
         foreach (Guid offeredGroupId in offeredGroupIds)
             NotificationDispatchManager.MarkOffersDirty(offeredGroupId);
         dbContext.ChatMessageReactions.Where(field => field.UserAccountId == userAccountId).ExecuteDelete();
+        List<Guid> directGroupIds = [.. dbContext.ChatGroups
+            .Where(field => (field.DirectPairLowId == userAccountId || field.DirectPairHighId == userAccountId) && field.Status != ChatGroupStatus.Deleted)
+            .Select(field => field.Id)];
+        foreach (Guid directGroupId in directGroupIds) {
+            NotificationDispatchManager.RemoveMessagesChannels(directGroupId);
+            dbContext.ChatGroups
+                .Where(field => field.Id == directGroupId && field.Status != ChatGroupStatus.Deleted)
+                .ExecuteUpdate(setters => setters.SetProperty(field => field.Status, ChatGroupStatus.Deleted));
+            ClearSoftDeletedGroupRows(dbContext, directGroupId);
+        }
         List<Guid> ownedGroupIds = [.. dbContext.ChatGroups
             .Where(field => field.OwnerUserAccountId == userAccountId && field.Status != ChatGroupStatus.Deleted)
             .Select(field => field.Id)];
@@ -636,6 +808,8 @@ public static class ChatGroupManager {
             return ChatGroupSortMode.Public;
         if (string.Equals(normalizedSortBy, "Private", StringComparison.OrdinalIgnoreCase))
             return ChatGroupSortMode.Private;
+        if (string.Equals(normalizedSortBy, "Direct", StringComparison.OrdinalIgnoreCase))
+            return ChatGroupSortMode.DirectMessages;
         return ChatGroupSortMode.Latest;
     }
 
@@ -669,12 +843,15 @@ public static class ChatGroupManager {
             .ThenByDescending(group => FeedSortTimestamp(group, userAccountId, activeGroupIds, pendingGroupIds, myJoinedAtByGroup))];
     }
 
+    private sealed record LastMessageEntry(string Preview, DateTime CreatedAtUtc);
+
     private enum ChatGroupSortMode : byte {
         Latest = 0,
         Popular = 1,
         MostActive = 2,
         Public = 3,
-        Private = 4
+        Private = 4,
+        DirectMessages = 5
     }
 
 
@@ -769,6 +946,9 @@ public static class ChatGroupManager {
         List<Guid> avatarGroupIds = [.. pageGroups.Where(field => field.IsPublic || activeGroupIds.Contains(field.Id)).Select(field => field.Id)];
         Dictionary<Guid, List<ChatGroupHelperAvatar>> helpersByGroup = LoadHelperAvatars(dbContext, avatarGroupIds);
         Dictionary<Guid, int> unreadCounts = LoadUnreadCounts(dbContext, userAccountId, pageGroupIdList);
+        Dictionary<Guid, ChatGroupDirectContact> directContactsByGroup = LoadDirectContacts(dbContext, pageGroups, userAccountId);
+        Dictionary<Guid, LastMessageEntry> lastMessagesByGroup = LoadLastMessages(dbContext, pageGroups);
+        HashSet<Guid> mutedGroupIds = LoadMutedGroupIds(dbContext, userAccountId);
         List<ChatGroupSummaryResult> results = [];
         foreach (ChatGroup group in pageGroups) {
             bool owner = group.OwnerUserAccountId == userAccountId;
@@ -778,7 +958,9 @@ public static class ChatGroupManager {
             int memberCount = memberCounts.TryGetValue(group.Id, out int count) ? count : 0;
             List<ChatGroupHelperAvatar> helpers = helpersByGroup.TryGetValue(group.Id, out List<ChatGroupHelperAvatar> avatars) ? avatars : [];
             int unreadCount = unreadCounts.TryGetValue(group.Id, out int unread) ? unread : 0;
-            results.Add(new ChatGroupSummaryResult(group.Id.ToString(), group.Name, group.IsPublic, owner, joined, joinRequest, pendingMembers, memberCount, helpers, unreadCount));
+            ChatGroupDirectContact directContact = directContactsByGroup.TryGetValue(group.Id, out ChatGroupDirectContact contact) ? contact : null;
+            LastMessageEntry lastMessageEntry = lastMessagesByGroup.TryGetValue(group.Id, out LastMessageEntry lastMessage) ? lastMessage : null;
+            results.Add(new ChatGroupSummaryResult(group.Id.ToString(), group.Name, group.IsPublic, owner, joined, joinRequest, pendingMembers, memberCount, helpers, unreadCount, group.DirectPairLowId != null, directContact, joined ? lastMessageEntry?.Preview : null, joined ? lastMessageEntry?.CreatedAtUtc : null, mutedGroupIds.Contains(group.Id)));
         }
         return results;
     }
@@ -793,6 +975,103 @@ public static class ChatGroupManager {
                 Count = dbContext.ChatMessages.Count(message => message.ChatGroupId == member.ChatGroupId && message.Sequence > member.LastReadSequence && !message.IsDeleted && message.SenderUserAccountId != callerUserAccountId)
             })
             .ToDictionary(row => row.ChatGroupId, row => row.Count);
+    }
+
+    private static List<Guid> LoadBlockRelatedIds(HappyPlaceDbContext dbContext, Guid callerUserAccountId) {
+        return [.. dbContext.UserBlocks
+            .Where(field => field.BlockerUserAccountId == callerUserAccountId || field.BlockedUserAccountId == callerUserAccountId)
+            .Select(field => field.BlockerUserAccountId == callerUserAccountId ? field.BlockedUserAccountId : field.BlockerUserAccountId)];
+    }
+
+    private static IQueryable<ChatGroup> ApplyFeedVisibility(IQueryable<ChatGroup> matchingQuery, ChatGroupSortMode sortMode, HashSet<Guid> activeGroupIds, List<Guid> blockRelatedIds, List<Guid> hiddenGroupIds) {
+        matchingQuery = matchingQuery.Where(field => field.DirectPairLowId == null || (activeGroupIds.Contains(field.Id) && !blockRelatedIds.Contains(field.DirectPairLowId.Value) && !blockRelatedIds.Contains(field.DirectPairHighId.Value) && !hiddenGroupIds.Contains(field.Id)));
+        if (sortMode == ChatGroupSortMode.Public)
+            return matchingQuery.Where(field => field.IsPublic);
+        if (sortMode == ChatGroupSortMode.Private)
+            return matchingQuery.Where(field => !field.IsPublic && field.DirectPairLowId == null);
+        if (sortMode == ChatGroupSortMode.DirectMessages)
+            return matchingQuery.Where(field => field.DirectPairLowId != null);
+        return matchingQuery;
+    }
+
+    private static IQueryable<ChatGroup> ApplySearch(IQueryable<ChatGroup> matchingQuery, HappyPlaceDbContext dbContext, Guid callerUserAccountId, string searchPattern) {
+        if (searchPattern == null)
+            return matchingQuery;
+        return matchingQuery.Where(field => (field.DirectPairLowId == null && EF.Functions.Like(field.Name, searchPattern))
+            || (field.DirectPairLowId != null && dbContext.UserAccounts.Any(user => user.Id != callerUserAccountId && (user.Id == field.DirectPairLowId.Value || user.Id == field.DirectPairHighId.Value) && (EF.Functions.Like(user.DisplayName, searchPattern) || EF.Functions.Like(user.Username, searchPattern)))));
+    }
+
+    private static HashSet<Guid> LoadMutedGroupIds(HappyPlaceDbContext dbContext, Guid callerUserAccountId) {
+        return [.. dbContext.ChatGroupMembers
+            .Where(field => field.UserAccountId == callerUserAccountId && field.IsMuted)
+            .Select(field => field.ChatGroupId)];
+    }
+
+    private static List<Guid> LoadHiddenGroupIds(HappyPlaceDbContext dbContext, Guid callerUserAccountId) {
+        return [.. dbContext.ChatGroupMembers
+            .Where(field => field.UserAccountId == callerUserAccountId && field.HiddenAtUtc != null)
+            .Select(field => field.ChatGroupId)];
+    }
+
+    private static Dictionary<Guid, LastMessageEntry> LoadLastMessages(HappyPlaceDbContext dbContext, List<ChatGroup> groups) {
+        List<Guid> groupIds = [.. groups.Select(field => field.Id)];
+        if (groupIds.Count == 0)
+            return [];
+        var maxSequences = dbContext.ChatMessages
+            .Where(field => groupIds.Contains(field.ChatGroupId))
+            .GroupBy(field => field.ChatGroupId)
+            .Select(grouping => new { ChatGroupId = grouping.Key, MaxSequence = grouping.Max(message => message.Sequence) })
+            .ToList();
+        if (maxSequences.Count == 0)
+            return [];
+        Dictionary<Guid, long> maxSequenceByGroup = maxSequences.ToDictionary(field => field.ChatGroupId, field => field.MaxSequence);
+        List<long> sequenceValues = [.. maxSequenceByGroup.Values.Distinct()];
+        List<ChatMessage> candidateMessages = [.. dbContext.ChatMessages
+            .Where(field => groupIds.Contains(field.ChatGroupId) && sequenceValues.Contains(field.Sequence))];
+        Dictionary<Guid, LastMessageEntry> lastMessagesByGroup = [];
+        foreach (ChatMessage candidateMessage in candidateMessages)
+            if (maxSequenceByGroup.TryGetValue(candidateMessage.ChatGroupId, out long maxSequence) && candidateMessage.Sequence == maxSequence)
+                lastMessagesByGroup[candidateMessage.ChatGroupId] = new LastMessageEntry(BuildMessagePreview(candidateMessage), candidateMessage.CreatedAtUtc);
+        return lastMessagesByGroup;
+    }
+
+    private static string BuildMessagePreview(ChatMessage message) {
+        if (message.IsDeleted)
+            return "Message deleted";
+        if (message.Kind != ChatMessageKind.Text) {
+            byte kindValue = (byte)message.Kind;
+            if (kindValue == 2)
+                return "Photo";
+            if (kindValue == 3)
+                return "Video";
+            return "Voice message";
+        }
+        string body = MessageCipher.Decrypt(message.BodyCipher);
+        if (body == null)
+            return "";
+        if (body.Length <= 120)
+            return body;
+        return body[..120];
+    }
+
+    private static Dictionary<Guid, ChatGroupDirectContact> LoadDirectContacts(HappyPlaceDbContext dbContext, List<ChatGroup> groups, Guid callerUserAccountId) {
+        Dictionary<Guid, Guid> partnerIdsByGroup = [];
+        foreach (ChatGroup group in groups) {
+            if (group.DirectPairLowId == null)
+                continue;
+            partnerIdsByGroup[group.Id] = group.DirectPairLowId.Value == callerUserAccountId ? group.DirectPairHighId.Value : group.DirectPairLowId.Value;
+        }
+        if (partnerIdsByGroup.Count == 0)
+            return [];
+        List<Guid> partnerUserAccountIds = [.. partnerIdsByGroup.Values.Distinct()];
+        Dictionary<Guid, UserAccount> partnersById = dbContext.UserAccounts
+            .Where(field => partnerUserAccountIds.Contains(field.Id))
+            .ToDictionary(field => field.Id);
+        Dictionary<Guid, ChatGroupDirectContact> directContactsByGroup = [];
+        foreach (KeyValuePair<Guid, Guid> entry in partnerIdsByGroup)
+            if (partnersById.TryGetValue(entry.Value, out UserAccount partnerAccount))
+                directContactsByGroup[entry.Key] = ChatGroupDirectContact.FromUserAccount(partnerAccount);
+        return directContactsByGroup;
     }
 
     private static void TrySaveChanges(HappyPlaceDbContext dbContext) {

@@ -17,7 +17,10 @@ CREATE TABLE [dbo].[ChatGroupMember]
 		constraint [DF-ChatGroupMember-JoinedAtUtc] default sysutcdatetime(),
 	[LastReadSequence] bigint NOT NULL
 		constraint [DF-ChatGroupMember-LastReadSequence] default 0,
-	[LastTypingAtUtc] datetime2(7) NULL
+	[LastTypingAtUtc] datetime2(7) NULL,
+	[HiddenAtUtc] datetime2(0) NULL,
+	[IsMuted] bit NOT NULL
+		constraint [DF-ChatGroupMember-IsMuted] default 0
 )
 GO
 

@@ -310,6 +310,13 @@ public class FriendshipManager {
 
     // Methods - Status
 
+    public static bool CanDirectMessage(HappyPlaceDbContext dbContext, Guid firstUserAccountId, Guid secondUserAccountId) {
+        Friendship friendship = FindFriendshipBetween(dbContext, firstUserAccountId, secondUserAccountId);
+        if (friendship == null || friendship.Status != FriendshipStatus.Accepted)
+            return false;
+        return !IsBlockedEitherDirection(dbContext, firstUserAccountId, secondUserAccountId);
+    }
+
     public static string ComputeFriendshipStatus(Guid callerUserAccountId, Guid targetUserAccountId) {
         if (callerUserAccountId == targetUserAccountId)
             return "self";

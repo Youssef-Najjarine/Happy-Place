@@ -23,6 +23,10 @@ public record ChatMessageReactResult(string Status) {
         return new ChatMessageReactResult("notMember");
     }
 
+    public static ChatMessageReactResult NotFriends() {
+        return new ChatMessageReactResult("notFriends");
+    }
+
     public static ChatMessageReactResult GroupGone() {
         return new ChatMessageReactResult("groupGone");
     }

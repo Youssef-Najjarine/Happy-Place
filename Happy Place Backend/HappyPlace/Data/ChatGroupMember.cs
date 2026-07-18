@@ -13,4 +13,6 @@ public class ChatGroupMember {
     public DateTime JoinedAtUtc { get; set; }
     public Int64 LastReadSequence { get; set; }
     public DateTime? LastTypingAtUtc { get; set; }
+    public DateTime? HiddenAtUtc { get; set; }
+    public bool IsMuted { get; set; }
 }

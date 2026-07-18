@@ -139,7 +139,7 @@ public static class NotificationDispatchManager {
         try {
             EnsureMessagesChannels(chatGroupId, senderUserAccountId);
             using var dbContext = HappyPlaceDbContext.Create();
-            MarkDirty(dbContext.NotificationChannels.Where(field => field.Kind == NotificationChannelKind.Messages && field.ScopeChatGroupId == chatGroupId && field.RecipientUserAccountId != senderUserAccountId));
+            MarkDirty(dbContext.NotificationChannels.Where(field => field.Kind == NotificationChannelKind.Messages && field.ScopeChatGroupId == chatGroupId && field.RecipientUserAccountId != senderUserAccountId && !dbContext.ChatGroupMembers.Any(member => member.ChatGroupId == chatGroupId && member.UserAccountId == field.RecipientUserAccountId && member.IsMuted)));
         }
         catch (Exception) {
         }
@@ -439,9 +439,9 @@ public static class NotificationDispatchManager {
             });
         }
         if (channel.Kind == NotificationChannelKind.Messages) {
-            string chatGroupName = LoadChatGroupName(channel.ScopeChatGroupId);
+            string messagesTitle = LoadMessagesTitle(channel);
             string messagesBody = count == 1 ? "1 new message." : $"{count} new messages.";
-            return new NotificationContent(chatGroupName, messagesBody, new() {
+            return new NotificationContent(messagesTitle, messagesBody, new() {
                 ["type"] = "chatMessages",
                 ["count"] = count.ToString(),
                 ["chatGroupId"] = channel.ScopeChatGroupId == null ? "" : channel.ScopeChatGroupId.Value.ToString()
@@ -460,6 +460,25 @@ public static class NotificationDispatchManager {
             ["count"] = count.ToString(),
             ["chatGroupId"] = channel.ScopeChatGroupId == null ? "" : channel.ScopeChatGroupId.Value.ToString()
         });
+    }
+
+    private static string LoadMessagesTitle(NotificationChannel channel) {
+        if (channel.ScopeChatGroupId == null)
+            return "your group";
+        using var dbContext = HappyPlaceDbContext.Create();
+        ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == channel.ScopeChatGroupId.Value);
+        if (chatGroup == null)
+            return "your group";
+        if (chatGroup.DirectPairLowId == null) {
+            if (string.IsNullOrWhiteSpace(chatGroup.Name))
+                return "your group";
+            return chatGroup.Name;
+        }
+        Guid partnerUserAccountId = chatGroup.DirectPairLowId.Value == channel.RecipientUserAccountId ? chatGroup.DirectPairHighId.Value : chatGroup.DirectPairLowId.Value;
+        UserAccount partnerAccount = dbContext.UserAccounts.SingleOrDefault(field => field.Id == partnerUserAccountId);
+        if (partnerAccount == null || string.IsNullOrWhiteSpace(partnerAccount.DisplayName))
+            return "Direct message";
+        return partnerAccount.DisplayName;
     }
 
     private static string LoadChatGroupName(Guid? chatGroupId) {

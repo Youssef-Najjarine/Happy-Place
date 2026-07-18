@@ -15,6 +15,10 @@ public record ChatMessageSendResult(string Status, ChatMessageEntry Message) {
         return new ChatMessageSendResult("notMember", null);
     }
 
+    public static ChatMessageSendResult NotFriends() {
+        return new ChatMessageSendResult("notFriends", null);
+    }
+
     public static ChatMessageSendResult GroupGone() {
         return new ChatMessageSendResult("groupGone", null);
     }

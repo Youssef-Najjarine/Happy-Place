@@ -61,6 +61,8 @@ public static class HelpOfferManager {
         ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId);
         if (chatGroup == null || chatGroup.Status != ChatGroupStatus.Active)
             return HelpJoinResult.Unavailable();
+        if (chatGroup.DirectPairLowId != null)
+            return HelpJoinResult.Unavailable();
         if (!chatGroup.IsPublic) {
             bool invited = dbContext.HelpOffers.Any(field => field.ChatGroupId == chatGroupId && field.HelperUserAccountId == userAccountId.Value && field.Status == HelpOfferStatus.Connected);
             if (!invited)
@@ -182,7 +184,7 @@ public static class HelpOfferManager {
 
     private static void ClaimOwnershipIfUnowned(HappyPlaceDbContext dbContext, Guid chatGroupId, Guid userAccountId) {
         int claimed = dbContext.ChatGroups
-            .Where(field => field.Id == chatGroupId && field.OwnerUserAccountId == null)
+            .Where(field => field.Id == chatGroupId && field.OwnerUserAccountId == null && field.DirectPairLowId == null)
             .ExecuteUpdate(setters => setters.SetProperty(field => field.OwnerUserAccountId, (Guid?)userAccountId));
         if (claimed != 1)
             return;

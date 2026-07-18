@@ -241,7 +241,7 @@ public class PollMessagesTest {
 
         JsonElement group = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0).GetProperty("group");
         List<string> actualGroupProperties = [.. group.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
-        List<string> expectedGroupProperties = ["isPublic", "members", "title"];
+        List<string> expectedGroupProperties = ["directContact", "isDirect", "isPublic", "members", "title"];
         JsonElement memberEntry = group.GetProperty("members")[0];
         List<string> actualMemberProperties = [.. memberEntry.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
         List<string> expectedMemberProperties = ["avatarColor", "isOwner", "name", "profilePhotoUrl", "userAccountId", "username"];

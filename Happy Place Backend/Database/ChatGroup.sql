@@ -19,7 +19,12 @@ CREATE TABLE [dbo].[ChatGroup]
 	[LastMessageSequence] bigint NOT NULL
 		constraint [DF-ChatGroup-LastMessageSequence] default 0,
 	[LastChangeSequence] bigint NOT NULL
-		constraint [DF-ChatGroup-LastChangeSequence] default 0
+		constraint [DF-ChatGroup-LastChangeSequence] default 0,
+	[DirectPairLowId] uniqueidentifier NULL,
+	[DirectPairHighId] uniqueidentifier NULL,
+	constraint [CK-ChatGroup-DirectPair] CHECK (([DirectPairLowId] IS NULL AND [DirectPairHighId] IS NULL) OR ([DirectPairLowId] IS NOT NULL AND [DirectPairHighId] IS NOT NULL AND [DirectPairLowId] < [DirectPairHighId])),
+	constraint [CK-ChatGroup-DirectNotPublic] CHECK ([DirectPairLowId] IS NULL OR [IsPublic] = 0),
+	constraint [CK-ChatGroup-DirectUnowned] CHECK ([DirectPairLowId] IS NULL OR [OwnerUserAccountId] IS NULL)
 )
 GO
 
@@ -45,4 +50,9 @@ GO
 CREATE NONCLUSTERED INDEX [IX-ChatGroup-Status-CreatedAtUtc]
 	ON [dbo].[ChatGroup]([Status], [CreatedAtUtc])
 	INCLUDE ([Name], [OwnerUserAccountId], [IsPublic], [LastSeenAtUtc]);
+GO
+
+CREATE UNIQUE NONCLUSTERED INDEX [UQ-ChatGroup-DirectPairLowId-DirectPairHighId]
+	ON [dbo].[ChatGroup]([DirectPairLowId], [DirectPairHighId])
+	WHERE [DirectPairLowId] IS NOT NULL;
 GO
