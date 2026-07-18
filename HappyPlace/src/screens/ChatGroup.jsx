@@ -127,6 +127,28 @@ const phoneStyles = StyleSheet.create({
         gap: scaleHeight(2),
         flex: 1
     },
+    directHeaderRow: {
+        gap: scaleWidth(10),
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    headerTextColumn: {
+        gap: scaleHeight(2)
+    },
+    directHeaderTextColumn: {
+        gap: scaleHeight(2),
+        flex: 1
+    },
+    directHeaderAvatar: {
+        width: scaleWidth(36),
+        height: scaleWidth(36),
+        borderRadius: scaleWidth(18)
+    },
+    directHeaderAvatarInitial: {
+        fontSize: scaleFont(14),
+        fontWeight: 600,
+        color: White
+    },
     largeIcons: {
         width: scaleWidth(28),
         height: scaleHeight(28),
@@ -1077,6 +1099,28 @@ const tabletStyles = StyleSheet.create({
     chatNameAndMembers: {
         gap: scaleHeight(2.68),
         flex: 1
+    },
+    directHeaderRow: {
+        gap: scaleWidth(12),
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    headerTextColumn: {
+        gap: scaleHeight(2.68)
+    },
+    directHeaderTextColumn: {
+        gap: scaleHeight(2.68),
+        flex: 1
+    },
+    directHeaderAvatar: {
+        width: scaleWidth(44),
+        height: scaleWidth(44),
+        borderRadius: scaleWidth(22)
+    },
+    directHeaderAvatarInitial: {
+        fontSize: scaleFont(18),
+        fontWeight: 600,
+        color: White
     },
     largeIcons: {
         width: scaleWidth(37.557),
@@ -2230,6 +2274,9 @@ export default function ChatGroup() {
     return callerEntry ? !!callerEntry.isOwner : false;
   }, [groupState, callerUserAccountId]);
   const owner = ownerFromGroupState ?? !!cachedGroup?.owner;
+  const isDirect = groupState ? !!groupState.isDirect : !!cachedGroup?.isDirect;
+  const directContact = groupState?.directContact ?? cachedGroup?.directContact ?? null;
+  const headerTitle = isDirect ? ((directContact && directContact.displayName) || 'Direct message') : chatName;
   const activeMemberEntries = groupState?.members ?? membersQuery.data?.members ?? [];
   const pendingMemberEntries = owner ? (membersQuery.data?.pendingMembers ?? []) : [];
   const firstPendingMember = pendingMemberEntries.length > 0 ? pendingMemberEntries[0] : null;
@@ -2701,6 +2748,10 @@ export default function ChatGroup() {
     }
     if (!body) return;
     const result = await send(body);
+    if (!result.ok && result.status === 'notFriends') {
+      showToast('You can only message friends', 'error');
+      return;
+    }
     if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone' && result.status !== 'unreachable') {
       showToast("Couldn't send your message", 'info');
       setChatText(body);
@@ -2717,8 +2768,12 @@ export default function ChatGroup() {
   }, []);
 
   const handleChatNamePress = useCallback(() => {
+    if (isDirect) {
+      if (directContact && directContact.username) navigation.push('Profile', { username: directContact.username });
+      return;
+    }
     setShowViewChatNameModal(true);
-  }, []);
+  }, [isDirect, directContact, navigation]);
 
   const handleRetryFailed = useCallback(() => {
     if (!failedTarget) return;
@@ -3314,13 +3369,29 @@ export default function ChatGroup() {
                                 <BackArrow {...styles.largeIcons}/>
                             </TouchableOpacity>
                         </View>
-                        <TouchableOpacity style={styles.chatNameAndMembers} onPress={handleChatNamePress}>
-                            <CustomText style={styles.chatNameTxt} numberOfLines={1} ellipsizeMode="tail">{chatName}</CustomText>
-                            <View style={styles.membersRow}>
-                            {renderedMembers}
+                        <TouchableOpacity style={[styles.chatNameAndMembers, isDirect && styles.directHeaderRow]} onPress={handleChatNamePress}>
+                            {isDirect && (
+                                <Avatar
+                                    uri={directContact ? directContact.profilePhotoUrl : null}
+                                    color={directContact ? directContact.avatarColor : null}
+                                    initial={directContact ? directContact.initial : '?'}
+                                    style={styles.directHeaderAvatar}
+                                    initialStyle={styles.directHeaderAvatarInitial}
+                                />
+                            )}
+                            <View style={isDirect ? styles.directHeaderTextColumn : styles.headerTextColumn}>
+                                <CustomText style={styles.chatNameTxt} numberOfLines={1} ellipsizeMode="tail">{headerTitle}</CustomText>
+                                <View style={styles.membersRow}>
+                                {isDirect ? (
+                                    <CustomText style={[styles.membersTxt, styles.lightMembersColor, styles.memberNameShrink]} numberOfLines={1} ellipsizeMode="tail">
+                                        {directContact && directContact.username ? '@' + directContact.username : ''}
+                                    </CustomText>
+                                ) : renderedMembers}
+                                </View>
                             </View>
                         </TouchableOpacity>
                     </View>
+                    {!isDirect && (
                     <View style={styles.privacyLabelAndEllipsisRow}>
                         <View style={[styles.privacyLabel, isPublic ? styles.publicBackgroundColor : styles.privateBackgroundColor]}>
                             <CustomText style={styles.privacyLabelTxt}>
@@ -3337,6 +3408,7 @@ export default function ChatGroup() {
                             </TouchableOpacity>
                         </View>
                     </View>
+                    )}
                 </View>
                 </View>
                 <View style={styles.chatGroup}>

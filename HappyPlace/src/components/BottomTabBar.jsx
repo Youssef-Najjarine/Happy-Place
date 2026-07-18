@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useSelector } from 'react-redux';
+import tokenStorage from 'src/services/tokenStorage';
+import { useUnreadTotalQuery } from 'src/store/chatGroupsApi';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { shouldRedirectToFinishAccount } from 'src/utils/guestGate';
@@ -50,6 +52,30 @@ const phoneStyles = StyleSheet.create({
   tabIcon: {
     width: scaleWidth(24),
     height: scaleHeight(24)
+  },
+  chatsIconWrap: {
+    width: scaleWidth(44),
+    height: scaleHeight(28),
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  tabBadge: {
+    top: 0,
+    right: 0,
+    minWidth: scaleWidth(16),
+    height: scaleWidth(16),
+    borderRadius: scaleWidth(99),
+    paddingHorizontal: scaleWidth(4),
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: HappyColor
+  },
+  tabBadgeTxt: {
+    fontSize: scaleFont(9),
+    fontWeight: 700,
+    color: White
   },
   iconSlot: {
     height: scaleHeight(28),
@@ -112,6 +138,30 @@ const tabletStyles = StyleSheet.create({
     width: scaleWidth(28),
     height: scaleHeight(28)
   },
+  chatsIconWrap: {
+    width: scaleWidth(50),
+    height: scaleHeight(32),
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  tabBadge: {
+    top: 0,
+    right: 0,
+    minWidth: scaleWidth(18),
+    height: scaleWidth(18),
+    borderRadius: scaleWidth(99),
+    paddingHorizontal: scaleWidth(5),
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: HappyColor
+  },
+  tabBadgeTxt: {
+    fontSize: scaleFont(10),
+    fontWeight: 700,
+    color: White
+  },
   iconSlot: {
     height: scaleHeight(32),
     alignItems: 'center',
@@ -147,6 +197,10 @@ export default function BottomTabBar({ state, descriptors, navigation }) {
   const { bottomSafeHeight } = useSafeAreaPadding();
   const styles = useResponsiveStyles(phoneStyles, tabletStyles);
   const user = useSelector((storeState) => storeState.user);
+  const [authToken, setAuthToken] = useState(tokenStorage.peekToken());
+  useEffect(() => tokenStorage.subscribe((token) => setAuthToken(token)), []);
+  const { data: unreadTotalData } = useUnreadTotalQuery(authToken, { skip: !authToken, pollingInterval: 15000 });
+  const unreadTotal = unreadTotalData && unreadTotalData.status === 'ok' ? unreadTotalData.total : 0;
 
   const handleTabPress = (route, isFocused) => {
     if (shouldRedirectToFinishAccount(route.name, user)) {
@@ -192,6 +246,15 @@ export default function BottomTabBar({ state, descriptors, navigation }) {
                     style={styles.tabAvatar}
                     initialStyle={styles.tabAvatarInitial}
                   />
+                </View>
+              ) : route.name === 'ChatGroups' ? (
+                <View style={styles.chatsIconWrap}>
+                  {TabIcon && <TabIcon {...styles.tabIcon} color={tintColor} />}
+                  {unreadTotal > 0 && (
+                    <View style={styles.tabBadge}>
+                      <CustomText style={styles.tabBadgeTxt}>{unreadTotal > 99 ? '99+' : unreadTotal}</CustomText>
+                    </View>
+                  )}
                 </View>
               ) : (
                 TabIcon && <TabIcon {...styles.tabIcon} color={tintColor} />

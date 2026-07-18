@@ -189,6 +189,10 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
             setMessagesById((current) => upsertEntries(current, [response.message]));
             return { ok: true };
         }
+        if (response.status === 'notFriends') {
+            setPendingMessages((current) => markPendingFailed(current, pendingId));
+            return { ok: false, status: response.status };
+        }
         if (response.status === 'notMember' || response.status === 'groupGone') {
             setPendingMessages((current) => removePendingById(current, pendingId));
             setStatus(response.status);

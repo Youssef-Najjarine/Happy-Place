@@ -35,7 +35,9 @@ import { SearchAndSortChatGroupsBar, SearchAndSortChatGroupsDropdown } from 'src
 import PendingMembersCircle from 'assets/images/global/pending-members-circle.svg';
 import PrivateIcon from 'assets/images/global/private-chat-icon.svg';
 import TrashIcon from 'assets/images/global/trash-outline-icon.svg';
+import ProfileIcon from 'assets/images/friends/profile-black-icon.svg';
 import Avatar from 'src/components/Avatar';
+import { formatMessageTime } from 'src/utils/chatTime';
 import tokenStorage from 'src/services/tokenStorage';
 import authenticationService from 'src/services/authenticationService';
 import { showToast } from 'src/components/Toast';
@@ -49,6 +51,8 @@ import {
   useRequestToJoinChatGroupMutation,
   useCancelJoinRequestMutation,
   useJoinPublicChatGroupMutation,
+  useHideChatGroupMutation,
+  useSetChatGroupMutedMutation,
 } from 'src/store/chatGroupsApi';
 import { useDispatch } from 'react-redux';
 import { showLoading, hideLoading } from 'src/store/loadingSlice';
@@ -244,6 +248,48 @@ const phoneStyles = StyleSheet.create({
     opacity: 0.6,
     color: Black
   },
+  chatPreviewRow: {
+    marginTop: scaleHeight(4),
+    gap: scaleWidth(8),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  chatPreviewTxt: {
+    fontSize: scaleFont(13),
+    lineHeight: scaleLineHeight(19),
+    letterSpacing: scaleLetterSpacing(-0.13),
+    fontWeight: '500',
+    opacity: 0.6,
+    flex: 1,
+    color: Black
+  },
+  chatPreviewTime: {
+    fontSize: scaleFont(12),
+    lineHeight: scaleLineHeight(18),
+    letterSpacing: scaleLetterSpacing(-0.12),
+    fontWeight: '500',
+    opacity: 0.6,
+    color: Black
+  },
+  newChatRow: {
+    paddingHorizontal: scaleWidth(20),
+    width: '100%',
+    alignItems: 'flex-end'
+  },
+  newChatBtn: {
+    borderRadius: scaleWidth(99),
+    paddingVertical: scaleHeight(7),
+    paddingHorizontal: scaleWidth(14),
+    backgroundColor: HappyColor
+  },
+  newChatBtnTxt: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    fontWeight: 600,
+    color: White
+  },
   chatGroupHelperImage: {
     width: scaleWidth(36),
     height: scaleHeight(36),
@@ -280,7 +326,6 @@ const phoneStyles = StyleSheet.create({
     width: '100%' 
   },
   joinedEllipsisView: { 
-    width: scaleWidth(108), 
     gap: scaleWidth(8), 
     flexDirection: 'row', 
     justifyContent: 'flex-end', 
@@ -488,17 +533,12 @@ const phoneStyles = StyleSheet.create({
     overflow: 'visible'
   },
   unreadBadge: {
-    position: 'absolute',
-    top: scaleHeight(-6),
-    right: scaleWidth(-6),
     minWidth: scaleWidth(22),
     height: scaleWidth(22),
     borderRadius: scaleWidth(99),
     paddingHorizontal: scaleWidth(6),
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1100,
-    elevation: 1100,
     backgroundColor: HappyColor
   },
   unreadBadgeTxt: {
@@ -632,6 +672,48 @@ const tabletStyles = StyleSheet.create({
     opacity: 0.6,
     color: Black
   },
+  chatPreviewRow: {
+    marginTop: scaleHeight(5),
+    gap: scaleWidth(10),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  chatPreviewTxt: {
+    fontSize: scaleFont(16),
+    lineHeight: scaleLineHeight(24),
+    letterSpacing: scaleLetterSpacing(-0.16),
+    fontWeight: '500',
+    opacity: 0.6,
+    flex: 1,
+    color: Black
+  },
+  chatPreviewTime: {
+    fontSize: scaleFont(14),
+    lineHeight: scaleLineHeight(21),
+    letterSpacing: scaleLetterSpacing(-0.14),
+    fontWeight: '500',
+    opacity: 0.6,
+    color: Black
+  },
+  newChatRow: {
+    paddingHorizontal: scaleWidth(24),
+    width: '100%',
+    alignItems: 'flex-end'
+  },
+  newChatBtn: {
+    borderRadius: scaleWidth(99),
+    paddingVertical: scaleHeight(9),
+    paddingHorizontal: scaleWidth(16),
+    backgroundColor: HappyColor
+  },
+  newChatBtnTxt: {
+    fontSize: scaleFont(18),
+    lineHeight: scaleLineHeight(27),
+    letterSpacing: scaleLetterSpacing(-0.18),
+    fontWeight: 600,
+    color: White
+  },
   chatGroupHelperImage: {
     width: 66.98,
     height: 66.98,
@@ -668,7 +750,6 @@ const tabletStyles = StyleSheet.create({
     width: '100%' 
   },
   joinedEllipsisView: { 
-    width: scaleWidth(133.48), 
     gap: scaleWidth(12), 
     flexDirection: 'row', 
     justifyContent: 'flex-end', 
@@ -875,17 +956,12 @@ const tabletStyles = StyleSheet.create({
     overflow: 'visible'
   },
   unreadBadge: {
-    position: 'absolute',
-    top: scaleHeight(-6),
-    right: scaleWidth(-6),
     minWidth: scaleWidth(22),
     height: scaleWidth(22),
     borderRadius: scaleWidth(99),
     paddingHorizontal: scaleWidth(6),
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1100,
-    elevation: 1100,
     backgroundColor: HappyColor
   },
   unreadBadgeTxt: {
@@ -993,7 +1069,9 @@ export default function ChatGroups() {
   const [requestToJoinChatGroup] = useRequestToJoinChatGroupMutation();
   const [cancelJoinRequest] = useCancelJoinRequestMutation();
   const [joinPublicChatGroup] = useJoinPublicChatGroupMutation();
-  const sortOptions = ['Popular', 'Latest', 'Most Active', 'Public', 'Private'];
+  const [hideChatGroup] = useHideChatGroupMutation();
+  const [setChatGroupMuted] = useSetChatGroupMutedMutation();
+  const sortOptions = ['Popular', 'Latest', 'Most Active', 'Public', 'Private', 'Direct'];
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [activeDropdownIndex, setActiveDropdownIndex] = useState(null);
   const [selectedChatGroupId, setSelectedChatGroupId] = useState(null);
@@ -1189,19 +1267,124 @@ export default function ChatGroups() {
     closeAllMenus();
     if (authToken) joinPublicChatGroup({ authToken, chatGroupId: id });
   }, [closeAllMenus, authToken, joinPublicChatGroup]);
+  const handleHideChatPress = useCallback((id) => {
+    closeAllMenus();
+    if (authToken) hideChatGroup({ authToken, chatGroupId: id });
+  }, [closeAllMenus, authToken, hideChatGroup]);
+  const handleToggleMutePress = useCallback((item) => {
+    closeAllMenus();
+    if (authToken) setChatGroupMuted({ authToken, chatGroupId: item.id, isMuted: !item.isMuted });
+  }, [closeAllMenus, authToken, setChatGroupMuted]);
+  const handleViewDirectProfilePress = useCallback((username) => {
+    closeAllMenus();
+    if (username) navigation.push('Profile', { username });
+  }, [closeAllMenus, navigation]);
+  const handleNewChatPress = useCallback(() => {
+    closeAllMenus();
+    navigation.navigate('CreateGroupChat');
+  }, [closeAllMenus, navigation]);
   const renderChatGroup = useCallback(({ item, index }) => {
       const isActive = activeDropdownIndex === index;
       const maxVisible = 5;
       const overlapSpacing = isTablet ? 32.19 : 24;
       const spacing = scaleWidth(overlapSpacing);
 
+      if (item.isDirect) {
+        const contact = item.directContact || {};
+        return (
+          <View style={[styles.chatGroupCard, styles.chatGroupCardJoinedBorder, { overflow: 'visible' }]} needsOffscreenAlphaCompositing>
+            <View style={styles.chatPhotosHeader}>
+              <HelperStack
+                helpers={[contact]}
+                total={1}
+                spacing={spacing}
+                maxVisible={maxVisible}
+                imageBaseStyle={styles.chatGroupHelperImage}
+                initialStyle={{ color: White, fontSize: scaleFont(14), fontWeight: '600' }}
+                wrapperStyle={styles.chatGroupHelpersWrapper}
+                stackStyle={styles.chatGroupHelpersStack}
+                extraCircleStyle={styles.extraHelpersCircle}
+                extraTextStyle={styles.extraHelpersText}
+                TextComponent={CustomText}
+              />
+              <View style={styles.joinedEllipsisView}>
+                {(item.unreadCount || 0) > 0 && (
+                  <View style={styles.unreadBadge}>
+                    <CustomText style={styles.unreadBadgeTxt}>{item.unreadCount > 999 ? '999+' : item.unreadCount}</CustomText>
+                  </View>
+                )}
+                <View style={styles.privateCircle}>
+                  <CustomText style={styles.publicAndPrivateLabel}>Direct</CustomText>
+                </View>
+                <TouchableOpacity
+                  ref={(ref) => (ellipsisRefs.current[index] = ref)}
+                  style={styles.ellipsisBackground}
+                  onPressIn={() => handleEllipsisPress(index, item.id)}
+                >
+                  <EllipsisIcon {...styles.ellipsis} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.chatGroupTitleView}>
+              <CustomText style={styles.chatGroupTitle}>
+                {contact.displayName || 'Direct message'}
+              </CustomText>
+              {(item.lastMessagePreview || item.lastMessageAtUtc) ? (
+                <View style={styles.chatPreviewRow}>
+                  <CustomText style={styles.chatPreviewTxt} numberOfLines={1} ellipsizeMode="tail">{item.lastMessagePreview || ''}</CustomText>
+                  {item.lastMessageAtUtc ? (
+                    <CustomText style={styles.chatPreviewTime}>{formatMessageTime(item.lastMessageAtUtc)}</CustomText>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+
+            <View style={styles.chatGroupOneBtnView}>
+              <TouchableOpacity
+                style={styles.groupChatViewChatBtn}
+                onPress={() => handleViewChatGroupPress(item.id)}
+              >
+                <CustomText style={styles.groupChatViewChatTxt}>Message</CustomText>
+              </TouchableOpacity>
+            </View>
+
+            {isActive && (
+              <Pressable
+                ref={chatDropdownRef}
+                onLayout={() => measureToRect(chatDropdownRef, 'chatDropdown')}
+                style={styles.chatGroupDropdown}
+              >
+                <TouchableOpacity
+                  onPressIn={() => handleViewDirectProfilePress(contact.username)}
+                  onPressOut={closeAllMenus}
+                  style={[styles.chatGroupDropdownOptions, styles.chatGroupDropdownOptionsBorderBottom]}
+                >
+                  <CustomText style={styles.dropdownBlackTxt}>View Profile</CustomText>
+                  <ProfileIcon {...styles.dropdownIcons} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPressIn={() => handleToggleMutePress(item)}
+                  onPressOut={closeAllMenus}
+                  style={[styles.chatGroupDropdownOptions, styles.chatGroupDropdownOptionsBorderBottom]}
+                >
+                  <CustomText style={styles.dropdownBlackTxt}>{item.isMuted ? 'Unmute' : 'Mute'}</CustomText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPressIn={() => handleHideChatPress(item.id)}
+                  onPressOut={closeAllMenus}
+                  style={styles.chatGroupDropdownOptions}
+                >
+                  <CustomText style={styles.dropdownBlackTxt}>Hide Conversation</CustomText>
+                </TouchableOpacity>
+              </Pressable>
+            )}
+          </View>
+        );
+      }
+
       return (
         <View style={[styles.chatGroupCard, item.joined && styles.chatGroupCardJoinedBorder, { overflow: 'visible' }]} needsOffscreenAlphaCompositing>
-          {item.joined && (item.unreadCount || 0) > 0 && (
-            <View style={styles.unreadBadge}>
-              <CustomText style={styles.unreadBadgeTxt}>{item.unreadCount > 99 ? '99+' : item.unreadCount}</CustomText>
-            </View>
-          )}
           <View style={styles.chatPhotosHeader}>
             {item.public || item.joined ? (
               <HelperStack
@@ -1225,6 +1408,11 @@ export default function ChatGroups() {
               </View>
             )}
             <View style={styles.joinedEllipsisView}>
+              {item.joined && (item.unreadCount || 0) > 0 && (
+                <View style={styles.unreadBadge}>
+                  <CustomText style={styles.unreadBadgeTxt}>{item.unreadCount > 999 ? '999+' : item.unreadCount}</CustomText>
+                </View>
+              )}
               {item.public ? (
                 <View style={styles.publicCircle}>
                   <CustomText style={styles.publicAndPrivateLabel}>Public</CustomText>
@@ -1248,6 +1436,14 @@ export default function ChatGroups() {
             <CustomText style={styles.chatGroupTitle}>
               {item.title}
             </CustomText>
+            {item.joined && (item.lastMessagePreview || item.lastMessageAtUtc) ? (
+              <View style={styles.chatPreviewRow}>
+                <CustomText style={styles.chatPreviewTxt} numberOfLines={1} ellipsizeMode="tail">{item.lastMessagePreview || ''}</CustomText>
+                {item.lastMessageAtUtc ? (
+                  <CustomText style={styles.chatPreviewTime}>{formatMessageTime(item.lastMessageAtUtc)}</CustomText>
+                ) : null}
+              </View>
+            ) : null}
           </View>
 
           {item.joined ? (
@@ -1323,6 +1519,16 @@ export default function ChatGroups() {
                 </TouchableOpacity>
               )}
 
+              {item.joined && (
+                <TouchableOpacity
+                  onPressIn={() => handleToggleMutePress(item)}
+                  onPressOut={closeAllMenus}
+                  style={[styles.chatGroupDropdownOptions, styles.chatGroupDropdownOptionsBorderBottom]}
+                >
+                  <CustomText style={styles.dropdownBlackTxt}>{item.isMuted ? 'Unmute' : 'Mute'}</CustomText>
+                </TouchableOpacity>
+              )}
+
               {item.owner && item.public && (
                 <TouchableOpacity
                   onPressIn={() => handleMakeChatPrivatePressIn(item.id)}
@@ -1385,6 +1591,19 @@ export default function ChatGroups() {
         </View>
       );
     }
+    if (sortBy === 'Direct') {
+      return (
+        <View style={styles.emptyState}>
+          <View style={styles.emptyStateIconCircle}>
+            <HappyEmoji {...styles.emptyStateIcon} />
+          </View>
+          <CustomText style={styles.emptyStateTitle}>No direct messages yet</CustomText>
+          <CustomText style={styles.emptyStateSubtitle}>
+            Message a friend from your Friends list to start a conversation.
+          </CustomText>
+        </View>
+      );
+    }
     return (
       <View style={styles.emptyState}>
         <View style={styles.emptyStateIconCircle}>
@@ -1396,7 +1615,7 @@ export default function ChatGroups() {
         </CustomText>
       </View>
     );
-  }, [styles, isChatGroupsInitialLoading, connectionFailed, handleRetryConnection]);
+  }, [styles, isChatGroupsInitialLoading, connectionFailed, handleRetryConnection, sortBy]);
   const handleEndReached = useCallback(() => {
     const nextCursor = chatGroupsPage?.nextCursor;
     if (!authToken || !nextCursor || isFetchingNextChatGroupsPage) return;
@@ -1454,6 +1673,11 @@ export default function ChatGroups() {
     <>
       <View style={styles.root} onTouchEndCapture={handleRootTouchEndCapture}>
         <View style={topNavStyle}>
+          <View style={styles.newChatRow}>
+            <TouchableOpacity style={styles.newChatBtn} onPress={handleNewChatPress}>
+              <CustomText style={styles.newChatBtnTxt}>+ New Chat</CustomText>
+            </TouchableOpacity>
+          </View>
           <SearchAndSortChatGroupsBar
             search={search}
             onChangeSearch={setSearch}

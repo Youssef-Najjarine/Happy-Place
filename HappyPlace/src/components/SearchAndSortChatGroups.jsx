@@ -243,7 +243,7 @@ export function SearchAndSortChatGroupsBar({ search, onChangeSearch, onSearchFoc
           onPressIn={onSortPress}
         >
           <SortIcon {...styles.topNavIcons} />
-          <CustomText style={styles.sortTxt}>{sortBy}</CustomText>
+          <CustomText style={styles.sortTxt} numberOfLines={1}>{sortBy}</CustomText>
           <DownArrowIcon {...styles.topNavIcons} />
         </TouchableOpacity>
       </View>

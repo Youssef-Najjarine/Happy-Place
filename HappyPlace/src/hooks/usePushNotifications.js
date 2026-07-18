@@ -153,6 +153,13 @@ export default function usePushNotifications() {
                 resetToChatGroup(data.chatGroupId);
                 return;
             }
+            if (data.type === 'chatMessages') {
+                if (!data.chatGroupId) return;
+                await waitForNavigationReady();
+                if (!active) return;
+                resetToChatGroup(data.chatGroupId);
+                return;
+            }
             if (data.type === 'helpWaiting') {
                 await waitForNavigationReady();
                 if (!active) return;
@@ -215,6 +222,21 @@ export default function usePushNotifications() {
                 showToast(body, 'success', { label: 'Open', onPress: () => resetToChatGroup(approvedChatGroupId) }, `join-approved-${approvedChatGroupId}`);
                 return;
             }
+            if (data.type === 'chatMessages') {
+                if (!data.chatGroupId) return;
+                const notification = remoteMessage.notification;
+                const title = notification && notification.title ? notification.title : null;
+                const body = notification && notification.body ? notification.body : null;
+                if (!body) return;
+                const chatMessagesChatGroupId = data.chatGroupId;
+                const currentRoute = navigationRef.isReady() ? navigationRef.getCurrentRoute() : null;
+                const isInsideThisChat = !!currentRoute && currentRoute.name === 'ChatGroup' && !!currentRoute.params && currentRoute.params.chatGroupId === chatMessagesChatGroupId;
+                if (isInsideThisChat) return;
+                const chatToastBody = title ? `${title}: ${body}` : body;
+                const chatToastAction = { label: 'Open', onPress: () => resetToChatGroup(chatMessagesChatGroupId) };
+                showToast(chatToastBody, 'info', chatToastAction, `chat-messages-${chatMessagesChatGroupId}`);
+                return;
+            }
             if (data.type === 'helpWaiting' || data.type === 'helpOffers') {
                 const notification = remoteMessage.notification;
                 const body = notification && notification.body ? notification.body : null;
@@ -267,6 +289,16 @@ export default function usePushNotifications() {
                 await waitForNavigationReady();
                 if (active) {
                     resetToNotificationRoute('ChatGroup', approvedParams);
+                    pendingNotificationRoute.markHandled();
+                }
+                return;
+            }
+            if (active && initialData && initialData.type === 'chatMessages' && initialData.chatGroupId) {
+                const chatMessagesParams = { chatGroupId: initialData.chatGroupId };
+                pendingNotificationRoute.set('ChatGroup', chatMessagesParams);
+                await waitForNavigationReady();
+                if (active) {
+                    resetToNotificationRoute('ChatGroup', chatMessagesParams);
                     pendingNotificationRoute.markHandled();
                 }
                 return;

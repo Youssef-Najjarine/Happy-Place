@@ -190,6 +190,37 @@ export const chatGroupsApi = createApi({
             query: (args) => ({ path: 'chatGroup/removeMember', body: { AuthToken: args.authToken, ChatGroupId: args.chatGroupId, MemberUserAccountId: args.memberUserAccountId } }),
             invalidatesTags: ['ChatGroupMembers', 'ChatGroupList'],
         }),
+        openDirectChat: builder.mutation({
+            query: (args) => ({ path: 'chatGroup/openDirect', body: { AuthToken: args.authToken, Username: args.username } }),
+            invalidatesTags: (result) => (result && result.status === 'opened' ? ['ChatGroupList'] : []),
+        }),
+        hideChatGroup: builder.mutation({
+            query: (args) => ({ path: 'chatGroup/hide', body: { AuthToken: args.authToken, ChatGroupId: args.chatGroupId } }),
+            async onQueryStarted(args, { dispatch, getState, queryFulfilled }) {
+                const patches = patchAllFeeds(dispatch, getState, (draft) => {
+                    const index = draft.findIndex((entry) => entry.id === args.chatGroupId);
+                    if (index !== -1) draft.splice(index, 1);
+                });
+                await runOptimistic(patches, queryFulfilled);
+            },
+        }),
+        setChatGroupMuted: builder.mutation({
+            query: (args) => ({ path: 'chatGroup/setMuted', body: { AuthToken: args.authToken, ChatGroupId: args.chatGroupId, IsMuted: args.isMuted } }),
+            async onQueryStarted(args, { dispatch, getState, queryFulfilled }) {
+                const patches = patchAllFeeds(dispatch, getState, (draft) => {
+                    const group = draft.find((entry) => entry.id === args.chatGroupId);
+                    if (group) group.isMuted = args.isMuted;
+                });
+                await runOptimistic(patches, queryFulfilled);
+            },
+        }),
+        unreadTotal: builder.query({
+            query: (authToken) => ({ path: 'chatGroup/unreadTotal', body: { AuthToken: authToken } }),
+        }),
+        createFriendsGroup: builder.mutation({
+            query: (args) => ({ path: 'chatGroup/createWithFriends', body: { AuthToken: args.authToken, Name: args.name, Usernames: args.usernames } }),
+            invalidatesTags: (result) => (result && result.status === 'created' ? ['ChatGroupList'] : []),
+        }),
     }),
 });
 
@@ -209,4 +240,9 @@ export const {
     useApproveMemberMutation,
     useRejectMemberMutation,
     useRemoveMemberMutation,
+    useOpenDirectChatMutation,
+    useHideChatGroupMutation,
+    useSetChatGroupMutedMutation,
+    useUnreadTotalQuery,
+    useCreateFriendsGroupMutation,
 } = chatGroupsApi;

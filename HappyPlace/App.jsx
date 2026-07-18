@@ -17,6 +17,7 @@ import Home from 'screens/Home';
 import Help from 'screens/Help';
 import ChatGroups from 'screens/ChatGroups';
 import ChatGroup from 'screens/ChatGroup';
+import CreateGroupChat from 'screens/CreateGroupChat';
 import CreateAccount from 'screens/CreateAccount';
 import FinishAccount from 'screens/FinishAccount';
 import VerifyCode from 'screens/VerifyCode';
@@ -96,6 +97,7 @@ const App = () => {
               <Stack.Screen name="AddFriends" component={AddFriends} />
               <Stack.Screen name="BlockedUsers" component={BlockedUsers} />
               <Stack.Screen name="Members" component={Members} />
+              <Stack.Screen name="CreateGroupChat" component={CreateGroupChat} />
               <Stack.Screen name="TermsAndPrivacyInformation" component={TermsAndPrivacyInformation} />
             </Stack.Navigator>
             <LoadingModal />

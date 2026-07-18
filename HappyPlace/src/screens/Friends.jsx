@@ -36,6 +36,7 @@ import {
   useDeclineFriendRequestMutation,
   useUnfriendMutation,
 } from 'store/friendsApi';
+import { useOpenDirectChatMutation } from 'src/store/chatGroupsApi';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
 import SearchIcon from 'assets/images/global/search-icon.svg';
 import EllipsisIcon from 'assets/images/global/three-dots-icon.svg';
@@ -952,6 +953,7 @@ export default function Friends() {
   const [acceptFriendRequest] = useAcceptFriendRequestMutation();
   const [declineFriendRequest] = useDeclineFriendRequestMutation();
   const [unfriend] = useUnfriendMutation();
+  const [openDirectChat] = useOpenDirectChatMutation();
 
   useFocusEffect(
     useCallback(() => {
@@ -1113,6 +1115,29 @@ export default function Friends() {
     }
   }, [authToken, unfriendTarget, unfriend, handleActionResult, handleActionError]);
 
+  const handleMessagePress = useCallback(async (username) => {
+    closeAllMenus();
+    if (!authToken) return;
+    try {
+      const data = await openDirectChat({ authToken, username }).unwrap();
+      if (data?.status === 'opened') {
+        navigation.navigate('ChatGroup', { chatGroupId: data.chatGroupId });
+        return;
+      }
+      if (data?.status === 'accountRequired') {
+        showToast('Create an account to send messages', 'error');
+        navigation.navigate('FinishAccount');
+        return;
+      }
+      if (data?.status === 'notFriends') {
+        showToast('You can only message friends', 'error');
+        return;
+      }
+      showToast('Something went wrong. Please try again.', 'error');
+    } catch (error) {
+      showToast('Something went wrong. Please try again.', 'error');
+    }
+  }, [closeAllMenus, authToken, openDirectChat, navigation]);
   const handleViewProfile = useCallback((username) => {
     closeAllMenus();
     navigation.push('Profile', { username });
@@ -1218,7 +1243,7 @@ export default function Friends() {
             </TouchableOpacity>
             <TouchableOpacity
             onPressIn={() => { swallowNextCloseRef.current = true; }}
-            onPressOut={closeAllMenus}
+            onPressOut={() => handleMessagePress(item.username)}
             style={[styles.friendDropdownOptions, styles.friendDropdownOptionsBorderBottom]}
             >
             <CustomText style={styles.dropdownBlackTxt}>Message</CustomText>
@@ -1236,7 +1261,7 @@ export default function Friends() {
         )}
       </View>
     );
-  }, [activeDropdownIndex, styles, closeAllMenus, renderAvatar, handleEllipsisPress, handleViewProfile, measureToRect]);
+  }, [activeDropdownIndex, styles, closeAllMenus, renderAvatar, handleEllipsisPress, handleViewProfile, handleMessagePress, measureToRect]);
 
   const renderOtherFriend = useCallback(({ item }) => {
     return (
