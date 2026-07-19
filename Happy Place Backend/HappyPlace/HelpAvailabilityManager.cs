@@ -32,6 +32,15 @@ public static class HelpAvailabilityManager {
         return true;
     }
 
+    public static HelpAvailabilityStatusResult GetAvailability(string authToken) {
+        Guid? helperUserAccountId = HelpParticipant.ResolveUserAccountId(authToken);
+        if (helperUserAccountId == null)
+            return null;
+        using var dbContext = HappyPlaceDbContext.Create();
+        HelpAvailability availability = dbContext.HelpAvailabilities.SingleOrDefault(field => field.HelperUserAccountId == helperUserAccountId.Value);
+        return new HelpAvailabilityStatusResult("ok", availability != null && availability.IsAvailable);
+    }
+
     private static void WithdrawOutstandingOffers(Guid helperUserAccountId) {
         using var dbContext = HappyPlaceDbContext.Create();
         List<Guid> affectedChatGroupIds = [.. dbContext.HelpOffers

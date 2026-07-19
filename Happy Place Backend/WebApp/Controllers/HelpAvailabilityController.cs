@@ -14,4 +14,10 @@ public class HelpAvailabilityController : ControllerBase {
         model.Apply();
         return this.Ok();
     }
+
+    [HttpPost]
+    public IActionResult GetAvailability(GetAvailabilityModel model) {
+        if (!model.IsAuthenticated()) return this.Unauthorized();
+        return this.Ok(model.Read());
+    }
 }

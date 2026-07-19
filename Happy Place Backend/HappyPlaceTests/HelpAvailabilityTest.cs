@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using HappyWorld.HappyPlace.Data;
 
 namespace HappyWorld.HappyPlace;
@@ -32,6 +33,72 @@ public class HelpAvailabilityTest {
         HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/helpAvailability/setAvailability", new { IsAvailable = true });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    // Tests - Availability Read
+
+    [Fact]
+    public void GetAvailabilityEmptyTokenReturnsUnauthorized() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/helpAvailability/getAvailability", new { AuthToken = "" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public void GetAvailabilityInvalidTokenReturnsUnauthorized() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+
+        HttpResponseMessage response = testingMockProvidersContainer.WebClient.PostJson("api/helpAvailability/getAvailability", new { AuthToken = "not-a-real-token-at-all" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public void GetAvailabilityDefaultsToFalseWhenNoRowExists() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper " + Guid.NewGuid());
+
+        JsonElement root = GetAvailability(testingMockProvidersContainer, helperAuthToken);
+
+        Assert.Equal("ok", root.GetProperty("status").GetString());
+        Assert.False(root.GetProperty("isAvailable").GetBoolean());
+    }
+
+    [Fact]
+    public void GetAvailabilityReadsTrueAfterSetTrue() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper " + Guid.NewGuid());
+        testingMockProvidersContainer.WebClient.PostJson("api/helpAvailability/setAvailability", new { AuthToken = helperAuthToken, IsAvailable = true }).EnsureSuccessStatusCode();
+
+        JsonElement root = GetAvailability(testingMockProvidersContainer, helperAuthToken);
+
+        Assert.True(root.GetProperty("isAvailable").GetBoolean());
+    }
+
+    [Fact]
+    public void GetAvailabilityReadsFalseAfterToggleOff() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper " + Guid.NewGuid());
+        testingMockProvidersContainer.WebClient.PostJson("api/helpAvailability/setAvailability", new { AuthToken = helperAuthToken, IsAvailable = true }).EnsureSuccessStatusCode();
+        testingMockProvidersContainer.WebClient.PostJson("api/helpAvailability/setAvailability", new { AuthToken = helperAuthToken, IsAvailable = false }).EnsureSuccessStatusCode();
+
+        JsonElement root = GetAvailability(testingMockProvidersContainer, helperAuthToken);
+
+        Assert.False(root.GetProperty("isAvailable").GetBoolean());
+    }
+
+    [Fact]
+    public void GetAvailabilityResponseContainsExactlyExpectedProperties() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper " + Guid.NewGuid());
+
+        JsonElement root = GetAvailability(testingMockProvidersContainer, helperAuthToken);
+
+        List<string> actualProperties = [.. root.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
+        List<string> expectedProperties = ["isAvailable", "status"];
+        Assert.Equal(expectedProperties, actualProperties);
     }
 
     // Tests - Availability Upsert
@@ -112,5 +179,11 @@ public class HelpAvailabilityTest {
 
         using var dbContext = HappyPlaceDbContext.Create();
         Assert.Equal(1, dbContext.HelpAvailabilities.Count(field => field.HelperUserAccountId == helperUserAccountId));
+    }
+
+    // Helpers - Acting
+
+    private static JsonElement GetAvailability(TestingMockProvidersContainer testingMockProvidersContainer, string authToken) {
+        return testingMockProvidersContainer.WebClient.PostJson("api/helpAvailability/getAvailability", new { AuthToken = authToken }).ReadContentAsJsonDocument().RootElement.Clone();
     }
 }
