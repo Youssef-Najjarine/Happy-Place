@@ -57,6 +57,9 @@ export const helpApi = createApi({
         setAvailability: builder.mutation({
             query: (args) => ({ path: 'helpAvailability/setAvailability', body: { AuthToken: args.authToken, IsAvailable: args.isAvailable } }),
         }),
+        getAvailability: builder.query({
+            query: (authToken) => ({ path: 'helpAvailability/getAvailability', body: { AuthToken: authToken } }),
+        }),
     }),
 });
 export const {
@@ -75,4 +78,6 @@ export const {
     useJoinMutation,
     useDeclineInviteMutation,
     useSetAvailabilityMutation,
+    useGetAvailabilityQuery,
+    useLazyGetAvailabilityQuery,
 } = helpApi;

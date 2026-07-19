@@ -95,7 +95,7 @@ export default function useSeekerSearch() {
                 return;
             }
             if (result.status === 'waiting') {
-                await helpSessionStorage.saveSeeking(result.chatGroupId);
+                await helpSessionStorage.saveSeeking(token, result.chatGroupId);
                 setChatGroupId(result.chatGroupId);
                 setTopic(result.chatGroupName);
                 return;
@@ -179,7 +179,7 @@ export default function useSeekerSearch() {
             const token = await tokenStorage.getToken();
             if (cancelled || !token) return;
             const session = await helpSessionStorage.get();
-            if (!cancelled && session && session.mode === 'seeking' && session.chatGroupId) {
+            if (!cancelled && session && session.mode === 'seeking' && session.chatGroupId && session.ownerToken === token) {
                 let validation = null;
                 try {
                     validation = await authenticationService.validateToken(token);
@@ -197,7 +197,7 @@ export default function useSeekerSearch() {
                 const result = await triggerMyOpenRequest(token).unwrap();
                 if (cancelled || !result || result.status !== 'waiting') return;
                 navigatedRef.current = false;
-                await helpSessionStorage.saveSeeking(result.chatGroupId);
+                await helpSessionStorage.saveSeeking(token, result.chatGroupId);
                 setAuthToken(token);
                 setChatGroupId(result.chatGroupId);
                 setTopic(result.chatGroupName);

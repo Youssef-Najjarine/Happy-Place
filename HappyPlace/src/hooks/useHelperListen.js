@@ -4,7 +4,7 @@ import tokenStorage from 'src/services/tokenStorage';
 import authenticationService from 'src/services/authenticationService';
 import helpSessionStorage from 'src/services/helpSessionStorage';
 import { showToast } from 'src/components/Toast';
-import { useOpenRequestsQuery, usePollOfferQuery, useSetAvailabilityMutation } from 'src/store/helpApi';
+import { useOpenRequestsQuery, usePollOfferQuery, useSetAvailabilityMutation, useLazyGetAvailabilityQuery } from 'src/store/helpApi';
 
 const LISTEN_INTERVAL_MS = 3000;
 const READY_INTERVAL_MS = 3000;
@@ -14,6 +14,7 @@ export default function useHelperListen() {
     const [listening, setListening] = useState(false);
     const [authToken, setAuthToken] = useState(null);
     const [setAvailability] = useSetAvailabilityMutation();
+    const [triggerGetAvailability] = useLazyGetAvailabilityQuery();
     const intentSeqRef = useRef(0);
     const intentRef = useRef({ desired: null, running: false });
 
@@ -28,8 +29,8 @@ export default function useHelperListen() {
                 const next = intentRef.current.desired;
                 try {
                     if (next.wantListening) {
-                        await helpSessionStorage.saveListening();
                         if (next.token) {
+                            await helpSessionStorage.saveListening(next.token);
                             await setAvailability({ authToken: next.token, isAvailable: true }).unwrap();
                         }
                     } else {
@@ -51,29 +52,45 @@ export default function useHelperListen() {
 
     useEffect(() => {
         let cancelled = false;
-        const load = async () => {
-            const session = await helpSessionStorage.get();
-            if (cancelled || !session || session.mode !== 'listening') return;
-            const token = await tokenStorage.getToken();
-            if (cancelled || !token) return;
-            let validation = null;
-            try {
-                validation = await authenticationService.validateToken(token);
-            } catch (error) {
-                return;
-            }
-            if (cancelled || !validation.ok) return;
+        const beginListening = (token) => {
             const seq = intentSeqRef.current + 1;
             intentSeqRef.current = seq;
             setAuthToken(token);
             setListening(true);
             applyIntent(seq, token, true);
         };
+        const load = async () => {
+            const token = await tokenStorage.getToken();
+            if (cancelled || !token) return;
+            const session = await helpSessionStorage.get();
+            if (cancelled) return;
+            const hasOwnListeningSession = !!session && session.mode === 'listening' && session.ownerToken === token;
+            if (hasOwnListeningSession) {
+                let validation = null;
+                try {
+                    validation = await authenticationService.validateToken(token);
+                } catch (error) {
+                    return;
+                }
+                if (cancelled || !validation.ok) return;
+                beginListening(token);
+                return;
+            }
+            if (session && session.mode === 'seeking' && session.ownerToken === token) return;
+            let availabilityResult = null;
+            try {
+                availabilityResult = await triggerGetAvailability(token).unwrap();
+            } catch (error) {
+                return;
+            }
+            if (cancelled || !availabilityResult || availabilityResult.status !== 'ok' || !availabilityResult.isAvailable) return;
+            beginListening(token);
+        };
         load();
         return () => {
             cancelled = true;
         };
-    }, [applyIntent]);
+    }, [applyIntent, triggerGetAvailability]);
 
     const { data: openRequestsData, error: openRequestsError } = useOpenRequestsQuery(
         authToken,

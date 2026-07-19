@@ -3,15 +3,15 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 const HELP_SESSION_KEY = 'help_session';
 
 const helpSessionStorage = {
-    saveSeeking: async function(chatGroupId) {
+    saveSeeking: async function(authToken, chatGroupId) {
         try {
-            await EncryptedStorage.setItem(HELP_SESSION_KEY, JSON.stringify({ mode: 'seeking', chatGroupId }));
+            await EncryptedStorage.setItem(HELP_SESSION_KEY, JSON.stringify({ mode: 'seeking', chatGroupId, ownerToken: authToken }));
         } catch {}
     },
 
-    saveListening: async function() {
+    saveListening: async function(authToken) {
         try {
-            await EncryptedStorage.setItem(HELP_SESSION_KEY, JSON.stringify({ mode: 'listening' }));
+            await EncryptedStorage.setItem(HELP_SESSION_KEY, JSON.stringify({ mode: 'listening', ownerToken: authToken }));
         } catch {}
     },
 
