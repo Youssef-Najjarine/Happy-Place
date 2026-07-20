@@ -1,6 +1,6 @@
 namespace HappyWorld.HappyPlace.Web.Models.ChatMessage;
 
-public record ChatMessageSendModel(string AuthToken, Guid ChatGroupId, Guid ClientMessageId, string Body, Guid MediaId) {
+public record ChatMessageSendModel(string AuthToken, Guid ChatGroupId, Guid ClientMessageId, string Body, Guid MediaId, Guid ReplyToMessageId) {
     // Methods
 
     public bool IsAuthenticated() {
@@ -8,6 +8,6 @@ public record ChatMessageSendModel(string AuthToken, Guid ChatGroupId, Guid Clie
     }
 
     public ChatMessageSendResult Send() {
-        return ChatMessageManager.Send(this.AuthToken, this.ChatGroupId, this.ClientMessageId, this.Body, this.MediaId);
+        return ChatMessageManager.Send(this.AuthToken, this.ChatGroupId, this.ClientMessageId, this.Body, this.MediaId, this.ReplyToMessageId);
     }
 }

@@ -423,7 +423,7 @@ public class PollMessagesTest {
 
         JsonElement entry = Poll(testingMockProvidersContainer, ownerAuthToken, groupId, 0).GetProperty("changes")[0];
         List<string> actualEntryProperties = [.. entry.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
-        List<string> expectedEntryProperties = ["body", "clientMessageId", "createdAtUtc", "id", "isDeleted", "kind", "mediaDurationSeconds", "mediaHeight", "mediaUrl", "mediaWidth", "reactions", "senderUserAccountId", "sequence"];
+        List<string> expectedEntryProperties = ["body", "clientMessageId", "createdAtUtc", "id", "isDeleted", "kind", "mediaDurationSeconds", "mediaHeight", "mediaUrl", "mediaWidth", "reactions", "replyTo", "senderUserAccountId", "sequence"];
 
         Assert.Equal(expectedEntryProperties, actualEntryProperties);
     }

@@ -420,9 +420,9 @@ public class SendMessageTest {
 
         JsonElement root = Send(testingMockProvidersContainer, ownerAuthToken, groupId, Guid.NewGuid(), "hello");
         List<string> actualProperties = [.. root.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
-        List<string> expectedProperties = ["message", "status"];
+        List<string> expectedProperties = ["guestMessagesRemaining", "message", "status"];
         List<string> actualMessageProperties = [.. root.GetProperty("message").EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
-        List<string> expectedMessageProperties = ["body", "clientMessageId", "createdAtUtc", "id", "isDeleted", "kind", "mediaDurationSeconds", "mediaHeight", "mediaUrl", "mediaWidth", "reactions", "senderUserAccountId", "sequence"];
+        List<string> expectedMessageProperties = ["body", "clientMessageId", "createdAtUtc", "id", "isDeleted", "kind", "mediaDurationSeconds", "mediaHeight", "mediaUrl", "mediaWidth", "reactions", "replyTo", "senderUserAccountId", "sequence"];
 
         Assert.Equal(expectedProperties, actualProperties);
         Assert.Equal(expectedMessageProperties, actualMessageProperties);

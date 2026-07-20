@@ -12,10 +12,12 @@ public static class ChatMessageManager {
     private static readonly byte MessageHistoryCursorMarker = 4;
     private static readonly int TypingWindowSeconds = 5;
     private static readonly int MaxReportReasonLength = 500;
+    private static readonly int ReplyPreviewMaxLength = 140;
+    public static readonly int GuestMessageCap = 10;
 
     // Methods
 
-    public static ChatMessageSendResult Send(string authToken, Guid chatGroupId, Guid clientMessageId, string body, Guid mediaId) {
+    public static ChatMessageSendResult Send(string authToken, Guid chatGroupId, Guid clientMessageId, string body, Guid mediaId, Guid replyToMessageId) {
         Guid? senderUserAccountId = HelpParticipant.ResolveUserAccountId(authToken);
         if (senderUserAccountId == null)
             return ChatMessageSendResult.NotMember();
@@ -43,20 +45,42 @@ public static class ChatMessageManager {
             if (!assetIsAttachable) {
                 ChatMessage retriedMessage = dbContext.ChatMessages.SingleOrDefault(field => field.ChatGroupId == chatGroupId && field.ClientMessageId == clientMessageId);
                 if (retriedMessage != null)
-                    return ChatMessageSendResult.Duplicate(BuildEntries(dbContext, [retriedMessage])[0]);
+                    return ChatMessageSendResult.Duplicate(BuildEntries(dbContext, [retriedMessage])[0], GuestMessagesRemaining(dbContext, senderUserAccountId));
                 return ChatMessageSendResult.InvalidMedia();
             }
         }
+        ChatMessage replyParentMessage = null;
+        if (replyToMessageId != Guid.Empty) {
+            replyParentMessage = dbContext.ChatMessages.SingleOrDefault(field => field.Id == replyToMessageId && field.ChatGroupId == chatGroupId);
+            if (replyParentMessage == null)
+                return ChatMessageSendResult.InvalidReply();
+        }
+        bool senderIsAnonymous = dbContext.UserAccounts.Where(field => field.Id == senderUserAccountId.Value).Select(field => field.IsAnonymous).SingleOrDefault();
         byte[] bodyCipher = isMediaSend ? null : MessageCipher.Encrypt(trimmedBody);
         ChatMessageKind messageKind = isMediaSend ? mediaAsset.Kind : ChatMessageKind.Text;
+        int? guestMessagesRemaining = null;
         using var transaction = dbContext.Database.BeginTransaction();
+        if (senderIsAnonymous) {
+            int guestSendCounted = dbContext.Database.ExecuteSql($"UPDATE [dbo].[UserAccount] SET [GuestMessageCount] = [GuestMessageCount] + 1 WHERE [Id] = {senderUserAccountId.Value} AND [IsAnonymous] = 1 AND [GuestMessageCount] < {GuestMessageCap}");
+            if (guestSendCounted == 1) {
+                int guestMessageCount = dbContext.UserAccounts.Where(field => field.Id == senderUserAccountId.Value).Select(field => field.GuestMessageCount).Single();
+                guestMessagesRemaining = Math.Max(0, GuestMessageCap - guestMessageCount);
+            }
+            else {
+                bool stillAnonymous = dbContext.UserAccounts.Where(field => field.Id == senderUserAccountId.Value).Select(field => field.IsAnonymous).SingleOrDefault();
+                if (stillAnonymous) {
+                    transaction.Rollback();
+                    return LoadGuestLimitedSend(chatGroupId, clientMessageId);
+                }
+            }
+        }
         int sequenceClaimed = dbContext.Database.ExecuteSql($"UPDATE [dbo].[ChatGroup] SET [LastMessageSequence] = [LastMessageSequence] + 1, [LastChangeSequence] = [LastChangeSequence] + 1, [LastSeenAtUtc] = sysutcdatetime() WHERE [Id] = {chatGroupId} AND [Status] = {(byte)ChatGroupStatus.Active}");
         if (sequenceClaimed != 1) {
             transaction.Rollback();
             return ChatMessageSendResult.GroupGone();
         }
         var claimedCounters = dbContext.ChatGroups.Where(field => field.Id == chatGroupId).Select(field => new { field.LastMessageSequence, field.LastChangeSequence }).Single();
-        ChatMessage message = new() { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, SenderUserAccountId = senderUserAccountId.Value, ClientMessageId = clientMessageId, Kind = messageKind, BodyCipher = bodyCipher, CipherVersion = MessageCipher.CurrentVersion, Sequence = claimedCounters.LastMessageSequence, ChangeSequence = claimedCounters.LastChangeSequence, IsDeleted = false, CreatedAtUtc = DateTime.UtcNow };
+        ChatMessage message = new() { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, SenderUserAccountId = senderUserAccountId.Value, ClientMessageId = clientMessageId, ReplyToChatMessageId = replyParentMessage?.Id, Kind = messageKind, BodyCipher = bodyCipher, CipherVersion = MessageCipher.CurrentVersion, Sequence = claimedCounters.LastMessageSequence, ChangeSequence = claimedCounters.LastChangeSequence, IsDeleted = false, CreatedAtUtc = DateTime.UtcNow };
         dbContext.ChatMessages.Add(message);
         try {
             dbContext.SaveChanges();
@@ -80,7 +104,7 @@ public static class ChatMessageManager {
                 .Where(field => field.ChatGroupId == chatGroupId && field.HiddenAtUtc != null)
                 .ExecuteUpdate(setters => setters.SetProperty(field => field.HiddenAtUtc, (DateTime?)null));
         NotificationDispatchManager.MarkMessagesDirty(chatGroupId, senderUserAccountId.Value);
-        return ChatMessageSendResult.Sent(BuildEntry(message, [], mediaAsset));
+        return ChatMessageSendResult.Sent(BuildEntry(message, [], mediaAsset, BuildSingleReplyContext(dbContext, replyParentMessage)), guestMessagesRemaining);
     }
 
     public static ChatMessageListPageResult ListPage(string authToken, Guid chatGroupId, string cursor) {
@@ -105,7 +129,7 @@ public static class ChatMessageManager {
         if (hasOlder)
             pageMessages.RemoveAt(pageMessages.Count - 1);
         string nextCursor = hasOlder ? CursorCodec.EncodeFeedCursor(MessageHistoryCursorMarker, pageMessages[^1].Sequence, 0, chatGroupId) : null;
-        return ChatMessageListPageResult.Ok(callerUserAccountId.Value.ToString(), BuildEntries(dbContext, pageMessages), BuildSenderEntries(dbContext, pageMessages), BuildReadPointerEntries(activeMembers), BuildTypingUserIds(activeMembers, callerUserAccountId.Value), nextCursor, chatGroup.LastChangeSequence);
+        return ChatMessageListPageResult.Ok(callerUserAccountId.Value.ToString(), BuildEntries(dbContext, pageMessages), BuildSenderEntries(dbContext, pageMessages), BuildReadPointerEntries(activeMembers), BuildTypingUserIds(activeMembers, callerUserAccountId.Value), nextCursor, chatGroup.LastChangeSequence, GuestMessagesRemaining(dbContext, callerUserAccountId.Value));
     }
 
     public static ChatMessagePollResult Poll(string authToken, Guid chatGroupId, long sinceChangeSequence) {
@@ -350,7 +374,24 @@ public static class ChatMessageManager {
         ChatMessage existingMessage = dbContext.ChatMessages.SingleOrDefault(field => field.ChatGroupId == chatGroupId && field.ClientMessageId == clientMessageId);
         if (existingMessage == null)
             return ChatMessageSendResult.GroupGone();
-        return ChatMessageSendResult.Duplicate(BuildEntries(dbContext, [existingMessage])[0]);
+        return ChatMessageSendResult.Duplicate(BuildEntries(dbContext, [existingMessage])[0], GuestMessagesRemaining(dbContext, existingMessage.SenderUserAccountId));
+    }
+
+    private static ChatMessageSendResult LoadGuestLimitedSend(Guid chatGroupId, Guid clientMessageId) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        ChatMessage existingMessage = dbContext.ChatMessages.SingleOrDefault(field => field.ChatGroupId == chatGroupId && field.ClientMessageId == clientMessageId);
+        if (existingMessage == null)
+            return ChatMessageSendResult.GuestLimitReached();
+        return ChatMessageSendResult.Duplicate(BuildEntries(dbContext, [existingMessage])[0], GuestMessagesRemaining(dbContext, existingMessage.SenderUserAccountId));
+    }
+
+    private static int? GuestMessagesRemaining(HappyPlaceDbContext dbContext, Guid? userAccountId) {
+        if (userAccountId == null)
+            return null;
+        var guestCounters = dbContext.UserAccounts.Where(field => field.Id == userAccountId.Value).Select(field => new { field.IsAnonymous, field.GuestMessageCount }).SingleOrDefault();
+        if (guestCounters == null || !guestCounters.IsAnonymous)
+            return null;
+        return Math.Max(0, GuestMessageCap - guestCounters.GuestMessageCount);
     }
 
     private static bool IsValidReactionEmoji(string emoji) {
@@ -372,10 +413,12 @@ public static class ChatMessageManager {
         Dictionary<Guid, ChatMediaAsset> assetsByMessageId = dbContext.ChatMediaAssets
             .Where(field => field.AttachedMessageId != null && messageIds.Contains(field.AttachedMessageId.Value))
             .ToDictionary(field => field.AttachedMessageId.Value);
-        return [.. messages.Select(field => BuildEntry(field, reactionsByMessageId.TryGetValue(field.Id, out List<ChatMessageReactionEntry> messageReactions) ? messageReactions : [], assetsByMessageId.TryGetValue(field.Id, out ChatMediaAsset messageAsset) ? messageAsset : null))];
+        Dictionary<Guid, ChatMessage> replyParentsById = LoadReplyParents(dbContext, messages);
+        Dictionary<Guid, string> replyParentSenderNamesById = LoadSenderDisplayNames(dbContext, [.. replyParentsById.Values]);
+        return [.. messages.Select(field => BuildEntry(field, reactionsByMessageId.TryGetValue(field.Id, out List<ChatMessageReactionEntry> messageReactions) ? messageReactions : [], assetsByMessageId.TryGetValue(field.Id, out ChatMediaAsset messageAsset) ? messageAsset : null, BuildReplyContext(field.ReplyToChatMessageId, replyParentsById, replyParentSenderNamesById)))];
     }
 
-    private static ChatMessageEntry BuildEntry(ChatMessage message, List<ChatMessageReactionEntry> reactions, ChatMediaAsset mediaAsset) {
+    private static ChatMessageEntry BuildEntry(ChatMessage message, List<ChatMessageReactionEntry> reactions, ChatMediaAsset mediaAsset, ChatMessageReplyContextEntry replyTo) {
         string senderUserAccountId = message.SenderUserAccountId?.ToString();
         string body = message.IsDeleted ? null : MessageCipher.Decrypt(message.BodyCipher);
         string mediaUrl = null;
@@ -388,7 +431,45 @@ public static class ChatMessageManager {
             mediaHeight = mediaAsset.Height;
             mediaDurationSeconds = mediaAsset.DurationSeconds;
         }
-        return new ChatMessageEntry(message.Id.ToString(), message.ClientMessageId.ToString(), message.Sequence, senderUserAccountId, (byte)message.Kind, body, message.IsDeleted, reactions, mediaUrl, mediaWidth, mediaHeight, mediaDurationSeconds, message.CreatedAtUtc);
+        return new ChatMessageEntry(message.Id.ToString(), message.ClientMessageId.ToString(), message.Sequence, senderUserAccountId, (byte)message.Kind, body, message.IsDeleted, reactions, mediaUrl, mediaWidth, mediaHeight, mediaDurationSeconds, replyTo, message.CreatedAtUtc);
+    }
+
+    private static ChatMessageReplyContextEntry BuildSingleReplyContext(HappyPlaceDbContext dbContext, ChatMessage replyParentMessage) {
+        if (replyParentMessage == null)
+            return null;
+        Dictionary<Guid, ChatMessage> replyParentsById = new() { [replyParentMessage.Id] = replyParentMessage };
+        return BuildReplyContext(replyParentMessage.Id, replyParentsById, LoadSenderDisplayNames(dbContext, [replyParentMessage]));
+    }
+
+    private static ChatMessageReplyContextEntry BuildReplyContext(Guid? replyToChatMessageId, Dictionary<Guid, ChatMessage> replyParentsById, Dictionary<Guid, string> replyParentSenderNamesById) {
+        if (replyToChatMessageId == null)
+            return null;
+        if (!replyParentsById.TryGetValue(replyToChatMessageId.Value, out ChatMessage replyParentMessage))
+            return new ChatMessageReplyContextEntry(replyToChatMessageId.Value.ToString(), null, null, (byte)ChatMessageKind.Text, null, true);
+        string senderUserAccountId = replyParentMessage.SenderUserAccountId?.ToString();
+        string senderDisplayName = replyParentMessage.SenderUserAccountId != null && replyParentSenderNamesById.TryGetValue(replyParentMessage.SenderUserAccountId.Value, out string parentSenderName) ? parentSenderName : null;
+        string preview = null;
+        if (!replyParentMessage.IsDeleted && replyParentMessage.Kind == ChatMessageKind.Text) {
+            string parentBody = MessageCipher.Decrypt(replyParentMessage.BodyCipher);
+            preview = parentBody != null && parentBody.Length > ReplyPreviewMaxLength ? parentBody[..ReplyPreviewMaxLength] : parentBody;
+        }
+        return new ChatMessageReplyContextEntry(replyParentMessage.Id.ToString(), senderUserAccountId, senderDisplayName, (byte)replyParentMessage.Kind, preview, replyParentMessage.IsDeleted);
+    }
+
+    private static Dictionary<Guid, ChatMessage> LoadReplyParents(HappyPlaceDbContext dbContext, List<ChatMessage> messages) {
+        List<Guid> replyParentIds = [.. messages.Where(field => field.ReplyToChatMessageId != null).Select(field => field.ReplyToChatMessageId.Value).Distinct()];
+        Dictionary<Guid, ChatMessage> replyParentsById = [];
+        if (replyParentIds.Count == 0)
+            return replyParentsById;
+        return dbContext.ChatMessages.Where(field => replyParentIds.Contains(field.Id)).ToDictionary(field => field.Id);
+    }
+
+    private static Dictionary<Guid, string> LoadSenderDisplayNames(HappyPlaceDbContext dbContext, List<ChatMessage> messages) {
+        List<Guid> parentSenderIds = [.. messages.Where(field => field.SenderUserAccountId != null).Select(field => field.SenderUserAccountId.Value).Distinct()];
+        Dictionary<Guid, string> senderNamesById = [];
+        if (parentSenderIds.Count == 0)
+            return senderNamesById;
+        return dbContext.UserAccounts.Where(field => parentSenderIds.Contains(field.Id)).ToDictionary(field => field.Id, field => field.DisplayName);
     }
 
     private static List<ChatMessageSenderEntry> BuildSenderEntries(HappyPlaceDbContext dbContext, List<ChatMessage> messages) {

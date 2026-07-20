@@ -9,6 +9,7 @@ public class ChatMessage {
     public Guid ChatGroupId { get; set; }
     public Guid? SenderUserAccountId { get; set; }
     public Guid ClientMessageId { get; set; }
+    public Guid? ReplyToChatMessageId { get; set; }
     public ChatMessageKind Kind { get; set; }
     public Byte[] BodyCipher { get; set; }
     public Byte CipherVersion { get; set; }

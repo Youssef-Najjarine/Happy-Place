@@ -15,5 +15,6 @@ public class UserAccount {
     public String ProfilePhotoUrl { get; set; }
     public String BackgroundPhotoUrl { get; set; }
     public Boolean IsAnonymous { get; set; }
+    public Int32 GuestMessageCount { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 }

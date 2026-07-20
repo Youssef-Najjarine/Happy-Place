@@ -10,6 +10,7 @@ CREATE TABLE [dbo].[ChatMessage]
 		constraint [FK-ChatMessage-SenderUserAccountId]
 		FOREIGN KEY REFERENCES [dbo].[UserAccount]([Id]) ON DELETE SET NULL,
 	[ClientMessageId] uniqueidentifier NOT NULL,
+	[ReplyToChatMessageId] uniqueidentifier NULL,
 	[Kind] tinyint NOT NULL
 		constraint [CK-ChatMessage-Kind] CHECK ([Kind] IN (1, 2, 3, 4)),
 	[BodyCipher] varbinary(MAX) NULL,

@@ -13,6 +13,8 @@ CREATE TABLE [dbo].[UserAccount]
     [BackgroundPhotoUrl] nvarchar(500) NULL,
 	[IsAnonymous] bit NOT NULL
 		constraint [DF-UserAccount-IsAnonymous] default 0,
+	[GuestMessageCount] int NOT NULL
+		constraint [DF-UserAccount-GuestMessageCount] default 0,
 	[CreatedAtUtc] datetime2(0) NOT NULL
 		constraint [DF-UserAccount-CreatedAtUtc] default sysutcdatetime(),
 )
