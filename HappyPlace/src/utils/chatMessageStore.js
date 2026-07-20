@@ -23,7 +23,19 @@ export function mergeSenders(sendersById, senders) {
     return next;
 }
 
-export function createPendingEntry({ clientMessageId, callerUserAccountId, kind, body, file, durationSeconds, nowIso }) {
+export function mergeMemberSenders(sendersById, members) {
+    if (!members || members.length === 0) return sendersById;
+    let next = null;
+    members.forEach((member) => {
+        const existing = sendersById[member.userAccountId];
+        if (existing && existing.displayName === member.name && existing.profilePhotoUrl === member.profilePhotoUrl && existing.avatarColor === member.avatarColor) return;
+        if (!next) next = { ...sendersById };
+        next[member.userAccountId] = { id: member.userAccountId, displayName: member.name, profilePhotoUrl: member.profilePhotoUrl, avatarColor: member.avatarColor };
+    });
+    return next || sendersById;
+}
+
+export function createPendingEntry({ clientMessageId, callerUserAccountId, kind, body, file, durationSeconds, replyTo, nowIso }) {
     const isMedia = kind !== 1;
     return {
         id: 'pending-' + clientMessageId,
@@ -39,12 +51,13 @@ export function createPendingEntry({ clientMessageId, callerUserAccountId, kind,
         mediaHeight: isMedia ? (file && file.height) || null : null,
         mediaDurationSeconds: isMedia ? durationSeconds || null : null,
         localUri: kind === 2 && file ? file.uri : null,
+        replyTo: replyTo || null,
         createdAtUtc: nowIso,
         pending: true,
         failed: false,
         retryPayload: isMedia
-            ? { file: file ? { uri: file.uri, type: file.type, name: file.name, width: file.width || null, height: file.height || null } : null, durationSeconds: durationSeconds || 0, mediaId: null }
-            : { body },
+            ? { file: file ? { uri: file.uri, type: file.type, name: file.name, width: file.width || null, height: file.height || null } : null, durationSeconds: durationSeconds || 0, mediaId: null, replyToMessageId: replyTo ? replyTo.messageId : null }
+            : { body, replyToMessageId: replyTo ? replyTo.messageId : null },
     };
 }
 
@@ -96,4 +109,35 @@ export function reconcilePending(pendingList, serverEntries) {
 export function orderMessages(messagesById, pendingMessages) {
     const serverMessages = Object.values(messagesById).sort((first, second) => first.sequence - second.sequence);
     return [...serverMessages, ...pendingMessages];
+}
+
+export function buildReplyContext(parentEntry, sendersById) {
+    if (!parentEntry) return null;
+    const sender = parentEntry.senderUserAccountId && sendersById ? sendersById[parentEntry.senderUserAccountId] : null;
+    const previewSource = parentEntry.kind === 1 && !parentEntry.isDeleted ? parentEntry.body || '' : null;
+    return {
+        messageId: parentEntry.id,
+        senderUserAccountId: parentEntry.senderUserAccountId || null,
+        senderDisplayName: sender ? sender.displayName : null,
+        kind: parentEntry.kind,
+        preview: previewSource == null ? null : previewSource.slice(0, 140),
+        isDeleted: !!parentEntry.isDeleted,
+    };
+}
+
+export function resolveReplyDisplay(replyTo, messagesById, sendersById) {
+    if (!replyTo) return null;
+    const liveParent = messagesById ? messagesById[replyTo.messageId] : null;
+    if (!liveParent) {
+        return { messageId: replyTo.messageId, senderDisplayName: replyTo.senderDisplayName || null, kind: replyTo.kind, preview: replyTo.preview == null ? null : replyTo.preview, isDeleted: !!replyTo.isDeleted, parentIsLoaded: false };
+    }
+    const liveContext = buildReplyContext(liveParent, sendersById);
+    return {
+        messageId: liveContext.messageId,
+        senderDisplayName: liveContext.senderDisplayName || replyTo.senderDisplayName || null,
+        kind: liveContext.kind,
+        preview: liveContext.preview,
+        isDeleted: liveContext.isDeleted,
+        parentIsLoaded: true,
+    };
 }

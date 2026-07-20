@@ -2,6 +2,7 @@ import {
     createClientMessageId,
     upsertEntries,
     mergeSenders,
+    mergeMemberSenders,
     createPendingEntry,
     markPendingFailed,
     markPendingRetrying,
@@ -9,6 +10,8 @@ import {
     removePendingById,
     reconcilePending,
     orderMessages,
+    buildReplyContext,
+    resolveReplyDisplay,
 } from '../src/utils/chatMessageStore';
 
 function makeTextPending(clientMessageId, overrides) {
@@ -32,6 +35,7 @@ function makeServerEntry(id, sequence, overrides) {
         mediaWidth: null,
         mediaHeight: null,
         mediaDurationSeconds: null,
+        replyTo: null,
         createdAtUtc: '2026-07-16T01:00:00Z',
         ...(overrides || {}),
     };
@@ -70,7 +74,8 @@ describe('createPendingEntry', () => {
         expect(entry.createdAtUtc).toBe('2026-07-16T01:00:00.000Z');
         expect(entry.pending).toBe(true);
         expect(entry.failed).toBe(false);
-        expect(entry.retryPayload).toEqual({ body: 'hi' });
+        expect(entry.replyTo).toBeNull();
+        expect(entry.retryPayload).toEqual({ body: 'hi', replyToMessageId: null });
     });
 
     it('builds an image entry with localUri, dimensions, and a media retry payload', () => {
@@ -100,6 +105,22 @@ describe('createPendingEntry', () => {
         expect(entry.mediaWidth).toBeNull();
         expect(entry.mediaDurationSeconds).toBe(7);
         expect(entry.retryPayload.durationSeconds).toBe(7);
+    });
+
+    it('carries a reply context and threads the parent id into the retry payload', () => {
+        const replyTo = { messageId: 'm-parent', senderUserAccountId: 'caller-2', senderDisplayName: 'Sam', kind: 1, preview: 'the original', isDeleted: false };
+        const entry = createPendingEntry({ clientMessageId: 'cid-5', callerUserAccountId: 'caller-1', kind: 1, body: 'the reply', replyTo, nowIso: '2026-07-19T01:00:00.000Z' });
+        expect(entry.replyTo).toEqual(replyTo);
+        expect(entry.retryPayload).toEqual({ body: 'the reply', replyToMessageId: 'm-parent' });
+    });
+
+    it('threads the reply link through a media retry payload', () => {
+        const file = { uri: 'file:///photo.jpg', type: 'image/jpeg', name: 'photo.jpg', width: 800, height: 600 };
+        const replyTo = { messageId: 'm-parent', senderUserAccountId: 'caller-2', senderDisplayName: 'Sam', kind: 1, preview: 'the original', isDeleted: false };
+        const entry = createPendingEntry({ clientMessageId: 'cid-6', callerUserAccountId: 'caller-1', kind: 2, file, durationSeconds: 0, replyTo, nowIso: '2026-07-19T01:00:00.000Z' });
+        expect(entry.replyTo).toEqual(replyTo);
+        expect(entry.retryPayload.replyToMessageId).toBe('m-parent');
+        expect(entry.retryPayload.mediaId).toBeNull();
     });
 });
 
@@ -141,6 +162,46 @@ describe('mergeSenders', () => {
         const current = { s1: { id: 's1', displayName: 'Ann' } };
         expect(mergeSenders(current, null)).toBe(current);
         expect(mergeSenders(current, [])).toBe(current);
+    });
+});
+
+describe('mergeMemberSenders', () => {
+    function makeMember(userAccountId, name, profilePhotoUrl) {
+        return { userAccountId, name, profilePhotoUrl: profilePhotoUrl || null, username: 'user', avatarColor: '#E17055', isOwner: false };
+    }
+
+    it('refreshes a stale sender from live group-state members', () => {
+        const current = { u1: { id: 'u1', displayName: 'Guest4821', profilePhotoUrl: null } };
+        const next = mergeMemberSenders(current, [makeMember('u1', 'Casey Jordan', 'https://photos/u1.jpg')]);
+        expect(next.u1).toEqual({ id: 'u1', displayName: 'Casey Jordan', profilePhotoUrl: 'https://photos/u1.jpg', avatarColor: '#E17055' });
+    });
+
+    it('adds members that were never in the senders map', () => {
+        const next = mergeMemberSenders({}, [makeMember('u1', 'Casey', null)]);
+        expect(next.u1.displayName).toBe('Casey');
+    });
+
+    it('returns the same reference when every member already matches', () => {
+        const current = { u1: { id: 'u1', displayName: 'Casey', profilePhotoUrl: null, avatarColor: '#E17055' } };
+        expect(mergeMemberSenders(current, [makeMember('u1', 'Casey', null)])).toBe(current);
+        const recolored = mergeMemberSenders(current, [{ ...makeMember('u1', 'Casey', null), avatarColor: '#0984E3' }]);
+        expect(recolored.u1.avatarColor).toBe('#0984E3');
+        expect(current.u1.avatarColor).toBe('#E17055');
+    });
+
+    it('keeps former members untouched while refreshing current ones', () => {
+        const current = { u1: { id: 'u1', displayName: 'Guest4821', profilePhotoUrl: null }, gone: { id: 'gone', displayName: 'Left The Group', profilePhotoUrl: null } };
+        const next = mergeMemberSenders(current, [makeMember('u1', 'Casey', null)]);
+        expect(next.gone.displayName).toBe('Left The Group');
+        expect(next.u1.displayName).toBe('Casey');
+    });
+
+    it('returns the same reference for null or empty member lists and does not mutate inputs', () => {
+        const current = { u1: { id: 'u1', displayName: 'Casey', profilePhotoUrl: null } };
+        expect(mergeMemberSenders(current, null)).toBe(current);
+        expect(mergeMemberSenders(current, [])).toBe(current);
+        mergeMemberSenders(current, [makeMember('u1', 'Renamed', null)]);
+        expect(current.u1.displayName).toBe('Casey');
     });
 });
 
@@ -288,6 +349,78 @@ describe('orderMessages', () => {
     it('keeps deleted messages in the timeline', () => {
         const byId = upsertEntries({}, [makeServerEntry('m1', 1, { isDeleted: true })]);
         expect(orderMessages(byId, [])).toHaveLength(1);
+    });
+});
+
+describe('buildReplyContext', () => {
+    it('builds a full context from a text parent with a known sender', () => {
+        const parent = makeServerEntry('m1', 1, { body: 'help me think this through' });
+        const context = buildReplyContext(parent, { 'caller-1': { id: 'caller-1', displayName: 'Sam' } });
+        expect(context).toEqual({ messageId: 'm1', senderUserAccountId: 'caller-1', senderDisplayName: 'Sam', kind: 1, preview: 'help me think this through', isDeleted: false });
+    });
+
+    it('truncates long parent bodies to 140 characters', () => {
+        const parent = makeServerEntry('m1', 1, { body: 'a'.repeat(300) });
+        const context = buildReplyContext(parent, {});
+        expect(context.preview).toBe('a'.repeat(140));
+    });
+
+    it('gives media parents a null preview while keeping the kind', () => {
+        const parent = makeServerEntry('m1', 1, { kind: 2, body: null, mediaUrl: 'https://media/m1' });
+        const context = buildReplyContext(parent, {});
+        expect(context.kind).toBe(2);
+        expect(context.preview).toBeNull();
+    });
+
+    it('marks deleted parents with a null preview', () => {
+        const parent = makeServerEntry('m1', 1, { isDeleted: true, body: null });
+        const context = buildReplyContext(parent, {});
+        expect(context.isDeleted).toBe(true);
+        expect(context.preview).toBeNull();
+    });
+
+    it('tolerates deleted-account parents, unknown senders, and null parents', () => {
+        const orphanParent = makeServerEntry('m1', 1, { senderUserAccountId: null });
+        expect(buildReplyContext(orphanParent, {}).senderUserAccountId).toBeNull();
+        const unknownSenderParent = makeServerEntry('m2', 2);
+        expect(buildReplyContext(unknownSenderParent, {}).senderDisplayName).toBeNull();
+        expect(buildReplyContext(null, {})).toBeNull();
+    });
+});
+
+describe('resolveReplyDisplay', () => {
+    const embedded = { messageId: 'm1', senderUserAccountId: 'caller-1', senderDisplayName: 'Sam', kind: 1, preview: 'the original', isDeleted: false };
+
+    it('prefers the live parent so later deletions tombstone the chip', () => {
+        const byId = upsertEntries({}, [makeServerEntry('m1', 1, { isDeleted: true, body: null })]);
+        const display = resolveReplyDisplay(embedded, byId, {});
+        expect(display.isDeleted).toBe(true);
+        expect(display.preview).toBeNull();
+        expect(display.parentIsLoaded).toBe(true);
+    });
+
+    it('reflects the live parent body when it is loaded', () => {
+        const byId = upsertEntries({}, [makeServerEntry('m1', 1, { body: 'live body' })]);
+        const display = resolveReplyDisplay(embedded, byId, { 'caller-1': { id: 'caller-1', displayName: 'Sam' } });
+        expect(display.preview).toBe('live body');
+        expect(display.senderDisplayName).toBe('Sam');
+        expect(display.parentIsLoaded).toBe(true);
+    });
+
+    it('falls back to the embedded context when the parent is beyond loaded pages', () => {
+        const display = resolveReplyDisplay(embedded, {}, {});
+        expect(display).toEqual({ messageId: 'm1', senderDisplayName: 'Sam', kind: 1, preview: 'the original', isDeleted: false, parentIsLoaded: false });
+    });
+
+    it('keeps the embedded sender name when the live sender is unknown', () => {
+        const byId = upsertEntries({}, [makeServerEntry('m1', 1, { body: 'live body' })]);
+        const display = resolveReplyDisplay(embedded, byId, {});
+        expect(display.senderDisplayName).toBe('Sam');
+    });
+
+    it('returns null for entries that are not replies', () => {
+        expect(resolveReplyDisplay(null, {}, {})).toBeNull();
+        expect(resolveReplyDisplay(undefined, {}, {})).toBeNull();
     });
 });
 

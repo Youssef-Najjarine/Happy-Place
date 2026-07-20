@@ -21,6 +21,7 @@ export const chatMessagesApi = chatGroupsApi.injectEndpoints({
                 const body = { AuthToken: args.authToken, ChatGroupId: args.chatGroupId, ClientMessageId: args.clientMessageId };
                 if (args.mediaId) body.MediaId = args.mediaId;
                 if (args.body != null) body.Body = args.body;
+                if (args.replyToMessageId) body.ReplyToMessageId = args.replyToMessageId;
                 return { path: 'chatMessage/send', body };
             },
         }),

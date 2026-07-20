@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { AppState } from 'react-native';
 import baseService from 'src/services/baseService';
-import { createClientMessageId, upsertEntries, mergeSenders, createPendingEntry, markPendingFailed, markPendingRetrying, setPendingMediaId, removePendingById, reconcilePending, orderMessages } from 'src/utils/chatMessageStore';
+import { createClientMessageId, upsertEntries, mergeSenders, mergeMemberSenders, createPendingEntry, markPendingFailed, markPendingRetrying, setPendingMediaId, removePendingById, reconcilePending, orderMessages } from 'src/utils/chatMessageStore';
 import {
     useLazyListMessagesPageQuery,
     useLazyPollMessagesQuery,
@@ -28,6 +28,7 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
     const [callerUserAccountId, setCallerUserAccountId] = useState(null);
     const [nextCursor, setNextCursor] = useState(null);
     const [loadingOlder, setLoadingOlder] = useState(false);
+    const [guestMessagesRemaining, setGuestMessagesRemaining] = useState(null);
 
     const watermarkRef = useRef(0);
     const pollBusyRef = useRef(false);
@@ -50,7 +51,11 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
         setSendersById((current) => mergeSenders(current, response.senders));
         if (Array.isArray(response.readPointers)) setReadPointers(response.readPointers);
         if (Array.isArray(response.typing)) setTypingUserIds(response.typing);
-        if (response.group) setGroupState(response.group);
+        if (response.group) {
+            setGroupState(response.group);
+            if (Array.isArray(response.group.members))
+                setSendersById((current) => mergeMemberSenders(current, response.group.members));
+        }
     }, []);
 
     const loadFirstPage = useCallback(async () => {
@@ -71,6 +76,7 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
             setMessagesById(upsertEntries({}, response.items || []));
             setPendingMessages((current) => reconcilePending(current, response.items || []));
             setNextCursor(response.nextCursor);
+            setGuestMessagesRemaining(response.guestMessagesRemaining == null ? null : response.guestMessagesRemaining);
             applySharedBlocks(response);
             setStatus('ok');
         } catch (error) {
@@ -187,7 +193,13 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
         if (response.status === 'sent' || response.status === 'duplicate') {
             setPendingMessages((current) => removePendingById(current, pendingId));
             setMessagesById((current) => upsertEntries(current, [response.message]));
+            setGuestMessagesRemaining(response.guestMessagesRemaining == null ? null : response.guestMessagesRemaining);
             return { ok: true };
+        }
+        if (response.status === 'guestLimitReached') {
+            setPendingMessages((current) => removePendingById(current, pendingId));
+            setGuestMessagesRemaining(0);
+            return { ok: false, status: response.status };
         }
         if (response.status === 'notFriends') {
             setPendingMessages((current) => markPendingFailed(current, pendingId));
@@ -207,7 +219,7 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
         const payload = pendingEntry.retryPayload;
         try {
             if (payload.body !== undefined) {
-                const response = await sendChatMessage({ authToken, chatGroupId, clientMessageId: pendingEntry.clientMessageId, body: payload.body }).unwrap();
+                const response = await sendChatMessage({ authToken, chatGroupId, clientMessageId: pendingEntry.clientMessageId, body: payload.body, replyToMessageId: payload.replyToMessageId }).unwrap();
                 return applySendOutcome(pendingId, response);
             }
             let mediaId = payload.mediaId;
@@ -234,7 +246,7 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
                 mediaId = upload.mediaId;
                 setPendingMessages((current) => setPendingMediaId(current, pendingId, mediaId));
             }
-            const response = await sendChatMessage({ authToken, chatGroupId, clientMessageId: pendingEntry.clientMessageId, mediaId }).unwrap();
+            const response = await sendChatMessage({ authToken, chatGroupId, clientMessageId: pendingEntry.clientMessageId, mediaId, replyToMessageId: payload.replyToMessageId }).unwrap();
             return applySendOutcome(pendingId, response);
         } catch (error) {
             setPendingMessages((current) => markPendingFailed(current, pendingId));
@@ -242,14 +254,14 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
         }
     }, [authToken, chatGroupId, sendChatMessage, applySendOutcome]);
 
-    const send = useCallback(async (body) => {
-        const pendingEntry = createPendingEntry({ clientMessageId: createClientMessageId(), callerUserAccountId, kind: 1, body, nowIso: new Date().toISOString() });
+    const send = useCallback(async (body, replyTo) => {
+        const pendingEntry = createPendingEntry({ clientMessageId: createClientMessageId(), callerUserAccountId, kind: 1, body, replyTo, nowIso: new Date().toISOString() });
         setPendingMessages((current) => [...current, pendingEntry]);
         return attemptDelivery(pendingEntry);
     }, [callerUserAccountId, attemptDelivery]);
 
-    const sendMedia = useCallback(async (kind, file, durationSeconds) => {
-        const pendingEntry = createPendingEntry({ clientMessageId: createClientMessageId(), callerUserAccountId, kind, file, durationSeconds, nowIso: new Date().toISOString() });
+    const sendMedia = useCallback(async (kind, file, durationSeconds, replyTo) => {
+        const pendingEntry = createPendingEntry({ clientMessageId: createClientMessageId(), callerUserAccountId, kind, file, durationSeconds, replyTo, nowIso: new Date().toISOString() });
         setPendingMessages((current) => [...current, pendingEntry]);
         return attemptDelivery(pendingEntry);
     }, [callerUserAccountId, attemptDelivery]);
@@ -265,11 +277,11 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
         setPendingMessages((current) => removePendingById(current, messageId));
     }, []);
 
-    const sendImage = useCallback((file) => sendMedia(2, { ...file, type: file.type || 'image/jpeg', name: file.name || 'photo.jpg' }, 0), [sendMedia]);
+    const sendImage = useCallback((file, replyTo) => sendMedia(2, { ...file, type: file.type || 'image/jpeg', name: file.name || 'photo.jpg' }, 0, replyTo), [sendMedia]);
 
-    const sendVideo = useCallback((file, durationSeconds) => sendMedia(3, { ...file, type: file.type || 'video/mp4', name: file.name || 'video.mp4' }, durationSeconds), [sendMedia]);
+    const sendVideo = useCallback((file, durationSeconds, replyTo) => sendMedia(3, { ...file, type: file.type || 'video/mp4', name: file.name || 'video.mp4' }, durationSeconds, replyTo), [sendMedia]);
 
-    const sendVoice = useCallback((file, durationSeconds) => sendMedia(4, { ...file, type: file.type || 'audio/mp4', name: file.name || 'voice.m4a' }, durationSeconds), [sendMedia]);
+    const sendVoice = useCallback((file, durationSeconds, replyTo) => sendMedia(4, { ...file, type: file.type || 'audio/mp4', name: file.name || 'voice.m4a' }, durationSeconds, replyTo), [sendMedia]);
 
     const reactTo = useCallback(async (messageId, emoji) => {
         setMessagesById((current) => {
@@ -324,6 +336,7 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
         callerUserAccountId,
         typingUserIds,
         groupState,
+        guestMessagesRemaining,
         hasOlder: !!nextCursor,
         loadingOlder,
         loadOlder,

@@ -37,6 +37,7 @@ import RemoteImage from 'src/components/RemoteImage';
 import ReportMessageModal from 'src/components/ReportMessageModal';
 import ImagePicker from 'react-native-image-crop-picker';
 import baseService from 'src/services/baseService';
+import { buildReplyContext, resolveReplyDisplay } from 'src/utils/chatMessageStore';
 
 function loadOptionalModule(loader) {
     try {
@@ -1058,6 +1059,164 @@ const phoneStyles = StyleSheet.create({
         elevation: 3000,
         backgroundColor: TranslucentBlack
     },
+    replyChip: {
+        borderLeftWidth: scaleWidth(3),
+        borderRadius: scaleWidth(8),
+        paddingVertical: scaleHeight(5),
+        paddingHorizontal: scaleWidth(8),
+        gap: scaleHeight(1)
+    },
+    replyChipMine: {
+        borderLeftColor: White,
+        backgroundColor: WhiteScrim
+    },
+    replyChipHelper: {
+        borderLeftColor: HappyColor,
+        backgroundColor: VeryLightGray
+    },
+    replyChipSenderTxt: {
+        fontSize: scaleFont(12),
+        lineHeight: scaleLineHeight(16),
+        letterSpacing: scaleLetterSpacing(-0.12),
+        fontWeight: 700
+    },
+    replyChipSenderMine: {
+        color: White
+    },
+    replyChipSenderHelper: {
+        color: HappyColor
+    },
+    replyChipBodyTxt: {
+        fontSize: scaleFont(13),
+        lineHeight: scaleLineHeight(17),
+        letterSpacing: scaleLetterSpacing(-0.13),
+        fontWeight: 500
+    },
+    replyChipBodyMine: {
+        color: WhiteScrim
+    },
+    replyChipBodyHelper: {
+        color: Charcoal
+    },
+    replyChipDeletedTxt: {
+        fontStyle: 'italic'
+    },
+    replyBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: scaleHeight(8),
+        borderRadius: scaleWidth(12),
+        borderLeftWidth: scaleWidth(3),
+        borderLeftColor: HappyColor,
+        paddingVertical: scaleHeight(8),
+        paddingLeft: scaleWidth(10),
+        paddingRight: scaleWidth(8),
+        backgroundColor: White
+    },
+    replyBarTextColumn: {
+        flex: 1,
+        gap: scaleHeight(1)
+    },
+    replyBarSenderTxt: {
+        fontSize: scaleFont(13),
+        lineHeight: scaleLineHeight(18),
+        letterSpacing: scaleLetterSpacing(-0.13),
+        fontWeight: 700,
+        color: HappyColor
+    },
+    replyBarBodyTxt: {
+        fontSize: scaleFont(13),
+        lineHeight: scaleLineHeight(18),
+        letterSpacing: scaleLetterSpacing(-0.13),
+        fontWeight: 500,
+        color: Charcoal
+    },
+    replyBarCloseBtn: {
+        width: scaleWidth(26),
+        height: scaleWidth(26),
+        borderRadius: scaleWidth(99),
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: scaleWidth(8),
+        backgroundColor: VeryLightGray
+    },
+    replyBarCloseTxt: {
+        fontSize: scaleFont(14),
+        lineHeight: scaleLineHeight(16),
+        fontWeight: 600,
+        color: Black
+    },
+    guestCountdownPill: {
+        alignSelf: 'center',
+        marginTop: scaleHeight(8),
+        borderRadius: scaleWidth(99),
+        paddingVertical: scaleHeight(6),
+        paddingHorizontal: scaleWidth(14),
+        backgroundColor: White
+    },
+    guestCountdownTxt: {
+        fontSize: scaleFont(12),
+        lineHeight: scaleLineHeight(16),
+        letterSpacing: scaleLetterSpacing(-0.12),
+        fontWeight: 600,
+        color: HappyColor,
+        textAlign: 'center'
+    },
+    guestWall: {
+        width: '100%',
+        borderRadius: scaleWidth(16),
+        paddingVertical: scaleHeight(14),
+        paddingHorizontal: scaleWidth(16),
+        alignItems: 'center',
+        gap: scaleHeight(10),
+        backgroundColor: White
+    },
+    guestWallTxt: {
+        fontSize: scaleFont(14),
+        lineHeight: scaleLineHeight(20),
+        letterSpacing: scaleLetterSpacing(-0.14),
+        fontWeight: 600,
+        color: Black,
+        textAlign: 'center'
+    },
+    guestWallBtn: {
+        borderRadius: scaleWidth(99),
+        paddingVertical: scaleHeight(9),
+        paddingHorizontal: scaleWidth(22),
+        backgroundColor: HappyColor
+    },
+    guestWallBtnTxt: {
+        fontSize: scaleFont(15),
+        lineHeight: scaleLineHeight(20),
+        letterSpacing: scaleLetterSpacing(-0.15),
+        fontWeight: 800,
+        color: White
+    },
+    highlightedRow: {
+        borderRadius: scaleWidth(12),
+        backgroundColor: VeryLightLavenderTint
+    },
+    swipeReplyIndicatorWrap: {
+        position: 'absolute',
+        left: scaleWidth(2),
+        top: 0,
+        bottom: 0,
+        justifyContent: 'center'
+    },
+    swipeReplyIndicatorCircle: {
+        width: scaleWidth(28),
+        height: scaleWidth(28),
+        borderRadius: scaleWidth(99),
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: White
+    },
+    swipeReplyIndicatorGlyph: {
+        fontSize: scaleFont(15),
+        lineHeight: scaleLineHeight(18),
+        fontWeight: 800,
+        color: HappyColor
+    },
 });
 
 const tabletStyles = StyleSheet.create({
@@ -2031,6 +2190,164 @@ const tabletStyles = StyleSheet.create({
         elevation: 3000,
         backgroundColor: TranslucentBlack
     },
+    replyChip: {
+        borderLeftWidth: scaleWidth(3),
+        borderRadius: scaleWidth(8),
+        paddingVertical: scaleHeight(5),
+        paddingHorizontal: scaleWidth(8),
+        gap: scaleHeight(1)
+    },
+    replyChipMine: {
+        borderLeftColor: White,
+        backgroundColor: WhiteScrim
+    },
+    replyChipHelper: {
+        borderLeftColor: HappyColor,
+        backgroundColor: VeryLightGray
+    },
+    replyChipSenderTxt: {
+        fontSize: scaleFont(12),
+        lineHeight: scaleLineHeight(16),
+        letterSpacing: scaleLetterSpacing(-0.12),
+        fontWeight: 700
+    },
+    replyChipSenderMine: {
+        color: White
+    },
+    replyChipSenderHelper: {
+        color: HappyColor
+    },
+    replyChipBodyTxt: {
+        fontSize: scaleFont(13),
+        lineHeight: scaleLineHeight(17),
+        letterSpacing: scaleLetterSpacing(-0.13),
+        fontWeight: 500
+    },
+    replyChipBodyMine: {
+        color: WhiteScrim
+    },
+    replyChipBodyHelper: {
+        color: Charcoal
+    },
+    replyChipDeletedTxt: {
+        fontStyle: 'italic'
+    },
+    replyBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: scaleHeight(8),
+        borderRadius: scaleWidth(12),
+        borderLeftWidth: scaleWidth(3),
+        borderLeftColor: HappyColor,
+        paddingVertical: scaleHeight(8),
+        paddingLeft: scaleWidth(10),
+        paddingRight: scaleWidth(8),
+        backgroundColor: White
+    },
+    replyBarTextColumn: {
+        flex: 1,
+        gap: scaleHeight(1)
+    },
+    replyBarSenderTxt: {
+        fontSize: scaleFont(13),
+        lineHeight: scaleLineHeight(18),
+        letterSpacing: scaleLetterSpacing(-0.13),
+        fontWeight: 700,
+        color: HappyColor
+    },
+    replyBarBodyTxt: {
+        fontSize: scaleFont(13),
+        lineHeight: scaleLineHeight(18),
+        letterSpacing: scaleLetterSpacing(-0.13),
+        fontWeight: 500,
+        color: Charcoal
+    },
+    replyBarCloseBtn: {
+        width: scaleWidth(26),
+        height: scaleWidth(26),
+        borderRadius: scaleWidth(99),
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: scaleWidth(8),
+        backgroundColor: VeryLightGray
+    },
+    replyBarCloseTxt: {
+        fontSize: scaleFont(14),
+        lineHeight: scaleLineHeight(16),
+        fontWeight: 600,
+        color: Black
+    },
+    guestCountdownPill: {
+        alignSelf: 'center',
+        marginTop: scaleHeight(8),
+        borderRadius: scaleWidth(99),
+        paddingVertical: scaleHeight(6),
+        paddingHorizontal: scaleWidth(14),
+        backgroundColor: White
+    },
+    guestCountdownTxt: {
+        fontSize: scaleFont(12),
+        lineHeight: scaleLineHeight(16),
+        letterSpacing: scaleLetterSpacing(-0.12),
+        fontWeight: 600,
+        color: HappyColor,
+        textAlign: 'center'
+    },
+    guestWall: {
+        width: '100%',
+        borderRadius: scaleWidth(16),
+        paddingVertical: scaleHeight(14),
+        paddingHorizontal: scaleWidth(16),
+        alignItems: 'center',
+        gap: scaleHeight(10),
+        backgroundColor: White
+    },
+    guestWallTxt: {
+        fontSize: scaleFont(14),
+        lineHeight: scaleLineHeight(20),
+        letterSpacing: scaleLetterSpacing(-0.14),
+        fontWeight: 600,
+        color: Black,
+        textAlign: 'center'
+    },
+    guestWallBtn: {
+        borderRadius: scaleWidth(99),
+        paddingVertical: scaleHeight(9),
+        paddingHorizontal: scaleWidth(22),
+        backgroundColor: HappyColor
+    },
+    guestWallBtnTxt: {
+        fontSize: scaleFont(15),
+        lineHeight: scaleLineHeight(20),
+        letterSpacing: scaleLetterSpacing(-0.15),
+        fontWeight: 800,
+        color: White
+    },
+    highlightedRow: {
+        borderRadius: scaleWidth(12),
+        backgroundColor: VeryLightLavenderTint
+    },
+    swipeReplyIndicatorWrap: {
+        position: 'absolute',
+        left: scaleWidth(2),
+        top: 0,
+        bottom: 0,
+        justifyContent: 'center'
+    },
+    swipeReplyIndicatorCircle: {
+        width: scaleWidth(28),
+        height: scaleWidth(28),
+        borderRadius: scaleWidth(99),
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: White
+    },
+    swipeReplyIndicatorGlyph: {
+        fontSize: scaleFont(15),
+        lineHeight: scaleLineHeight(18),
+        fontWeight: 800,
+        color: HappyColor
+    },
 });
 
 const QUICK_REACTIONS = ['\u2764\uFE0F', '\uD83D\uDC4D', '\uD83D\uDE0A', '\uD83D\uDE22', '\u203C\uFE0F', '\u2753'];
@@ -2041,6 +2358,11 @@ const VOICE_MAX_SECONDS = 300;
 const MAX_STAGED_ATTACHMENTS = 10;
 const VIDEO_MAX_SECONDS = 180;
 const VIDEO_MAX_BYTES = 100 * 1024 * 1024;
+
+const SWIPE_REPLY_ACTIVATE = scaleWidth(12);
+const SWIPE_REPLY_TRIGGER = scaleWidth(56);
+const SWIPE_REPLY_MAX = scaleWidth(72);
+const SWIPE_REPLY_OVERDRAG = 0.2;
 
 function formatDuration(totalSeconds) {
     const seconds = Math.max(0, Math.round(totalSeconds || 0));
@@ -2103,6 +2425,43 @@ function VoiceBubble({ entry, styles, mine, active, paused, positionMs, onToggle
     );
 }
 
+function SwipeToReplyRow({ enabled, onReply, styles, children }) {
+    const translateX = useRef(new Animated.Value(0)).current;
+    const onReplyRef = useRef(onReply);
+    onReplyRef.current = onReply;
+    const enabledRef = useRef(enabled);
+    enabledRef.current = enabled;
+    const panResponder = useMemo(() => PanResponder.create({
+        onMoveShouldSetPanResponder: (event, gestureState) => enabledRef.current && gestureState.dx > SWIPE_REPLY_ACTIVATE && gestureState.dx > Math.abs(gestureState.dy) * 1.5,
+        onPanResponderMove: (event, gestureState) => {
+            const dragDistance = Math.max(0, gestureState.dx);
+            const settledDistance = dragDistance > SWIPE_REPLY_TRIGGER ? SWIPE_REPLY_TRIGGER + (dragDistance - SWIPE_REPLY_TRIGGER) * SWIPE_REPLY_OVERDRAG : dragDistance;
+            translateX.setValue(Math.min(settledDistance, SWIPE_REPLY_MAX));
+        },
+        onPanResponderRelease: (event, gestureState) => {
+            if (gestureState.dx >= SWIPE_REPLY_TRIGGER) onReplyRef.current();
+            Animated.spring(translateX, { toValue: 0, friction: 7, tension: 60, useNativeDriver: true }).start();
+        },
+        onPanResponderTerminate: () => {
+            Animated.spring(translateX, { toValue: 0, friction: 7, tension: 60, useNativeDriver: true }).start();
+        },
+    }), [translateX]);
+    const indicatorOpacity = translateX.interpolate({ inputRange: [0, SWIPE_REPLY_TRIGGER * 0.4, SWIPE_REPLY_TRIGGER], outputRange: [0, 0.35, 1], extrapolate: 'clamp' });
+    const indicatorScale = translateX.interpolate({ inputRange: [0, SWIPE_REPLY_TRIGGER], outputRange: [0.6, 1], extrapolate: 'clamp' });
+    return (
+        <View>
+            <Animated.View pointerEvents="none" style={[styles.swipeReplyIndicatorWrap, { opacity: indicatorOpacity, transform: [{ scale: indicatorScale }] }]}>
+                <View style={styles.swipeReplyIndicatorCircle}>
+                    <CustomText style={styles.swipeReplyIndicatorGlyph}>{'\u21A9'}</CustomText>
+                </View>
+            </Animated.View>
+            <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
+                {children}
+            </Animated.View>
+        </View>
+    );
+}
+
 export default function ChatGroup() {
   const [showEditChatNameModal, setShowEditChatNameModal] = useState(false);
   const [showViewChatNameModal, setShowViewChatNameModal] = useState(false);
@@ -2132,6 +2491,8 @@ export default function ChatGroup() {
   const [voicePositionMs, setVoicePositionMs] = useState(0);
   const [voicePaused, setVoicePaused] = useState(false);
   const [viewerTarget, setViewerTarget] = useState(null);
+  const [replyTarget, setReplyTarget] = useState(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const recordSecondsRef = useRef(0);
   const isRecordingRef = useRef(false);
   const finishRecordingRef = useRef(null);
@@ -2155,10 +2516,15 @@ export default function ChatGroup() {
   const keyboardVisibleRef = useRef(false);
   const keyboardSpacerAnim = useRef(new Animated.Value(0)).current;
   const exitHandledRef = useRef(false);
+  const highlightTimerRef = useRef(null);
 
   const [expanded, setExpanded] = useState({});
 
   const cachedGroup = useSelector((state) => selectCachedChatGroup(state, chatGroupId));
+
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: false });
+  }, [navigation]);
 
   useEffect(() => {
     lastScrolledMessageIdRef.current = null;
@@ -2244,6 +2610,7 @@ export default function ChatGroup() {
     callerUserAccountId,
     typingUserIds,
     groupState,
+    guestMessagesRemaining,
     hasOlder,
     loadingOlder,
     loadOlder,
@@ -2302,6 +2669,14 @@ export default function ChatGroup() {
     if (!username) return;
     navigation.push('Profile', { username });
   }, [memberUsernamesById, navigation]);
+
+  const messagesById = useMemo(() => {
+    const map = {};
+    orderedMessages.forEach((entry) => {
+      if (!entry.pending) map[entry.id] = entry;
+    });
+    return map;
+  }, [orderedMessages]);
 
   const [renameChatGroup] = useRenameChatGroupMutation();
   const [setChatGroupVisibility] = useSetChatGroupVisibilityMutation();
@@ -2501,6 +2876,68 @@ export default function ChatGroup() {
     }
   }, [reportTarget, report]);
 
+  const handleReplyToTarget = useCallback(() => {
+    if (!actionTarget) return;
+    setReplyTarget(buildReplyContext(actionTarget, sendersById));
+    closeMessageActions();
+    inputRef.current?.focus();
+  }, [actionTarget, sendersById, closeMessageActions]);
+
+  const handleSwipeReply = useCallback((entry) => {
+    setReplyTarget(buildReplyContext(entry, sendersById));
+    inputRef.current?.focus();
+  }, [sendersById]);
+
+  const handleFinishAccountPress = useCallback(() => {
+    navigation.navigate('FinishAccount');
+  }, [navigation]);
+
+  const replyLineFor = useCallback((replyDisplay) => {
+    if (replyDisplay.isDeleted) return 'Message deleted';
+    if (replyDisplay.kind === 2) return 'Photo';
+    if (replyDisplay.kind === 3) return 'Video';
+    if (replyDisplay.kind === 4) return 'Voice message';
+    return replyDisplay.preview || '';
+  }, []);
+
+  const handleReplyChipPress = useCallback((replyDisplay) => {
+    if (!replyDisplay.parentIsLoaded) return;
+    for (let sectionIndex = 0; sectionIndex < groupedMessages.length; sectionIndex++) {
+      const itemIndex = groupedMessages[sectionIndex].data.findIndex((entry) => entry.id === replyDisplay.messageId);
+      if (itemIndex === -1) continue;
+      try {
+        sectionListRef.current?.scrollToLocation({ animated: true, sectionIndex, itemIndex, viewPosition: 0.5 });
+      } catch (error) {
+      }
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+      setHighlightedMessageId(replyDisplay.messageId);
+      highlightTimerRef.current = setTimeout(() => setHighlightedMessageId(null), 1400);
+      return;
+    }
+  }, [groupedMessages]);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    };
+  }, []);
+
+  const renderReplyChip = useCallback((entry, mine) => {
+    const replyDisplay = resolveReplyDisplay(entry.replyTo, messagesById, sendersById);
+    if (!replyDisplay) return null;
+    const senderName = replyDisplay.senderDisplayName || 'Former member';
+    return (
+      <TouchableOpacity
+        style={[styles.replyChip, mine ? styles.replyChipMine : styles.replyChipHelper]}
+        activeOpacity={0.7}
+        onPress={() => handleReplyChipPress(replyDisplay)}
+      >
+        <CustomText style={[styles.replyChipSenderTxt, mine ? styles.replyChipSenderMine : styles.replyChipSenderHelper]} numberOfLines={1} ellipsizeMode="tail">{senderName}</CustomText>
+        <CustomText style={[styles.replyChipBodyTxt, mine ? styles.replyChipBodyMine : styles.replyChipBodyHelper, replyDisplay.isDeleted && styles.replyChipDeletedTxt]} numberOfLines={1} ellipsizeMode="tail">{replyLineFor(replyDisplay)}</CustomText>
+      </TouchableOpacity>
+    );
+  }, [styles, messagesById, sendersById, handleReplyChipPress, replyLineFor]);
+
   const renderReactions = useCallback((entry, mine) => {
     const reactions = entry.reactions || [];
     if (reactions.length === 0 || entry.isDeleted) return null;
@@ -2621,12 +3058,15 @@ export default function ChatGroup() {
   const renderChatItem = useCallback(({ item }) => {
     const mine = !!item.senderUserAccountId && item.senderUserAccountId === callerUserAccountId;
     const timeStamp = formatMessageTime(item.createdAtUtc);
+    const highlighted = item.id === highlightedMessageId;
+    const swipeEnabled = !item.pending && !item.isDeleted && guestMessagesRemaining !== 0;
 
     if (!mine) {
       const sender = sendersById[item.senderUserAccountId];
       const senderName = sender ? sender.displayName : 'Former member';
       return (
-        <Pressable style={styles.helperChatMessageView} onLongPress={() => openMessageActions(item)}>
+        <SwipeToReplyRow enabled={swipeEnabled} onReply={() => handleSwipeReply(item)} styles={styles}>
+        <Pressable style={[styles.helperChatMessageView, highlighted && styles.highlightedRow]} onLongPress={() => openMessageActions(item)}>
           <TouchableOpacity
             style={styles.helperProfilePictureContainer}
             disabled={!memberUsernamesById[item.senderUserAccountId]}
@@ -2634,6 +3074,7 @@ export default function ChatGroup() {
           >
             <Avatar
               uri={sender ? sender.profilePhotoUrl : null}
+              color={sender ? sender.avatarColor : null}
               initial={senderName ? senderName.charAt(0).toUpperCase() : '?'}
               style={styles.helperProfilePicture}
               initialStyle={styles.avatarInitialTxt}
@@ -2644,6 +3085,7 @@ export default function ChatGroup() {
               <CustomText style={styles.helperSenderNameTxt} numberOfLines={1} ellipsizeMode="tail">
                 {senderName}
               </CustomText>
+              {renderReplyChip(item, false)}
               <View>
                 {renderMessageBody(item, false)}
               </View>
@@ -2654,13 +3096,16 @@ export default function ChatGroup() {
             {renderReactions(item, false)}
           </View>
         </Pressable>
+        </SwipeToReplyRow>
       );
     }
 
     const viewed = !item.pending && isViewedByEveryoneElse(item.sequence);
     return (
-      <Pressable style={styles.myChatMessageView} onLongPress={() => openMessageActions(item)} onPress={item.failed ? () => setFailedTarget(item) : undefined}>
+      <SwipeToReplyRow enabled={swipeEnabled} onReply={() => handleSwipeReply(item)} styles={styles}>
+      <Pressable style={[styles.myChatMessageView, highlighted && styles.highlightedRow]} onLongPress={() => openMessageActions(item)} onPress={item.failed ? () => setFailedTarget(item) : undefined}>
         <View style={styles.myChatTextBox}>
+          {renderReplyChip(item, true)}
           <View>
             {renderMessageBody(item, true)}
           </View>
@@ -2684,8 +3129,9 @@ export default function ChatGroup() {
         )}
         {renderReactions(item, true)}
       </Pressable>
+      </SwipeToReplyRow>
     );
-  }, [styles, callerUserAccountId, sendersById, isViewedByEveryoneElse, openMessageActions, renderMessageBody, renderReactions, memberUsernamesById, openSenderProfile]);
+  }, [styles, callerUserAccountId, sendersById, isViewedByEveryoneElse, openMessageActions, renderMessageBody, renderReactions, renderReplyChip, highlightedMessageId, guestMessagesRemaining, handleSwipeReply, memberUsernamesById, openSenderProfile]);
 
   const renderSectionHeader = useCallback(({ section: { title } }) => (
     <View style={styles.dayHeader}>
@@ -2695,10 +3141,10 @@ export default function ChatGroup() {
 
   const ChatMessageSeparator = useCallback(() => <View style={styles.ChatMessageSeparator} />, [styles]);
 
-  const deliverAttachment = useCallback(async (attachment) => {
+  const deliverAttachment = useCallback(async (attachment, replyTo) => {
     if (attachment.kind === 2) {
-      const result = await sendImage(attachment.file);
-      if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone') {
+      const result = await sendImage(attachment.file, replyTo);
+      if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone' && result.status !== 'guestLimitReached') {
         if (result.status === 'tooLarge') {
           showToast('That image is too large', 'info');
         } else if (result.status === 'invalidMedia') {
@@ -2707,11 +3153,11 @@ export default function ChatGroup() {
           showToast("Couldn't send your photo", 'info');
         }
       }
-      return;
+      return result;
     }
     if (attachment.kind === 3) {
-      const result = await sendVideo(attachment.file, attachment.durationSeconds);
-      if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone') {
+      const result = await sendVideo(attachment.file, attachment.durationSeconds, replyTo);
+      if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone' && result.status !== 'guestLimitReached') {
         if (result.status === 'tooLarge') {
           showToast('That video is too large to send', 'info');
         } else if (result.status === 'invalidMedia' || result.status === 'invalidDuration') {
@@ -2720,10 +3166,10 @@ export default function ChatGroup() {
           showToast("Couldn't send your video", 'info');
         }
       }
-      return;
+      return result;
     }
-    const result = await sendVoice(attachment.file, attachment.durationSeconds);
-    if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone') {
+    const result = await sendVoice(attachment.file, attachment.durationSeconds, replyTo);
+    if (!result.ok && result.status !== 'notMember' && result.status !== 'groupGone' && result.status !== 'guestLimitReached') {
       if (result.status === 'tooLarge') {
         showToast('That voice message is too large to send', 'info');
       } else if (result.status === 'invalidMedia' || result.status === 'invalidDuration') {
@@ -2732,22 +3178,41 @@ export default function ChatGroup() {
         showToast("Couldn't send your voice message", 'info');
       }
     }
+    return result;
   }, [sendImage, sendVideo, sendVoice]);
 
   const handleSend = useCallback(async () => {
     const body = chatText.trim();
     const attachments = stagedAttachments;
     if (!body && attachments.length === 0) return;
+    const replyTo = replyTarget;
+    setReplyTarget(null);
     if (attachments.length > 0) setStagedAttachments([]);
     if (body) {
       setChatText('');
       setComposerInputHeight(null);
     }
+    const textCarriesReply = !!body;
+    let attachmentIndex = 0;
     for (const attachment of attachments) {
-      await deliverAttachment(attachment);
+      const attachmentReplyTo = !textCarriesReply && attachmentIndex === 0 ? replyTo : null;
+      const attachmentResult = await deliverAttachment(attachment, attachmentReplyTo);
+      attachmentIndex++;
+      if (attachmentResult && attachmentResult.status === 'guestLimitReached') {
+        if (body) {
+          setChatText(body);
+          setReplyTarget(replyTo);
+        }
+        return;
+      }
     }
     if (!body) return;
-    const result = await send(body);
+    const result = await send(body, replyTo);
+    if (!result.ok && result.status === 'guestLimitReached') {
+      setChatText(body);
+      setReplyTarget(replyTo);
+      return;
+    }
     if (!result.ok && result.status === 'notFriends') {
       showToast('You can only message friends', 'error');
       return;
@@ -2756,7 +3221,7 @@ export default function ChatGroup() {
       showToast("Couldn't send your message", 'info');
       setChatText(body);
     }
-  }, [chatText, stagedAttachments, deliverAttachment, send]);
+  }, [chatText, stagedAttachments, replyTarget, deliverAttachment, send]);
 
   const handleChangeChatText = useCallback((text) => {
     setChatText(text);
@@ -3353,6 +3818,8 @@ export default function ChatGroup() {
 
   const myReactionEmojiForTarget = actionTarget ? myReactionEmojiFor(actionTarget) : '';
   const actionTargetIsMine = !!actionTarget && !!actionTarget.senderUserAccountId && actionTarget.senderUserAccountId === callerUserAccountId;
+  const guestWalled = guestMessagesRemaining === 0;
+  const showGuestCountdown = guestMessagesRemaining != null && guestMessagesRemaining > 0 && guestMessagesRemaining <= 3;
 
   return (
     <>
@@ -3592,6 +4059,21 @@ export default function ChatGroup() {
             </CustomText>
         </View>
     )}
+    {replyTarget && !isRecording && (
+        <View style={styles.replyBar}>
+            <View style={styles.replyBarTextColumn}>
+                <CustomText style={styles.replyBarSenderTxt} numberOfLines={1} ellipsizeMode="tail">
+                    Replying to {replyTarget.senderDisplayName || 'Former member'}
+                </CustomText>
+                <CustomText style={styles.replyBarBodyTxt} numberOfLines={1} ellipsizeMode="tail">
+                    {replyLineFor(replyTarget)}
+                </CustomText>
+            </View>
+            <TouchableOpacity style={styles.replyBarCloseBtn} onPress={() => setReplyTarget(null)}>
+                <CustomText style={styles.replyBarCloseTxt}>{'\u00D7'}</CustomText>
+            </TouchableOpacity>
+        </View>
+    )}
     {stagedAttachments.length > 0 && !isRecording && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stagedAttachmentBar} contentContainerStyle={styles.stagedAttachmentBarContent} keyboardShouldPersistTaps="handled">
             {stagedAttachments.map((attachment) => (
@@ -3621,6 +4103,13 @@ export default function ChatGroup() {
             ))}
         </ScrollView>
     )}
+    {showGuestCountdown && (
+        <TouchableOpacity style={styles.guestCountdownPill} onPress={handleFinishAccountPress}>
+            <CustomText style={styles.guestCountdownTxt}>
+                {guestMessagesRemaining === 1 ? '1 free guest message left. Create your account to keep chatting.' : guestMessagesRemaining + ' free guest messages left. Create your account to keep chatting.'}
+            </CustomText>
+        </TouchableOpacity>
+    )}
     {isRecording ? (
         <View style={styles.recordingBar}>
             <TouchableOpacity style={styles.recordingCancelBtn} onPress={() => finishRecording(false)} disabled={recorderBusy}>
@@ -3632,6 +4121,13 @@ export default function ChatGroup() {
             </View>
             <TouchableOpacity style={styles.recordingSendBtn} onPress={() => finishRecording(true)} disabled={recorderBusy}>
                 <CustomText style={styles.recordingSendTxt}>Send</CustomText>
+            </TouchableOpacity>
+        </View>
+    ) : guestWalled ? (
+        <View style={styles.guestWall}>
+            <CustomText style={styles.guestWallTxt}>You have used all of your free guest messages. Create your account to keep the conversation going.</CustomText>
+            <TouchableOpacity style={styles.guestWallBtn} onPress={handleFinishAccountPress}>
+                <CustomText style={styles.guestWallBtnTxt}>Finish Your Account</CustomText>
             </TouchableOpacity>
         </View>
     ) : (
@@ -3739,6 +4235,11 @@ export default function ChatGroup() {
                 <CustomText style={styles.reactionBarEmojiTxt}>+</CustomText>
               </TouchableOpacity>
             </View>
+            {!guestWalled && (
+            <TouchableOpacity style={[styles.actionSheetOption, styles.actionSheetOptionBorderTop]} onPress={handleReplyToTarget}>
+              <CustomText style={styles.actionSheetBlackTxt}>Reply</CustomText>
+            </TouchableOpacity>
+            )}
             {actionTargetIsMine ? (
               <TouchableOpacity style={[styles.actionSheetOption, styles.actionSheetOptionBorderTop]} onPress={handleDeleteOwn}>
                 <CustomText style={styles.actionSheetRedTxt}>Delete message</CustomText>
