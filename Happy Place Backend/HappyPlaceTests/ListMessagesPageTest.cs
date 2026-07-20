@@ -302,9 +302,9 @@ public class ListMessagesPageTest {
 
         JsonElement root = ListPage(testingMockProvidersContainer, ownerAuthToken, groupId, null);
         List<string> actualProperties = [.. root.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
-        List<string> expectedProperties = ["callerUserAccountId", "changeSequence", "items", "nextCursor", "readPointers", "senders", "status", "typing"];
+        List<string> expectedProperties = ["callerUserAccountId", "changeSequence", "guestMessagesRemaining", "items", "nextCursor", "readPointers", "senders", "status", "typing"];
         List<string> actualItemProperties = [.. root.GetProperty("items")[0].EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
-        List<string> expectedItemProperties = ["body", "clientMessageId", "createdAtUtc", "id", "isDeleted", "kind", "mediaDurationSeconds", "mediaHeight", "mediaUrl", "mediaWidth", "reactions", "senderUserAccountId", "sequence"];
+        List<string> expectedItemProperties = ["body", "clientMessageId", "createdAtUtc", "id", "isDeleted", "kind", "mediaDurationSeconds", "mediaHeight", "mediaUrl", "mediaWidth", "reactions", "replyTo", "senderUserAccountId", "sequence"];
         List<string> actualSenderProperties = [.. root.GetProperty("senders")[0].EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
         List<string> expectedSenderProperties = ["displayName", "id", "profilePhotoUrl"];
 
