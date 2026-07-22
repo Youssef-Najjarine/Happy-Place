@@ -164,7 +164,8 @@ public class SoftDeleteChatGroupTest {
         string callerAuthToken = CreateUser(testingMockProvidersContainer, "Caller");
         Guid seekerUserAccountId = SeedUser("Seeker", null);
         Guid groupId = CreateProvisionalGroup(seekerUserAccountId, "Waiting For Help", true);
-        SeedOffer(groupId, SeedUser("Helper", null), HelpOfferStatus.Offered, DateTime.UtcNow.AddDays(-8));
+        SeedOffer(groupId, SeedUser("Helper", null), HelpOfferStatus.Offered, DateTime.UtcNow);
+        SetGroupLastSeen(groupId, DateTime.UtcNow.AddDays(-8));
 
         testingMockProvidersContainer.WebClient.PostJson("api/helpOffer/openRequests", new { AuthToken = callerAuthToken }).EnsureSuccessStatusCode();
 
@@ -259,6 +260,13 @@ public class SoftDeleteChatGroupTest {
     private static void SeedOffer(Guid groupId, Guid helperUserAccountId, HelpOfferStatus status, DateTime createdAtUtc) {
         using var dbContext = HappyPlaceDbContext.Create();
         dbContext.HelpOffers.Add(new HelpOffer { Id = Guid.NewGuid(), ChatGroupId = groupId, HelperUserAccountId = helperUserAccountId, Status = status, CreatedAtUtc = createdAtUtc, LastSeenAtUtc = createdAtUtc });
+        dbContext.SaveChanges();
+    }
+
+    private static void SetGroupLastSeen(Guid groupId, DateTime lastSeenAtUtc) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        ChatGroup chatGroup = dbContext.ChatGroups.Single(field => field.Id == groupId);
+        chatGroup.LastSeenAtUtc = lastSeenAtUtc;
         dbContext.SaveChanges();
     }
 

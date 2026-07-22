@@ -42,7 +42,12 @@ public class NotificationDispatchTest {
     public void WaitingCountExcludesViewersOwnRequest() {
         using var container = new TestingMockProvidersContainer();
         var helper = AvailableHelperWithDevice(container, "Helper");
-        CreateRequest(container, helper.AuthToken, "My own request");
+        Guid helperUserAccountId = Guid.Parse(UserAuthenticationToken.ValidateToken(helper.AuthToken).Identifier);
+        DateTime now = DateTime.UtcNow;
+        using (var seedContext = HappyPlaceDbContext.Create()) {
+            seedContext.ChatGroups.Add(new() { Id = Guid.NewGuid(), Name = "My own request", OwnerUserAccountId = helperUserAccountId, IsPublic = true, Status = ChatGroupStatus.Provisional, CreatedAtUtc = now, LastSeenAtUtc = now });
+            seedContext.SaveChanges();
+        }
         CreateRequest(container, CreateUser(container, "Other Seeker"), "Their request");
 
         Flush();
@@ -489,6 +494,57 @@ public class NotificationDispatchTest {
 
         Assert.Single(CountUpdatesTo(container, healthyHelper.DeviceToken));
         Assert.Empty(MessagesTo(container, failingHelper.DeviceToken));
+    }
+
+    [Fact]
+    public void FailedSendKeepsTheChannelDirtyForRetry() {
+        using var container = new TestingMockProvidersContainer();
+        var seeker = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
+        container.PushProvider.FailToken(seeker.DeviceToken);
+        CreateOffer(container, CreateUser(container, "Helper"), seeker.ChatGroupId);
+
+        Flush();
+
+        Assert.Empty(MessagesTo(container, seeker.DeviceToken));
+        using var dbContext = HappyPlaceDbContext.Create();
+        Guid failedChatGroupGuid = Guid.Parse(seeker.ChatGroupId);
+        NotificationChannel channel = dbContext.NotificationChannels.Single(field => field.Kind == NotificationChannelKind.Offers && field.ScopeChatGroupId == failedChatGroupGuid);
+        Assert.NotNull(channel.DueAtUtc);
+        Assert.Equal(0, channel.LastSentCount);
+        Assert.False(channel.IsLive);
+    }
+
+    [Fact]
+    public void FailedSendRetriesAndDeliversOnceTheFailureClears() {
+        using var container = new TestingMockProvidersContainer();
+        var seeker = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
+        container.PushProvider.FailToken(seeker.DeviceToken);
+        CreateOffer(container, CreateUser(container, "Helper"), seeker.ChatGroupId);
+        Flush();
+        container.PushProvider.UnfailToken(seeker.DeviceToken);
+
+        Flush();
+
+        PushMessage message = CountUpdatesTo(container, seeker.DeviceToken).Single();
+        Assert.Equal("1", message.Data["count"]);
+        Assert.True(message.Alerting);
+    }
+
+    [Fact]
+    public void InvalidOnlyTokenFailureClearsInsteadOfRetrying() {
+        using var container = new TestingMockProvidersContainer();
+        var seeker = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
+        container.PushProvider.InvalidateToken(seeker.DeviceToken);
+        CreateOffer(container, CreateUser(container, "Helper"), seeker.ChatGroupId);
+
+        Flush();
+
+        using var dbContext = HappyPlaceDbContext.Create();
+        Guid invalidChatGroupGuid = Guid.Parse(seeker.ChatGroupId);
+        NotificationChannel channel = dbContext.NotificationChannels.Single(field => field.Kind == NotificationChannelKind.Offers && field.ScopeChatGroupId == invalidChatGroupGuid);
+        Assert.Null(channel.DueAtUtc);
+        Assert.Equal(0, channel.LastSentCount);
+        Assert.False(dbContext.DeviceTokens.Any(field => field.Token == seeker.DeviceToken));
     }
 
     [Fact]

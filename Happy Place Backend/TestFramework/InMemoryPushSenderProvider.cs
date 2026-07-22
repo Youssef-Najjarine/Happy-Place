@@ -23,6 +23,10 @@ public class InMemoryPushSenderProvider : IDisposable {
         this._pushSender.FailToken(token);
     }
 
+    public void UnfailToken(string token) {
+        this._pushSender.UnfailToken(token);
+    }
+
     public void Dispose() {
         GC.SuppressFinalize(this);
         PushSender.ResetInitializer();

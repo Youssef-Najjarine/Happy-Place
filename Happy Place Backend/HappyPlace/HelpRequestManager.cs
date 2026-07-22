@@ -18,9 +18,13 @@ public static class HelpRequestManager {
             return HelpRequestResult.None();
         string normalizedTopic = NormalizeTopic(topic);
         HelpRequestResult existingRequest = FindExistingProvisionalRequest(userAccountId.Value);
-        if (existingRequest != null)
+        if (existingRequest != null) {
+            HelpAvailabilityManager.SetUnavailable(userAccountId.Value);
             return existingRequest;
-        return CreateProvisionalGroup(userAccountId.Value, normalizedTopic);
+        }
+        HelpRequestResult createdRequest = CreateProvisionalGroup(userAccountId.Value, normalizedTopic);
+        HelpAvailabilityManager.SetUnavailable(userAccountId.Value);
+        return createdRequest;
     }
 
     public static HelpConnectResult Connect(string authToken, Guid chatGroupId) {

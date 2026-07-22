@@ -6,13 +6,13 @@ namespace HappyWorld.HappyPlace;
 public static class DeviceTokenManager {
     // Methods
 
-    public static bool RegisterDevice(string authToken, string token, string platform) {
+    public static bool RegisterDevice(string authToken, string token, string platform, bool fresh) {
         Guid? userAccountId = HelpParticipant.ResolveUserAccountId(authToken);
         if (userAccountId == null)
             return false;
         if (string.IsNullOrWhiteSpace(token))
             return true;
-        UpsertDeviceToken(userAccountId.Value, token, platform);
+        UpsertDeviceToken(userAccountId.Value, token, platform, fresh);
         return true;
     }
 
@@ -27,7 +27,7 @@ public static class DeviceTokenManager {
         return true;
     }
 
-    private static void UpsertDeviceToken(Guid userAccountId, string token, string platform) {
+    private static void UpsertDeviceToken(Guid userAccountId, string token, string platform, bool fresh) {
         using var dbContext = HappyPlaceDbContext.Create();
         DateTime now = DateTime.UtcNow;
         DeviceToken existingToken = dbContext.DeviceTokens.SingleOrDefault(field => field.Token == token);
@@ -42,7 +42,7 @@ public static class DeviceTokenManager {
         existingToken.Platform = platform;
         existingToken.LastSeenAtUtc = now;
         TrySaveChanges(dbContext);
-        if (reassignedToNewAccount)
+        if (reassignedToNewAccount || fresh)
             NotificationDispatchManager.ResetChannelsForRecipient(userAccountId);
     }
 

@@ -181,9 +181,41 @@ public class HelpAvailabilityTest {
         Assert.Equal(1, dbContext.HelpAvailabilities.Count(field => field.HelperUserAccountId == helperUserAccountId));
     }
 
+    // Tests - Set Response
+
+    [Fact]
+    public void SetAvailabilityReturnsOkWithTheWrittenValue() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper " + Guid.NewGuid());
+
+        JsonElement enabledRoot = SetAvailability(testingMockProvidersContainer, helperAuthToken, true);
+        JsonElement disabledRoot = SetAvailability(testingMockProvidersContainer, helperAuthToken, false);
+
+        Assert.Equal("ok", enabledRoot.GetProperty("status").GetString());
+        Assert.True(enabledRoot.GetProperty("isAvailable").GetBoolean());
+        Assert.Equal("ok", disabledRoot.GetProperty("status").GetString());
+        Assert.False(disabledRoot.GetProperty("isAvailable").GetBoolean());
+    }
+
+    [Fact]
+    public void SetAvailabilityResponseContainsExactlyExpectedProperties() {
+        using var testingMockProvidersContainer = new TestingMockProvidersContainer();
+        string helperAuthToken = TestUserFactory.CreateVerifiedEmailUser(testingMockProvidersContainer, "Helper " + Guid.NewGuid());
+
+        JsonElement root = SetAvailability(testingMockProvidersContainer, helperAuthToken, true);
+
+        List<string> actualProperties = [.. root.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal)];
+        List<string> expectedProperties = ["isAvailable", "status"];
+        Assert.Equal(expectedProperties, actualProperties);
+    }
+
     // Helpers - Acting
 
     private static JsonElement GetAvailability(TestingMockProvidersContainer testingMockProvidersContainer, string authToken) {
         return testingMockProvidersContainer.WebClient.PostJson("api/helpAvailability/getAvailability", new { AuthToken = authToken }).ReadContentAsJsonDocument().RootElement.Clone();
+    }
+
+    private static JsonElement SetAvailability(TestingMockProvidersContainer testingMockProvidersContainer, string authToken, bool isAvailable) {
+        return testingMockProvidersContainer.WebClient.PostJson("api/helpAvailability/setAvailability", new { AuthToken = authToken, IsAvailable = isAvailable }).ReadContentAsJsonDocument().RootElement.Clone();
     }
 }

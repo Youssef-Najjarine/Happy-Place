@@ -14,85 +14,21 @@ public class ProvisionalRequestExpiryTest {
     // Tests - Threshold
 
     [Fact]
-    public void OfferOlderThanSevenDaysExpiresTheRequest() {
-        using var container = new TestingMockProvidersContainer();
-        var seeker = CreateSeekerRequest(container);
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
-
-        Browse(CreateUser(container, "Browser"));
-
-        Assert.False(GroupExists(seeker.GroupId));
-    }
-
-    [Fact]
-    public void OfferYoungerThanSevenDaysKeepsTheRequest() {
-        using var container = new TestingMockProvidersContainer();
-        var seeker = CreateSeekerRequest(container);
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays - 1));
-
-        Browse(CreateUser(container, "Browser"));
-
-        Assert.True(GroupExists(seeker.GroupId));
-    }
-
-    [Fact]
-    public void OfferJustOverSevenDaysExpiresTheRequest() {
-        using var container = new TestingMockProvidersContainer();
-        var seeker = CreateSeekerRequest(container);
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays) + TimeSpan.FromHours(1));
-
-        Browse(CreateUser(container, "Browser"));
-
-        Assert.False(GroupExists(seeker.GroupId));
-    }
-
-    [Fact]
-    public void OfferJustUnderSevenDaysKeepsTheRequest() {
-        using var container = new TestingMockProvidersContainer();
-        var seeker = CreateSeekerRequest(container);
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays) - TimeSpan.FromHours(1));
-
-        Browse(CreateUser(container, "Browser"));
-
-        Assert.True(GroupExists(seeker.GroupId));
-    }
-
-    // Tests - Requests Without A Qualifying Offer Persist
-
-    [Fact]
-    public void VeryOldRequestWithNoOffersIsNeverExpired() {
-        using var container = new TestingMockProvidersContainer();
-        var seeker = CreateSeekerRequest(container);
-        SetRequestTimestamps(seeker.GroupId, TimeSpan.FromDays(30));
-
-        Browse(CreateUser(container, "Browser"));
-
-        Assert.True(GroupExists(seeker.GroupId));
-    }
-
-    [Fact]
-    public void RequestWithStaleLastSeenButNoOffersIsNeverExpired() {
+    public void RequestUntouchedForOverSevenDaysExpires() {
         using var container = new TestingMockProvidersContainer();
         var seeker = CreateSeekerRequest(container);
         SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
 
         Browse(CreateUser(container, "Browser"));
 
-        Assert.True(GroupExists(seeker.GroupId));
+        Assert.False(GroupExists(seeker.GroupId));
     }
 
     [Fact]
-    public void OldDeclinedOfferDoesNotExpireTheRequest() {
+    public void RequestTouchedWithinSevenDaysIsKept() {
         using var container = new TestingMockProvidersContainer();
         var seeker = CreateSeekerRequest(container);
-        string helper = CreateUser(container, "Helper");
-        CreateOffer(container, helper, seeker.GroupId.ToString());
-        DeclineOffer(container, helper, seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays - 1));
 
         Browse(CreateUser(container, "Browser"));
 
@@ -100,30 +36,10 @@ public class ProvisionalRequestExpiryTest {
     }
 
     [Fact]
-    public void OldWithdrawnOfferDoesNotExpireTheRequest() {
+    public void RequestJustOverTheThresholdExpires() {
         using var container = new TestingMockProvidersContainer();
         var seeker = CreateSeekerRequest(container);
-        string helper = CreateUser(container, "Helper");
-        CreateOffer(container, helper, seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
-        WithdrawOffer(container, helper, seeker.GroupId.ToString());
-
-        Browse(CreateUser(container, "Browser"));
-
-        Assert.True(GroupExists(seeker.GroupId));
-    }
-
-    // Tests - Mixed Offers
-
-    [Fact]
-    public void OldOfferedWithRecentOfferedStillExpires() {
-        using var container = new TestingMockProvidersContainer();
-        var seeker = CreateSeekerRequest(container);
-        string oldHelper = CreateUser(container, "Old Helper");
-        string recentHelper = CreateUser(container, "Recent Helper");
-        CreateOffer(container, oldHelper, seeker.GroupId.ToString());
-        SetOfferCreatedAtForHelper(seeker.GroupId, UserAccountId(oldHelper), TimeSpan.FromDays(TtlDays + 1));
-        CreateOffer(container, recentHelper, seeker.GroupId.ToString());
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays) + TimeSpan.FromHours(1));
 
         Browse(CreateUser(container, "Browser"));
 
@@ -131,15 +47,24 @@ public class ProvisionalRequestExpiryTest {
     }
 
     [Fact]
-    public void RecentOfferedWithOldDeclinedIsKept() {
+    public void RequestJustUnderTheThresholdIsKept() {
         using var container = new TestingMockProvidersContainer();
         var seeker = CreateSeekerRequest(container);
-        string declinedHelper = CreateUser(container, "Declined Helper");
-        string offeringHelper = CreateUser(container, "Offering Helper");
-        CreateOffer(container, declinedHelper, seeker.GroupId.ToString());
-        DeclineOffer(container, declinedHelper, seeker.GroupId.ToString());
-        SetOfferCreatedAtForHelper(seeker.GroupId, UserAccountId(declinedHelper), TimeSpan.FromDays(TtlDays + 1));
-        CreateOffer(container, offeringHelper, seeker.GroupId.ToString());
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays) - TimeSpan.FromHours(1));
+
+        Browse(CreateUser(container, "Browser"));
+
+        Assert.True(GroupExists(seeker.GroupId));
+    }
+
+    // Tests - Seeker Activity Keeps A Request Alive
+
+    [Fact]
+    public void PollingRefreshesAnOldRequestAndPreventsExpiry() {
+        using var container = new TestingMockProvidersContainer();
+        var seeker = CreateSeekerRequest(container);
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+        PollRequest(container, seeker.AuthToken, seeker.GroupId);
 
         Browse(CreateUser(container, "Browser"));
 
@@ -147,44 +72,87 @@ public class ProvisionalRequestExpiryTest {
     }
 
     [Fact]
-    public void RecentOfferedAfterOldWithdrawnIsKept() {
+    public void MyOpenRequestRefreshesAnOldRequestAndPreventsExpiry() {
         using var container = new TestingMockProvidersContainer();
         var seeker = CreateSeekerRequest(container);
-        string withdrawingHelper = CreateUser(container, "Withdrawing Helper");
-        string offeringHelper = CreateUser(container, "Offering Helper");
-        CreateOffer(container, withdrawingHelper, seeker.GroupId.ToString());
-        SetOfferCreatedAtForHelper(seeker.GroupId, UserAccountId(withdrawingHelper), TimeSpan.FromDays(TtlDays + 1));
-        WithdrawOffer(container, withdrawingHelper, seeker.GroupId.ToString());
-        CreateOffer(container, offeringHelper, seeker.GroupId.ToString());
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+        MyOpenRequest(container, seeker.AuthToken);
 
         Browse(CreateUser(container, "Browser"));
 
         Assert.True(GroupExists(seeker.GroupId));
+    }
+
+    [Fact]
+    public void RecreatingTheRequestRefreshesItAndPreventsExpiry() {
+        using var container = new TestingMockProvidersContainer();
+        var seeker = CreateSeekerRequest(container);
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+        CreateRequest(container, seeker.AuthToken, "Still here");
+
+        Browse(CreateUser(container, "Browser"));
+
+        Assert.True(GroupExists(seeker.GroupId));
+    }
+
+    [Fact]
+    public void ARequestCreatedLongAgoButRecentlyTouchedIsKept() {
+        using var container = new TestingMockProvidersContainer();
+        var seeker = CreateSeekerRequest(container);
+        SetRequestTimestamps(seeker.GroupId, TimeSpan.FromDays(30));
+        PollRequest(container, seeker.AuthToken, seeker.GroupId);
+
+        Browse(CreateUser(container, "Browser"));
+
+        Assert.True(GroupExists(seeker.GroupId));
+    }
+
+    // Tests - Offers No Longer Govern Expiry
+
+    [Fact]
+    public void AnActivelySeenRequestWithAStaleOfferIsKept() {
+        using var container = new TestingMockProvidersContainer();
+        var seeker = CreateSeekerRequest(container);
+        CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
+        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+
+        Browse(CreateUser(container, "Browser"));
+
+        Assert.True(GroupExists(seeker.GroupId));
+    }
+
+    [Fact]
+    public void AnAbandonedRequestWithARecentOfferStillExpires() {
+        using var container = new TestingMockProvidersContainer();
+        var seeker = CreateSeekerRequest(container);
+        CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+
+        Browse(CreateUser(container, "Browser"));
+
+        Assert.False(GroupExists(seeker.GroupId));
+    }
+
+    [Fact]
+    public void AnAbandonedRequestWithNoOffersExpires() {
+        using var container = new TestingMockProvidersContainer();
+        var seeker = CreateSeekerRequest(container);
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+
+        Browse(CreateUser(container, "Browser"));
+
+        Assert.False(GroupExists(seeker.GroupId));
     }
 
     // Tests - Status Protection
 
     [Fact]
-    public void ActiveGroupWithOldOffersIsNeverExpired() {
+    public void AnActiveGroupWithAStaleLastSeenIsNeverExpired() {
         using var container = new TestingMockProvidersContainer();
         var seeker = CreateSeekerRequest(container);
         CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
         Connect(container, seeker.AuthToken, seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
-
-        Browse(CreateUser(container, "Browser"));
-
-        Assert.True(GroupExists(seeker.GroupId));
-        Assert.Equal(ChatGroupStatus.Active, GroupStatus(seeker.GroupId));
-    }
-
-    [Fact]
-    public void ConnectingBeforeTheSweepSavesTheRequest() {
-        using var container = new TestingMockProvidersContainer();
-        var seeker = CreateSeekerRequest(container);
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
-        Connect(container, seeker.AuthToken, seeker.GroupId.ToString());
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(30));
 
         Browse(CreateUser(container, "Browser"));
 
@@ -195,49 +163,30 @@ public class ProvisionalRequestExpiryTest {
     // Tests - Multiplicity And Isolation
 
     [Fact]
-    public void OnlyTheExpiredRequestIsDeleted() {
+    public void OnlyTheAbandonedRequestIsDeleted() {
         using var container = new TestingMockProvidersContainer();
-        var expiredSeeker = CreateSeekerRequest(container);
+        var abandonedSeeker = CreateSeekerRequest(container);
         var freshSeeker = CreateSeekerRequest(container);
-        CreateOffer(container, CreateUser(container, "Old Helper"), expiredSeeker.GroupId.ToString());
-        CreateOffer(container, CreateUser(container, "Recent Helper"), freshSeeker.GroupId.ToString());
-        SetOfferCreatedAt(expiredSeeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+        SetRequestLastSeen(abandonedSeeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
 
         Browse(CreateUser(container, "Browser"));
 
-        Assert.False(GroupExists(expiredSeeker.GroupId));
+        Assert.False(GroupExists(abandonedSeeker.GroupId));
         Assert.True(GroupExists(freshSeeker.GroupId));
     }
 
     [Fact]
-    public void AllExpiredRequestsAreDeletedTogether() {
+    public void AllAbandonedRequestsAreDeletedTogether() {
         using var container = new TestingMockProvidersContainer();
         var firstSeeker = CreateSeekerRequest(container);
         var secondSeeker = CreateSeekerRequest(container);
-        CreateOffer(container, CreateUser(container, "First Helper"), firstSeeker.GroupId.ToString());
-        CreateOffer(container, CreateUser(container, "Second Helper"), secondSeeker.GroupId.ToString());
-        SetOfferCreatedAt(firstSeeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
-        SetOfferCreatedAt(secondSeeker.GroupId, TimeSpan.FromDays(TtlDays + 2));
+        SetRequestLastSeen(firstSeeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+        SetRequestLastSeen(secondSeeker.GroupId, TimeSpan.FromDays(TtlDays + 2));
 
         Browse(CreateUser(container, "Browser"));
 
         Assert.False(GroupExists(firstSeeker.GroupId));
         Assert.False(GroupExists(secondSeeker.GroupId));
-    }
-
-    [Fact]
-    public void ExpiringAnOfferedRequestLeavesANoOfferRequestUntouched() {
-        using var container = new TestingMockProvidersContainer();
-        var offeredSeeker = CreateSeekerRequest(container);
-        var noOfferSeeker = CreateSeekerRequest(container);
-        CreateOffer(container, CreateUser(container, "Helper"), offeredSeeker.GroupId.ToString());
-        SetOfferCreatedAt(offeredSeeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
-        SetRequestTimestamps(noOfferSeeker.GroupId, TimeSpan.FromDays(30));
-
-        Browse(CreateUser(container, "Browser"));
-
-        Assert.False(GroupExists(offeredSeeker.GroupId));
-        Assert.True(GroupExists(noOfferSeeker.GroupId));
     }
 
     // Tests - Cascade On Deletion
@@ -248,7 +197,7 @@ public class ProvisionalRequestExpiryTest {
         var seeker = CreateSeekerRequest(container);
         CreateOffer(container, CreateUser(container, "First Helper"), seeker.GroupId.ToString());
         CreateOffer(container, CreateUser(container, "Second Helper"), seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
 
         Browse(CreateUser(container, "Browser"));
 
@@ -259,8 +208,7 @@ public class ProvisionalRequestExpiryTest {
     public void ExpiringARequestDeletesItsMembership() {
         using var container = new TestingMockProvidersContainer();
         var seeker = CreateSeekerRequest(container);
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
 
         Browse(CreateUser(container, "Browser"));
 
@@ -272,111 +220,12 @@ public class ProvisionalRequestExpiryTest {
         using var container = new TestingMockProvidersContainer();
         var seeker = CreateSeekerRequest(container);
         CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
-        Assert.True(OffersChannelExists(seeker.GroupId));
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
 
         Browse(CreateUser(container, "Browser"));
 
         Assert.False(OffersChannelExists(seeker.GroupId));
     }
-
-    // Tests - Sweep Trigger
-
-    [Fact]
-    public void ExpiredRequestRemainsUntilAHelperBrowses() {
-        using var container = new TestingMockProvidersContainer();
-        var seeker = CreateSeekerRequest(container);
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
-
-        Assert.True(GroupExists(seeker.GroupId));
-        Browse(CreateUser(container, "Browser"));
-        Assert.False(GroupExists(seeker.GroupId));
-    }
-
-    [Fact]
-    public void AnyHelperBrowsingTriggersTheExpirySweep() {
-        using var container = new TestingMockProvidersContainer();
-        var seeker = CreateSeekerRequest(container);
-        CreateOffer(container, CreateUser(container, "Offering Helper"), seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
-
-        Browse(CreateUser(container, "Unrelated Helper"));
-
-        Assert.False(GroupExists(seeker.GroupId));
-    }
-
-    [Fact]
-    public void UnauthenticatedBrowseDoesNotTriggerExpiry() {
-        using var container = new TestingMockProvidersContainer();
-        var seeker = CreateSeekerRequest(container);
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
-
-        HelpOfferManager.GetOpenRequestsForHelper("not-a-real-token-at-all");
-
-        Assert.True(GroupExists(seeker.GroupId));
-    }
-
-    // Tests - Reoffer And Timestamp Semantics
-
-    [Fact]
-    public void ReofferingDoesNotResetTheExpiryClock() {
-        using var container = new TestingMockProvidersContainer();
-        var seeker = CreateSeekerRequest(container);
-        string helper = CreateUser(container, "Helper");
-        CreateOffer(container, helper, seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
-        CreateOffer(container, helper, seeker.GroupId.ToString());
-
-        Browse(CreateUser(container, "Browser"));
-
-        Assert.False(GroupExists(seeker.GroupId));
-    }
-
-    [Fact]
-    public void DecliningThenReofferingKeepsTheOriginalOfferTimestamp() {
-        using var container = new TestingMockProvidersContainer();
-        var seeker = CreateSeekerRequest(container);
-        string helper = CreateUser(container, "Helper");
-        CreateOffer(container, helper, seeker.GroupId.ToString());
-        DeclineOffer(container, helper, seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
-        CreateOffer(container, helper, seeker.GroupId.ToString());
-
-        Browse(CreateUser(container, "Browser"));
-
-        Assert.False(GroupExists(seeker.GroupId));
-    }
-
-    // Tests - Idempotency
-
-    [Fact]
-    public void BrowsingRepeatedlyAfterExpiryIsSafe() {
-        using var container = new TestingMockProvidersContainer();
-        var seeker = CreateSeekerRequest(container);
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
-        string browser = CreateUser(container, "Browser");
-
-        Browse(browser);
-        Browse(browser);
-        Browse(browser);
-
-        Assert.False(GroupExists(seeker.GroupId));
-    }
-
-    [Fact]
-    public void SweepWithNoRequestsDoesNothing() {
-        using var container = new TestingMockProvidersContainer();
-        string browser = CreateUser(container, "Browser");
-
-        List<OpenHelpRequest> openRequests = HelpOfferManager.GetOpenRequestsForHelper(browser);
-
-        Assert.Empty(openRequests);
-    }
-
-    // Tests - Notification Side Effects
 
     [Fact]
     public void ExpiringARequestWithALiveOffersChannelDismissesTheSeeker() {
@@ -386,61 +235,89 @@ public class ProvisionalRequestExpiryTest {
         RegisterDevice(container, seeker.AuthToken, seekerDeviceToken);
         CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
         Flush();
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
 
         Browse(CreateUser(container, "Browser"));
 
         Assert.Single(DismissalsTo(container, seekerDeviceToken));
-        Assert.False(GroupExists(seeker.GroupId));
     }
 
     [Fact]
     public void ExpiringARequestRefreshesTheWaitingCountForAvailableHelpers() {
         using var container = new TestingMockProvidersContainer();
-        var availableHelper = AvailableHelperWithDevice(container, "Bystander");
+        var helper = AvailableHelperWithDevice(container, "Helper");
         var seeker = CreateSeekerRequest(container);
-        string offeringHelper = CreateUser(container, "Offering Helper");
-        CreateOffer(container, offeringHelper, seeker.GroupId.ToString());
         Flush();
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
-        Browse(offeringHelper);
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
 
+        Browse(CreateUser(container, "Browser"));
         Flush();
 
-        Assert.Single(DismissalsTo(container, availableHelper.DeviceToken));
-        Assert.False(GroupExists(seeker.GroupId));
+        Assert.Single(DismissalsTo(container, helper.DeviceToken));
     }
 
-    // Tests - Feed Contents
+    // Tests - Trigger Mechanics
 
     [Fact]
-    public void FreshRequestWithNoOffersIsServedInTheFeed() {
-        using var container = new TestingMockProvidersContainer();
-        CreateSeekerRequest(container);
-
-        int feedLength = OpenRequestsFeedLength(container, CreateUser(container, "Helper"));
-
-        Assert.Equal(1, feedLength);
-    }
-
-    [Fact]
-    public void StaleRequestWithNoOffersRemainsInTheFeed() {
+    public void AnAbandonedRequestRemainsUntilSomeoneBrowses() {
         using var container = new TestingMockProvidersContainer();
         var seeker = CreateSeekerRequest(container);
         SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
 
-        int feedLength = OpenRequestsFeedLength(container, CreateUser(container, "Helper"));
+        Assert.True(GroupExists(seeker.GroupId));
+    }
+
+    [Fact]
+    public void UnauthenticatedBrowseDoesNotTriggerExpiry() {
+        using var container = new TestingMockProvidersContainer();
+        var seeker = CreateSeekerRequest(container);
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+
+        Browse("not-a-real-token-at-all");
+
+        Assert.True(GroupExists(seeker.GroupId));
+    }
+
+    [Fact]
+    public void BrowsingRepeatedlyAfterExpiryIsSafe() {
+        using var container = new TestingMockProvidersContainer();
+        var seeker = CreateSeekerRequest(container);
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+
+        Browse(CreateUser(container, "First Browser"));
+        Browse(CreateUser(container, "Second Browser"));
+        Browse(CreateUser(container, "Third Browser"));
+
+        Assert.False(GroupExists(seeker.GroupId));
+    }
+
+    [Fact]
+    public void SweepWithNoRequestsDoesNothing() {
+        using var container = new TestingMockProvidersContainer();
+
+        int feedLength = OpenRequestsFeedLength(container, CreateUser(container, "Browser"));
+
+        Assert.Equal(0, feedLength);
+    }
+
+    // Tests - Feed Behavior
+
+    [Fact]
+    public void AFreshRequestWithNoOffersIsServedInTheFeed() {
+        using var container = new TestingMockProvidersContainer();
+        var seeker = CreateSeekerRequest(container);
+
+        int feedLength = OpenRequestsFeedLength(container, CreateUser(container, "Browser"));
 
         Assert.Equal(1, feedLength);
         Assert.True(GroupExists(seeker.GroupId));
     }
 
     [Fact]
-    public void ExpiredRequestIsRemovedFromTheFeedOnBrowse() {
+    public void AnAbandonedRequestIsRemovedFromTheFeedOnBrowse() {
         using var container = new TestingMockProvidersContainer();
         var seeker = CreateSeekerRequest(container);
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.GroupId.ToString());
-        SetOfferCreatedAt(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
+        SetRequestLastSeen(seeker.GroupId, TimeSpan.FromDays(TtlDays + 1));
 
         int feedLength = OpenRequestsFeedLength(container, CreateUser(container, "Browser"));
 
@@ -477,16 +354,16 @@ public class ProvisionalRequestExpiryTest {
         container.WebClient.PostJson("api/helpOffer/createOffer", new { AuthToken = authToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
     }
 
-    private static void DeclineOffer(TestingMockProvidersContainer container, string authToken, string chatGroupId) {
-        container.WebClient.PostJson("api/helpOffer/declineOffer", new { AuthToken = authToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
-    }
-
-    private static void WithdrawOffer(TestingMockProvidersContainer container, string authToken, string chatGroupId) {
-        container.WebClient.PostJson("api/helpOffer/withdrawOffer", new { AuthToken = authToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
-    }
-
     private static void Connect(TestingMockProvidersContainer container, string authToken, string chatGroupId) {
         container.WebClient.PostJson("api/helpRequest/connect", new { AuthToken = authToken, ChatGroupId = chatGroupId }).EnsureSuccessStatusCode();
+    }
+
+    private static void PollRequest(TestingMockProvidersContainer container, string authToken, Guid chatGroupId) {
+        container.WebClient.PostJson("api/helpRequest/pollRequest", new { AuthToken = authToken, ChatGroupId = chatGroupId.ToString() }).EnsureSuccessStatusCode();
+    }
+
+    private static void MyOpenRequest(TestingMockProvidersContainer container, string authToken) {
+        container.WebClient.PostJson("api/helpRequest/myOpenRequest", new { AuthToken = authToken }).EnsureSuccessStatusCode();
     }
 
     private static void RegisterDevice(TestingMockProvidersContainer container, string authToken, string deviceToken) {
@@ -532,23 +409,11 @@ public class ProvisionalRequestExpiryTest {
 
     // Helpers - Aging
 
-    private static Guid UserAccountId(string authToken) {
-        return Guid.Parse(UserAuthenticationToken.ValidateToken(authToken).Identifier);
-    }
-
     private static void SetOfferCreatedAt(Guid chatGroupId, TimeSpan age) {
         using var dbContext = HappyPlaceDbContext.Create();
         DateTime createdAt = DateTime.UtcNow - age;
         dbContext.HelpOffers
             .Where(field => field.ChatGroupId == chatGroupId)
-            .ExecuteUpdate(setters => setters.SetProperty(field => field.CreatedAtUtc, createdAt));
-    }
-
-    private static void SetOfferCreatedAtForHelper(Guid chatGroupId, Guid helperUserAccountId, TimeSpan age) {
-        using var dbContext = HappyPlaceDbContext.Create();
-        DateTime createdAt = DateTime.UtcNow - age;
-        dbContext.HelpOffers
-            .Where(field => field.ChatGroupId == chatGroupId && field.HelperUserAccountId == helperUserAccountId)
             .ExecuteUpdate(setters => setters.SetProperty(field => field.CreatedAtUtc, createdAt));
     }
 
