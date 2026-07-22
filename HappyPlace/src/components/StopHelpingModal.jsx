@@ -151,7 +151,7 @@ export default function StopHelpingModal({ visible, offeredCount, onConfirm, onC
   const count = offeredCount || 0;
   const message = count === 1
     ? 'This withdraws your offer to 1 person.'
-    : `This withdraws your offer to ${count} people.`;
+    : `This withdraws your offers to ${count} people.`;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>

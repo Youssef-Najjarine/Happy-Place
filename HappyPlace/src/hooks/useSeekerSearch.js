@@ -8,6 +8,8 @@ import { usePollRequestQuery, useLazyMyOpenRequestQuery, useCreateRequestMutatio
 import { useRenameChatGroupMutation } from 'src/store/chatGroupsApi';
 
 const POLL_INTERVAL_MS = 3000;
+const CANCEL_RETRY_BASE_MS = 1500;
+const CANCEL_RETRY_MAX_MS = 15000;
 
 export default function useSeekerSearch() {
     const navigation = useNavigation();
@@ -18,11 +20,20 @@ export default function useSeekerSearch() {
     const [readyHelperCount, setReadyHelperCount] = useState(0);
     const navigatedRef = useRef(false);
     const searchGenRef = useRef(0);
+    const chatGroupIdRef = useRef(null);
+    const aliveRef = useRef(true);
     const [createRequest] = useCreateRequestMutation();
     const [connectRequest] = useConnectMutation();
     const [cancelRequest] = useCancelRequestMutation();
     const [triggerMyOpenRequest] = useLazyMyOpenRequestQuery();
     const [renameChatGroup] = useRenameChatGroupMutation();
+
+    useEffect(() => {
+        aliveRef.current = true;
+        return () => {
+            aliveRef.current = false;
+        };
+    }, []);
 
     const { currentData: statusData, error: statusError } = usePollRequestQuery(
         { authToken, chatGroupId },
@@ -31,6 +42,7 @@ export default function useSeekerSearch() {
 
     const reset = useCallback(async () => {
         searchGenRef.current += 1;
+        chatGroupIdRef.current = null;
         setPhase('idle');
         setChatGroupId(null);
         setTopic(null);
@@ -65,11 +77,31 @@ export default function useSeekerSearch() {
         navigation.navigate('LoginOptions');
     }, [navigation, reset]);
 
+    const waitBeforeRetry = useCallback((delayMs) => {
+        return new Promise((resolve) => setTimeout(resolve, delayMs));
+    }, []);
+
+    const cancelRequestWithRetry = useCallback(async (token, targetChatGroupId) => {
+        let retryDelayMs = CANCEL_RETRY_BASE_MS;
+        while (aliveRef.current) {
+            if (chatGroupIdRef.current === targetChatGroupId) return;
+            try {
+                await cancelRequest({ authToken: token, chatGroupId: targetChatGroupId }).unwrap();
+                return;
+            } catch (error) {
+                if (error && error.status === 401) return;
+                await waitBeforeRetry(retryDelayMs);
+                retryDelayMs = Math.min(retryDelayMs * 2, CANCEL_RETRY_MAX_MS);
+            }
+        }
+    }, [cancelRequest, waitBeforeRetry]);
+
     const beginSearch = useCallback(async (topicText) => {
         const gen = searchGenRef.current + 1;
         searchGenRef.current = gen;
         navigatedRef.current = false;
         setReadyHelperCount(0);
+        chatGroupIdRef.current = null;
         setChatGroupId(null);
         setTopic(topicText);
         setPhase('waiting');
@@ -90,13 +122,25 @@ export default function useSeekerSearch() {
             const result = await createRequest({ authToken: token, topic: topicText }).unwrap();
             if (searchGenRef.current !== gen) {
                 if (result && result.status === 'waiting' && result.chatGroupId) {
-                    cancelRequest({ authToken: token, chatGroupId: result.chatGroupId }).unwrap().catch(() => {});
+                    cancelRequestWithRetry(token, result.chatGroupId);
                 }
                 return;
             }
             if (result.status === 'waiting') {
                 await helpSessionStorage.saveSeeking(token, result.chatGroupId);
+                chatGroupIdRef.current = result.chatGroupId;
                 setChatGroupId(result.chatGroupId);
+                if (result.chatGroupName !== topicText) {
+                    let resolvedTitle = result.chatGroupName;
+                    try {
+                        const renameResult = await renameChatGroup({ authToken: token, chatGroupId: result.chatGroupId, name: topicText }).unwrap();
+                        if (renameResult && renameResult.status === 'renamed' && renameResult.title != null) resolvedTitle = renameResult.title;
+                    } catch (error) {
+                    }
+                    if (searchGenRef.current !== gen) return;
+                    setTopic(resolvedTitle);
+                    return;
+                }
                 setTopic(result.chatGroupName);
                 return;
             }
@@ -111,7 +155,7 @@ export default function useSeekerSearch() {
             await reset();
             showToast('Couldn\u2019t reach the server \u2014 tap to try again', 'info');
         }
-    }, [resolveToken, createRequest, cancelRequest, reset, handleAuthFailure]);
+    }, [resolveToken, createRequest, cancelRequestWithRetry, reset, handleAuthFailure]);
 
     const connect = useCallback(async () => {
         if (phase !== 'waiting' || !authToken || !chatGroupId) return;
@@ -129,6 +173,7 @@ export default function useSeekerSearch() {
                 return;
             }
             await reset();
+            showToast('Your request is no longer open', 'info');
         } catch (error) {
             if (searchGenRef.current !== gen) return;
             if (error && error.status === 401) {
@@ -140,16 +185,14 @@ export default function useSeekerSearch() {
     }, [phase, authToken, chatGroupId, connectRequest, goToChat, reset, handleAuthFailure]);
 
     const cancelSearch = useCallback(async () => {
+        if (phase === 'connecting') return;
         const token = authToken;
-        const id = chatGroupId;
+        const targetChatGroupId = chatGroupId;
         await reset();
-        if (token && id) {
-            try {
-                await cancelRequest({ authToken: token, chatGroupId: id }).unwrap();
-            } catch (error) {
-            }
+        if (token && targetChatGroupId) {
+            await cancelRequestWithRetry(token, targetChatGroupId);
         }
-    }, [authToken, chatGroupId, cancelRequest, reset]);
+    }, [phase, authToken, chatGroupId, reset, cancelRequestWithRetry]);
 
     const updateTopic = useCallback(async (newTopic) => {
         if (phase !== 'waiting' || !authToken || !chatGroupId) return;
@@ -176,29 +219,35 @@ export default function useSeekerSearch() {
     useEffect(() => {
         let cancelled = false;
         const restore = async () => {
+            const restoreGeneration = searchGenRef.current;
             const token = await tokenStorage.getToken();
-            if (cancelled || !token) return;
+            if (cancelled || searchGenRef.current !== restoreGeneration || !token) return;
             const session = await helpSessionStorage.get();
-            if (!cancelled && session && session.mode === 'seeking' && session.chatGroupId && session.ownerToken === token) {
+            if (cancelled || searchGenRef.current !== restoreGeneration) return;
+            if (session && session.mode === 'seeking' && session.chatGroupId && session.ownerToken === token) {
                 let validation = null;
                 try {
                     validation = await authenticationService.validateToken(token);
                 } catch (error) {
                     return;
                 }
-                if (cancelled || !validation.ok) return;
+                if (cancelled || searchGenRef.current !== restoreGeneration || !validation.ok) return;
                 navigatedRef.current = false;
                 setAuthToken(token);
+                chatGroupIdRef.current = session.chatGroupId;
                 setChatGroupId(session.chatGroupId);
                 setPhase('waiting');
                 return;
             }
             try {
                 const result = await triggerMyOpenRequest(token).unwrap();
-                if (cancelled || !result || result.status !== 'waiting') return;
+                if (cancelled || searchGenRef.current !== restoreGeneration) return;
+                if (!result || result.status !== 'waiting') return;
                 navigatedRef.current = false;
                 await helpSessionStorage.saveSeeking(token, result.chatGroupId);
+                if (cancelled || searchGenRef.current !== restoreGeneration) return;
                 setAuthToken(token);
+                chatGroupIdRef.current = result.chatGroupId;
                 setChatGroupId(result.chatGroupId);
                 setTopic(result.chatGroupName);
                 setPhase('waiting');
@@ -219,6 +268,7 @@ export default function useSeekerSearch() {
         }
         if (statusData.status === 'none') {
             reset();
+            showToast('Your request is no longer open', 'info');
             return;
         }
         if (statusData.status === 'waiting') {

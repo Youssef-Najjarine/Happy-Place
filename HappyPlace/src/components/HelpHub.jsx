@@ -390,8 +390,9 @@ export default function HelpHub({ onListeningChange }) {
 
   const handleConfirmTopic = useCallback((topicText) => {
     setShowHelpTopic(false);
+    if (listening) stopListening();
     beginSearch(topicText);
-  }, [beginSearch]);
+  }, [listening, stopListening, beginSearch]);
 
   const handleCancelTopic = useCallback(() => {
     setShowHelpTopic(false);
@@ -462,7 +463,7 @@ export default function HelpHub({ onListeningChange }) {
               </View>
             ) : null}
             <View style={styles.cancelView}>
-              <TouchableOpacity style={styles.cancelBtn} onPressIn={handleSeekerCancel}>
+              <TouchableOpacity style={styles.cancelBtn} onPressIn={handleSeekerCancel} disabled={phase === 'connecting'}>
                 <CustomText style={styles.cancelTxt}>Cancel</CustomText>
               </TouchableOpacity>
             </View>

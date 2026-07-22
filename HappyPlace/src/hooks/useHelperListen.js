@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import tokenStorage from 'src/services/tokenStorage';
 import authenticationService from 'src/services/authenticationService';
 import helpSessionStorage from 'src/services/helpSessionStorage';
@@ -8,47 +8,91 @@ import { useOpenRequestsQuery, usePollOfferQuery, useSetAvailabilityMutation, us
 
 const LISTEN_INTERVAL_MS = 3000;
 const READY_INTERVAL_MS = 3000;
+const INTENT_RETRY_BASE_MS = 1500;
+const INTENT_RETRY_MAX_MS = 15000;
 
 export default function useHelperListen() {
     const navigation = useNavigation();
+    const isFocused = useIsFocused();
     const [listening, setListening] = useState(false);
     const [authToken, setAuthToken] = useState(null);
     const [setAvailability] = useSetAvailabilityMutation();
     const [triggerGetAvailability] = useLazyGetAvailabilityQuery();
     const intentSeqRef = useRef(0);
     const intentRef = useRef({ desired: null, running: false });
+    const aliveRef = useRef(true);
+
+    useEffect(() => {
+        aliveRef.current = true;
+        return () => {
+            aliveRef.current = false;
+        };
+    }, []);
+
+    const waitBeforeRetry = useCallback((delayMs) => {
+        return new Promise((resolve) => setTimeout(resolve, delayMs));
+    }, []);
 
     const applyIntent = useCallback((seq, token, wantListening) => {
-        const current = intentRef.current.desired;
-        if (current && current.seq > seq) return;
+        const currentDesired = intentRef.current.desired;
+        if (currentDesired && currentDesired.seq > seq) return;
         intentRef.current.desired = { seq, token, wantListening };
         if (intentRef.current.running) return;
         intentRef.current.running = true;
         const run = async () => {
-            while (true) {
+            let retryDelayMs = INTENT_RETRY_BASE_MS;
+            while (aliveRef.current) {
                 const next = intentRef.current.desired;
+                let applied = false;
                 try {
                     if (next.wantListening) {
                         if (next.token) {
                             await helpSessionStorage.saveListening(next.token);
-                            await setAvailability({ authToken: next.token, isAvailable: true }).unwrap();
+                            const result = await setAvailability({ authToken: next.token, isAvailable: true }).unwrap();
+                            if (result && result.status === 'seeking') {
+                                await helpSessionStorage.clear();
+                                if (intentRef.current.desired === next) {
+                                    setListening(false);
+                                    showToast('Cancel your Help Me request first', 'info');
+                                }
+                            }
                         }
+                        applied = true;
                     } else {
                         await helpSessionStorage.clear();
                         if (next.token) {
                             await setAvailability({ authToken: next.token, isAvailable: false }).unwrap();
                         }
+                        applied = true;
                     }
                 } catch (error) {
+                    if (error && error.status === 401) {
+                        await helpSessionStorage.clear();
+                        if (intentRef.current.desired === next) {
+                            setListening(false);
+                        }
+                        applied = true;
+                    }
                 }
-                if (intentRef.current.desired === next) {
-                    intentRef.current.running = false;
-                    return;
+                if (applied) {
+                    if (intentRef.current.desired === next) {
+                        intentRef.current.running = false;
+                        return;
+                    }
+                    retryDelayMs = INTENT_RETRY_BASE_MS;
+                    continue;
                 }
+                if (intentRef.current.desired !== next) {
+                    retryDelayMs = INTENT_RETRY_BASE_MS;
+                    continue;
+                }
+                await waitBeforeRetry(retryDelayMs);
+                retryDelayMs = Math.min(retryDelayMs * 2, INTENT_RETRY_MAX_MS);
             }
+            intentRef.current.running = false;
         };
         run();
-    }, [setAvailability]);
+    }, [setAvailability, waitBeforeRetry]);
 
     useEffect(() => {
         let cancelled = false;
@@ -63,7 +107,7 @@ export default function useHelperListen() {
             const token = await tokenStorage.getToken();
             if (cancelled || !token) return;
             const session = await helpSessionStorage.get();
-            if (cancelled) return;
+            if (cancelled || intentSeqRef.current !== 0) return;
             const hasOwnListeningSession = !!session && session.mode === 'listening' && session.ownerToken === token;
             if (hasOwnListeningSession) {
                 let validation = null;
@@ -72,7 +116,7 @@ export default function useHelperListen() {
                 } catch (error) {
                     return;
                 }
-                if (cancelled || !validation.ok) return;
+                if (cancelled || !validation.ok || intentSeqRef.current !== 0) return;
                 beginListening(token);
                 return;
             }
@@ -83,7 +127,8 @@ export default function useHelperListen() {
             } catch (error) {
                 return;
             }
-            if (cancelled || !availabilityResult || availabilityResult.status !== 'ok' || !availabilityResult.isAvailable) return;
+            if (cancelled || intentSeqRef.current !== 0) return;
+            if (!availabilityResult || availabilityResult.status !== 'ok' || !availabilityResult.isAvailable) return;
             beginListening(token);
         };
         load();
@@ -116,14 +161,16 @@ export default function useHelperListen() {
         return tokenStorage.ensureGuestToken();
     }, []);
 
-    const handleAuthFailure = useCallback(async () => {
+    const handleAuthFailure = useCallback(async (shouldNavigate) => {
         const seq = intentSeqRef.current + 1;
         intentSeqRef.current = seq;
         await tokenStorage.clearToken();
         setAuthToken(null);
         setListening(false);
         applyIntent(seq, null, false);
-        navigation.navigate('LoginOptions');
+        if (shouldNavigate) {
+            navigation.navigate('LoginOptions');
+        }
     }, [navigation, applyIntent]);
 
     const startListening = useCallback(async () => {
@@ -163,9 +210,9 @@ export default function useHelperListen() {
     useEffect(() => {
         if (!listening || !openRequestsError) return;
         if (openRequestsError.status === 401) {
-            handleAuthFailure();
+            handleAuthFailure(isFocused);
         }
-    }, [listening, openRequestsError, handleAuthFailure]);
+    }, [listening, openRequestsError, handleAuthFailure, isFocused]);
 
     const pendingCount = listening && Array.isArray(openRequestsData) ? openRequestsData.length : 0;
     const readyCount = authToken && Array.isArray(startedData) ? startedData.length : 0;

@@ -1,26 +1,27 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import tokenStorage from 'src/services/tokenStorage';
+import { showToast } from 'src/components/Toast';
+import { createOverlayState, applyOverride, settleOverride, removeOverride, hideRequest, unhideRequest, hideStartedGroup, unhideStartedGroup, reconcileWithServer, projectRequests, projectStartedGroups } from 'src/utils/helpOfferOverlay';
 import { useOpenRequestsQuery, usePollOfferQuery, useCreateOfferMutation, useWithdrawOfferMutation, useDeclineOfferMutation, useJoinMutation, useDeclineInviteMutation } from 'src/store/helpApi';
 
 const BROWSE_INTERVAL_MS = 3000;
 const READY_INTERVAL_MS = 3000;
 
-export default function useHelperOffer() {
+export default function useHelperOffer(helperListening) {
     const navigation = useNavigation();
     const isFocused = useIsFocused();
     const [phase, setPhase] = useState('loading');
     const [authToken, setAuthToken] = useState(null);
-    const [overrides, setOverrides] = useState({});
-    const [hidden, setHidden] = useState({});
-    const [hiddenStarted, setHiddenStarted] = useState({});
+    const [overlay, setOverlay] = useState(createOverlayState);
+    const previousListeningRef = useRef(!!helperListening);
     const [createOffer] = useCreateOfferMutation();
     const [withdrawOffer] = useWithdrawOfferMutation();
     const [declineOffer] = useDeclineOfferMutation();
     const [joinOffer] = useJoinMutation();
     const [declineInviteRequest] = useDeclineInviteMutation();
 
-    const { data: openRequestsData, error: openRequestsError } = useOpenRequestsQuery(
+    const { data: openRequestsData, error: openRequestsError, fulfilledTimeStamp: openRequestsFulfilledTime } = useOpenRequestsQuery(
         authToken,
         { skip: !authToken || phase === 'idle' || !isFocused, pollingInterval: BROWSE_INTERVAL_MS, refetchOnMountOrArgChange: true }
     );
@@ -43,37 +44,73 @@ export default function useHelperOffer() {
         navigation.navigate('LoginOptions');
     }, [navigation]);
 
+    useEffect(() => {
+        setOverlay((previousOverlay) => reconcileWithServer(previousOverlay, openRequestsData));
+    }, [openRequestsData, openRequestsFulfilledTime]);
+
+    useEffect(() => {
+        if (!isFocused) return;
+        setOverlay(createOverlayState());
+    }, [isFocused]);
+
+    useEffect(() => {
+        const wasListening = previousListeningRef.current;
+        const isListening = !!helperListening;
+        previousListeningRef.current = isListening;
+        if (wasListening && !isListening) setOverlay(createOverlayState());
+    }, [helperListening]);
+
     const offer = useCallback(async (id, name) => {
         if (!authToken) return;
-        setOverrides((prev) => ({ ...prev, [id]: 'offered' }));
+        const wasListeningAtTap = previousListeningRef.current;
+        setOverlay((previousOverlay) => applyOverride(previousOverlay, id, 'offered'));
         try {
-            await createOffer({ authToken, chatGroupId: id }).unwrap();
+            const result = await createOffer({ authToken, chatGroupId: id }).unwrap();
+            if (result && result.status === 'offered') {
+                if (wasListeningAtTap && !previousListeningRef.current) {
+                    setOverlay((previousOverlay) => removeOverride(previousOverlay, id));
+                    try {
+                        await withdrawOffer({ authToken, chatGroupId: id }).unwrap();
+                    } catch (error) {
+                    }
+                    return;
+                }
+                setOverlay((previousOverlay) => settleOverride(previousOverlay, id));
+                return;
+            }
+            setOverlay((previousOverlay) => removeOverride(previousOverlay, id));
+            showToast('That request is no longer open', 'info');
         } catch (error) {
             if (error && error.status === 401) {
                 await handleAuthFailure();
                 return;
             }
-            setOverrides((prev) => ({ ...prev, [id]: 'none' }));
+            setOverlay((previousOverlay) => removeOverride(previousOverlay, id));
         }
-    }, [authToken, createOffer, handleAuthFailure]);
+    }, [authToken, createOffer, withdrawOffer, handleAuthFailure]);
 
     const withdraw = useCallback(async (id) => {
         if (!authToken) return;
-        setOverrides((prev) => ({ ...prev, [id]: 'none' }));
+        setOverlay((previousOverlay) => applyOverride(previousOverlay, id, 'none'));
         try {
-            await withdrawOffer({ authToken, chatGroupId: id }).unwrap();
+            const result = await withdrawOffer({ authToken, chatGroupId: id }).unwrap();
+            if (result && result.status === 'withdrawn') {
+                setOverlay((previousOverlay) => settleOverride(previousOverlay, id));
+                return;
+            }
+            setOverlay((previousOverlay) => removeOverride(previousOverlay, id));
         } catch (error) {
             if (error && error.status === 401) {
                 await handleAuthFailure();
                 return;
             }
-            setOverrides((prev) => ({ ...prev, [id]: 'offered' }));
+            setOverlay((previousOverlay) => removeOverride(previousOverlay, id));
         }
     }, [authToken, withdrawOffer, handleAuthFailure]);
 
     const decline = useCallback(async (id) => {
         if (!authToken) return;
-        setHidden((prev) => ({ ...prev, [id]: true }));
+        setOverlay((previousOverlay) => hideRequest(previousOverlay, id));
         try {
             await declineOffer({ authToken, chatGroupId: id }).unwrap();
         } catch (error) {
@@ -81,11 +118,7 @@ export default function useHelperOffer() {
                 await handleAuthFailure();
                 return;
             }
-            setHidden((prev) => {
-                const next = { ...prev };
-                delete next[id];
-                return next;
-            });
+            setOverlay((previousOverlay) => unhideRequest(previousOverlay, id));
         }
     }, [authToken, declineOffer, handleAuthFailure]);
 
@@ -97,6 +130,10 @@ export default function useHelperOffer() {
             if (status === 'joined') {
                 const targetId = (result && result.chatGroupId) || id;
                 navigation.navigate('ChatGroup', { chatGroupId: targetId });
+                return;
+            }
+            if (status === 'unavailable') {
+                showToast('That conversation is no longer available', 'info');
             }
         } catch (error) {
             if (error && error.status === 401) {
@@ -107,7 +144,7 @@ export default function useHelperOffer() {
 
     const declineInvite = useCallback(async (id) => {
         if (!authToken) return;
-        setHiddenStarted((prev) => ({ ...prev, [id]: true }));
+        setOverlay((previousOverlay) => hideStartedGroup(previousOverlay, id));
         try {
             await declineInviteRequest({ authToken, chatGroupId: id }).unwrap();
         } catch (error) {
@@ -115,11 +152,7 @@ export default function useHelperOffer() {
                 await handleAuthFailure();
                 return;
             }
-            setHiddenStarted((prev) => {
-                const next = { ...prev };
-                delete next[id];
-                return next;
-            });
+            setOverlay((previousOverlay) => unhideStartedGroup(previousOverlay, id));
         }
     }, [authToken, declineInviteRequest, handleAuthFailure]);
 
@@ -158,21 +191,8 @@ export default function useHelperOffer() {
         }
     }, [phase, openRequestsError, handleAuthFailure]);
 
-    useEffect(() => {
-        if (!isFocused) return;
-        setOverrides({});
-        setHidden({});
-        setHiddenStarted({});
-    }, [isFocused]);
-
-    const raw = openRequestsData || [];
-    const openRequests = raw
-        .filter((item) => !hidden[item.chatGroupId])
-        .map((item) => ({
-            ...item,
-            offerStatus: overrides[item.chatGroupId] != null ? overrides[item.chatGroupId] : item.offerStatus
-        }));
-    const startedGroups = (Array.isArray(startedData) ? startedData : []).filter((group) => !hiddenStarted[group.chatGroupId]);
+    const openRequests = projectRequests(overlay, openRequestsData);
+    const startedGroups = projectStartedGroups(overlay, startedData);
 
     return { phase, startedGroups, openRequests, offer, withdraw, decline, join, declineInvite };
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -686,6 +686,17 @@ export default function Help() {
       navigation.setParams({ helpView: null });
     }
   }, [route.params?.helpView, navigation]);
+  useFocusEffect(
+    useCallback(() => {
+      return () => setHelpViewRequested(false);
+    }, [])
+  );
+  const previousHelperListeningRef = useRef(false);
+  useEffect(() => {
+    const wasListening = previousHelperListeningRef.current;
+    previousHelperListeningRef.current = helperListening;
+    if (wasListening && !helperListening) setHelpViewRequested(false);
+  }, [helperListening]);
   const isFocused = useIsFocused();
   const helpersPollingInterval = isFocused ? 5000 : 0;
   const { data: availableHelpersData, refetch: refetchAvailableHelpers } = useAvailableHelpersQuery(authToken, { skip: !authToken, pollingInterval: helpersPollingInterval });
@@ -696,9 +707,21 @@ export default function Help() {
     }, [authToken, refetchAvailableHelpers])
   );
   const availableHelpers = availableHelpersData || [];
-  const { phase, startedGroups, openRequests, offer, withdraw, decline, join, declineInvite } = useHelperOffer();
+  const { phase, startedGroups, openRequests, offer, withdraw, decline, join, declineInvite } = useHelperOffer(helperListening);
   const offeredRequests = openRequests.filter((request) => request.offerStatus === 'offered');
   const showHelperViews = helperListening || helpViewRequested || offeredRequests.length > 0 || startedGroups.length > 0;
+  const browseUnlocked = helperListening || helpViewRequested;
+  const visibleHelpViews = useMemo(() => {
+    if (browseUnlocked) return ['needsHelp', 'offered', 'ready'];
+    const involvedViews = [];
+    if (offeredRequests.length > 0) involvedViews.push('offered');
+    if (startedGroups.length > 0) involvedViews.push('ready');
+    return involvedViews;
+  }, [browseUnlocked, offeredRequests.length, startedGroups.length]);
+  useEffect(() => {
+    if (visibleHelpViews.length === 0) return;
+    if (!visibleHelpViews.includes(helpViewType)) setSelectedHelpView(visibleHelpViews[0]);
+  }, [visibleHelpViews, helpViewType]);
   const handleLoginPressIn = useCallback(() => {
     navigation.navigate('LoginOptions');
   }, [navigation]);
@@ -839,24 +862,30 @@ export default function Help() {
         <>
         <View style={styles.helpViewTypeWrap}>
           <View style={styles.helpViewType}>
+            {visibleHelpViews.includes('needsHelp') && (
             <TouchableOpacity
               style={helpViewType === 'needsHelp' ? styles.helpViewTypeSelectedBtn : styles.helpViewTypeNotSelectedBtn}
               onPress={() => setSelectedHelpView('needsHelp')}
             >
                 <CustomText style={helpViewType === 'needsHelp' ? styles.helpViewTypeSelectedtxt : styles.helpViewTypeNotSelectedTxt}>Needs Help ({openRequests.length})</CustomText>
             </TouchableOpacity>
+            )}
+            {visibleHelpViews.includes('offered') && (
             <TouchableOpacity
               style={helpViewType === 'offered' ? styles.helpViewTypeSelectedBtn : styles.helpViewTypeNotSelectedBtn}
               onPress={() => setSelectedHelpView('offered')}
             >
                 <CustomText style={helpViewType === 'offered' ? styles.helpViewTypeSelectedtxt : styles.helpViewTypeNotSelectedTxt}>Offered ({offeredRequests.length})</CustomText>
             </TouchableOpacity>
+            )}
+            {visibleHelpViews.includes('ready') && (
             <TouchableOpacity
               style={helpViewType === 'ready' ? styles.helpViewTypeSelectedBtn : styles.helpViewTypeNotSelectedBtn}
               onPress={() => setSelectedHelpView('ready')}
             >
                 <CustomText style={helpViewType === 'ready' ? styles.helpViewTypeSelectedtxt : styles.helpViewTypeNotSelectedTxt}>Ready ({startedGroups.length})</CustomText>
             </TouchableOpacity>
+            )}
           </View>
         </View>
         {phase === 'loading' ? (

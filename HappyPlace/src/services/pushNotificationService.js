@@ -68,13 +68,16 @@ async function resolveDeviceToken() {
     return getDeviceToken();
 }
 
-async function registerDevice(authToken) {
-    if (!authToken) return;
+async function registerDevice(authToken, fresh) {
+    if (!authToken) return false;
     try {
         const deviceToken = await resolveDeviceToken();
-        if (!deviceToken) return;
-        await baseService.postJson('device/registerDevice', { AuthToken: authToken, Token: deviceToken, Platform: Platform.OS });
+        if (!deviceToken) return false;
+        const response = await baseService.postJson('device/registerDevice', { AuthToken: authToken, Token: deviceToken, Platform: Platform.OS, Fresh: !!fresh });
+        if (response && response.ok === false) return false;
+        return true;
     } catch (error) {
+        return false;
     }
 }
 

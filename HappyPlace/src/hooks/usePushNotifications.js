@@ -17,14 +17,21 @@ export default function usePushNotifications() {
 
     useEffect(() => {
         let active = true;
+        let registerBusy = false;
+        let freshRegistrationPending = true;
 
         const registerCurrentDevice = async () => {
+            if (registerBusy) return;
+            registerBusy = true;
             try {
                 const token = await tokenStorage.getToken();
                 if (active && token) {
-                    await pushNotificationService.registerDevice(token);
+                    const registered = await pushNotificationService.registerDevice(token, freshRegistrationPending);
+                    if (registered) freshRegistrationPending = false;
                 }
             } catch (error) {
+            } finally {
+                registerBusy = false;
             }
         };
 
@@ -68,6 +75,8 @@ export default function usePushNotifications() {
                         navigationRef.reset({ index: 0, routes: [{ name: 'MainTabs', params: { screen: 'Help', params: { helpView: 'needsHelp' } } }] });
                     } else if (routeName === 'Help') {
                         navigationRef.reset({ index: 0, routes: [{ name: 'MainTabs', params: { screen: 'Help' } }] });
+                    } else if (routeName === 'MyFriends') {
+                        navigationRef.reset({ index: 0, routes: [{ name: 'MainTabs', params: { screen: 'MyFriends' } }] });
                     } else {
                         navigationRef.reset({ index: 1, routes: [{ name: 'MainTabs', params: { screen: 'ChatGroups' } }, { name: routeName, params: routeParams }] });
                     }
@@ -84,6 +93,8 @@ export default function usePushNotifications() {
                         navigationRef.navigate('MainTabs', { screen: 'Help', params: { helpView: 'needsHelp' } });
                     } else if (routeName === 'Help') {
                         navigationRef.navigate('MainTabs', { screen: 'Help' });
+                    } else if (routeName === 'MyFriends') {
+                        navigationRef.navigate('MainTabs', { screen: 'MyFriends' });
                     } else {
                         navigationRef.navigate(routeName);
                     }
@@ -160,6 +171,12 @@ export default function usePushNotifications() {
                 resetToChatGroup(data.chatGroupId);
                 return;
             }
+            if (data.type === 'friendRequests' || data.type === 'friendAccepted') {
+                await waitForNavigationReady();
+                if (!active) return;
+                navigateToRoute('MyFriends');
+                return;
+            }
             if (data.type === 'helpWaiting') {
                 await waitForNavigationReady();
                 if (!active) return;
@@ -222,6 +239,26 @@ export default function usePushNotifications() {
                 showToast(body, 'success', { label: 'Open', onPress: () => resetToChatGroup(approvedChatGroupId) }, `join-approved-${approvedChatGroupId}`);
                 return;
             }
+            if (data.type === 'friendRequests') {
+                const notification = remoteMessage.notification;
+                const body = notification && notification.body ? notification.body : null;
+                if (!body) return;
+                const friendRequestsAction = { label: 'View', onPress: () => navigateToRoute('MyFriends') };
+                if (data.alerting === 'true') {
+                    showToast(body, 'info', friendRequestsAction, 'friend-requests');
+                } else {
+                    updateToastIfVisible(body, 'info', friendRequestsAction, 'friend-requests');
+                }
+                return;
+            }
+            if (data.type === 'friendAccepted') {
+                const notification = remoteMessage.notification;
+                const body = notification && notification.body ? notification.body : null;
+                if (!body) return;
+                const friendAcceptedKey = `friend-accepted-${data.username || ''}`;
+                showToast(body, 'success', { label: 'View', onPress: () => navigateToRoute('MyFriends') }, friendAcceptedKey);
+                return;
+            }
             if (data.type === 'chatMessages') {
                 if (!data.chatGroupId) return;
                 const notification = remoteMessage.notification;
@@ -262,6 +299,15 @@ export default function usePushNotifications() {
             }
             if (active && initialData && initialData.type === 'invite' && initialData.chatGroupId) {
                 pendingInvite.set(initialData.chatGroupId);
+            }
+            if (active && initialData && (initialData.type === 'friendRequests' || initialData.type === 'friendAccepted')) {
+                pendingNotificationRoute.set('MyFriends');
+                await waitForNavigationReady();
+                if (active) {
+                    resetToNotificationRoute('MyFriends');
+                    pendingNotificationRoute.markHandled();
+                }
+                return;
             }
             if (active && initialData && (initialData.type === 'helpWaiting' || initialData.type === 'helpOffers')) {
                 const notificationRouteName = initialData.type === 'helpWaiting' ? 'OfferHelp' : 'Help';
