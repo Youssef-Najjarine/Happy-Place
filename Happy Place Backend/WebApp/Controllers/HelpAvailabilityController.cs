@@ -11,8 +11,7 @@ public class HelpAvailabilityController : ControllerBase {
     [HttpPost]
     public IActionResult SetAvailability(SetAvailabilityModel model) {
         if (!model.IsAuthenticated()) return this.Unauthorized();
-        model.Apply();
-        return this.Ok();
+        return this.Ok(model.Apply());
     }
 
     [HttpPost]

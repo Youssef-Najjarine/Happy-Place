@@ -11,13 +11,13 @@ public class DeviceRegistrationRedeliveryTest {
     [Fact]
     public void SweepWithNoDevicesLeavesTheChannelUnsent() {
         using var container = new TestingMockProvidersContainer();
-        var seeker = SeekerWithRequest(container, "Seeker", "I need help");
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.ChatGroupId);
+        var (_, chatGroupId) = SeekerWithRequest(container, "Seeker", "I need help");
+        CreateOffer(container, CreateUser(container, "Helper"), chatGroupId);
 
         Flush();
 
         using var dbContext = HappyPlaceDbContext.Create();
-        Guid chatGroupGuid = Guid.Parse(seeker.ChatGroupId);
+        Guid chatGroupGuid = Guid.Parse(chatGroupId);
         NotificationChannel channel = dbContext.NotificationChannels.Single(field => field.Kind == NotificationChannelKind.Offers && field.ScopeChatGroupId == chatGroupGuid);
         Assert.Equal(0, channel.LastSentCount);
         Assert.False(channel.IsLive);
@@ -28,11 +28,11 @@ public class DeviceRegistrationRedeliveryTest {
     [Fact]
     public void OfferArrivingBeforeSeekerHasADeviceIsDeliveredOnceTheDeviceRegisters() {
         using var container = new TestingMockProvidersContainer();
-        var seeker = SeekerWithRequest(container, "Seeker", "I need help");
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.ChatGroupId);
+        var (seekerAuthToken, chatGroupId) = SeekerWithRequest(container, "Seeker", "I need help");
+        CreateOffer(container, CreateUser(container, "Helper"), chatGroupId);
         Flush();
         string deviceToken = "device-" + Guid.NewGuid();
-        RegisterDevice(container, seeker.AuthToken, deviceToken);
+        RegisterDevice(container, seekerAuthToken, deviceToken);
 
         Flush();
 
@@ -64,35 +64,35 @@ public class DeviceRegistrationRedeliveryTest {
     [Fact]
     public void RotatedDeviceTokenRecoversTheMissedNotificationAfterReregistration() {
         using var container = new TestingMockProvidersContainer();
-        var seeker = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
-        CreateOffer(container, CreateUser(container, "First Helper"), seeker.ChatGroupId);
+        var (seekerAuthToken, seekerDeviceToken, chatGroupId) = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
+        CreateOffer(container, CreateUser(container, "First Helper"), chatGroupId);
         Flush();
-        container.PushProvider.InvalidateToken(seeker.DeviceToken);
-        CreateOffer(container, CreateUser(container, "Second Helper"), seeker.ChatGroupId);
+        container.PushProvider.InvalidateToken(seekerDeviceToken);
+        CreateOffer(container, CreateUser(container, "Second Helper"), chatGroupId);
         Flush();
         string rotatedDeviceToken = "device-" + Guid.NewGuid();
-        RegisterDevice(container, seeker.AuthToken, rotatedDeviceToken);
+        RegisterDevice(container, seekerAuthToken, rotatedDeviceToken);
 
         Flush();
 
         PushMessage message = CountUpdatesTo(container, rotatedDeviceToken).Single();
         Assert.Equal("2", message.Data["count"]);
         Assert.True(message.Alerting);
-        Assert.Equal("1", CountUpdatesTo(container, seeker.DeviceToken).Single().Data["count"]);
+        Assert.Equal("1", CountUpdatesTo(container, seekerDeviceToken).Single().Data["count"]);
     }
 
     [Fact]
     public void StaleLiveChannelSendsDismissalToTheNewDeviceAfterRegistration() {
         using var container = new TestingMockProvidersContainer();
-        var seeker = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
+        var (seekerAuthToken, seekerDeviceToken, chatGroupId) = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
         string helperAuthToken = CreateUser(container, "Helper");
-        CreateOffer(container, helperAuthToken, seeker.ChatGroupId);
+        CreateOffer(container, helperAuthToken, chatGroupId);
         Flush();
-        container.PushProvider.InvalidateToken(seeker.DeviceToken);
-        WithdrawOffer(container, helperAuthToken, seeker.ChatGroupId);
+        container.PushProvider.InvalidateToken(seekerDeviceToken);
+        WithdrawOffer(container, helperAuthToken, chatGroupId);
         Flush();
         string rotatedDeviceToken = "device-" + Guid.NewGuid();
-        RegisterDevice(container, seeker.AuthToken, rotatedDeviceToken);
+        RegisterDevice(container, seekerAuthToken, rotatedDeviceToken);
 
         Flush();
 
@@ -107,10 +107,10 @@ public class DeviceRegistrationRedeliveryTest {
         string previousOwnerAuthToken = CreateUser(container, "Previous Owner");
         string sharedDeviceToken = "device-" + Guid.NewGuid();
         RegisterDevice(container, previousOwnerAuthToken, sharedDeviceToken);
-        var seeker = SeekerWithRequest(container, "Seeker", "I need help");
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.ChatGroupId);
+        var (seekerAuthToken, chatGroupId) = SeekerWithRequest(container, "Seeker", "I need help");
+        CreateOffer(container, CreateUser(container, "Helper"), chatGroupId);
         Flush();
-        RegisterDevice(container, seeker.AuthToken, sharedDeviceToken);
+        RegisterDevice(container, seekerAuthToken, sharedDeviceToken);
 
         Flush();
 
@@ -171,16 +171,16 @@ public class DeviceRegistrationRedeliveryTest {
     [Fact]
     public void SecondDeviceRegisteredWhileNotificationIsLiveReceivesTheCurrentCount() {
         using var container = new TestingMockProvidersContainer();
-        var seeker = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.ChatGroupId);
+        var (seekerAuthToken, seekerDeviceToken, chatGroupId) = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
+        CreateOffer(container, CreateUser(container, "Helper"), chatGroupId);
         Flush();
         string secondDeviceToken = "device-" + Guid.NewGuid();
-        RegisterDevice(container, seeker.AuthToken, secondDeviceToken);
+        RegisterDevice(container, seekerAuthToken, secondDeviceToken);
 
         Flush();
 
         Assert.Equal("1", CountUpdatesTo(container, secondDeviceToken).Single().Data["count"]);
-        List<PushMessage> firstDeviceMessages = CountUpdatesTo(container, seeker.DeviceToken);
+        List<PushMessage> firstDeviceMessages = CountUpdatesTo(container, seekerDeviceToken);
         Assert.Equal(2, firstDeviceMessages.Count);
         Assert.Equal("1", firstDeviceMessages[1].Data["count"]);
     }
@@ -190,14 +190,58 @@ public class DeviceRegistrationRedeliveryTest {
     [Fact]
     public void HeartbeatReregistrationOfTheSameTokenDoesNotResend() {
         using var container = new TestingMockProvidersContainer();
-        var seeker = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
-        CreateOffer(container, CreateUser(container, "Helper"), seeker.ChatGroupId);
+        var (seekerAuthToken, seekerDeviceToken, chatGroupId) = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
+        CreateOffer(container, CreateUser(container, "Helper"), chatGroupId);
         Flush();
-        RegisterDevice(container, seeker.AuthToken, seeker.DeviceToken);
+        RegisterDevice(container, seekerAuthToken, seekerDeviceToken);
 
         Flush();
 
-        Assert.Single(CountUpdatesTo(container, seeker.DeviceToken));
+        Assert.Single(CountUpdatesTo(container, seekerDeviceToken));
+    }
+
+    // Tests - Fresh Cold Launch Replay
+
+    [Fact]
+    public void FreshReregistrationOfTheSameTokenReplaysTheLiveNotification() {
+        using var container = new TestingMockProvidersContainer();
+        var (seekerAuthToken, seekerDeviceToken, chatGroupId) = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
+        CreateOffer(container, CreateUser(container, "Helper"), chatGroupId);
+        Flush();
+        RegisterDeviceWithFresh(container, seekerAuthToken, seekerDeviceToken, true);
+
+        Flush();
+
+        List<PushMessage> messages = CountUpdatesTo(container, seekerDeviceToken);
+        Assert.Equal(2, messages.Count);
+        Assert.Equal("1", messages[1].Data["count"]);
+        Assert.True(messages[1].Alerting);
+    }
+
+    [Fact]
+    public void NonFreshReregistrationOfTheSameTokenDoesNotReplay() {
+        using var container = new TestingMockProvidersContainer();
+        var (seekerAuthToken, seekerDeviceToken, chatGroupId) = SeekerWithDeviceAndRequest(container, "Seeker", "I need help");
+        CreateOffer(container, CreateUser(container, "Helper"), chatGroupId);
+        Flush();
+        RegisterDeviceWithFresh(container, seekerAuthToken, seekerDeviceToken, false);
+
+        Flush();
+
+        Assert.Single(CountUpdatesTo(container, seekerDeviceToken));
+    }
+
+    [Fact]
+    public void FreshRegistrationWithNoLiveStateSendsNothing() {
+        using var container = new TestingMockProvidersContainer();
+        string personAuthToken = CreateUser(container, "Person");
+        string deviceToken = "device-" + Guid.NewGuid();
+        RegisterDevice(container, personAuthToken, deviceToken);
+        RegisterDeviceWithFresh(container, personAuthToken, deviceToken, true);
+
+        Flush();
+
+        Assert.Empty(container.PushProvider.SentMessages);
     }
 
     // Helpers - Acting
@@ -208,6 +252,10 @@ public class DeviceRegistrationRedeliveryTest {
 
     private static void RegisterDevice(TestingMockProvidersContainer container, string authToken, string deviceToken, string platform = "ios") {
         container.WebClient.PostJson("api/device/registerDevice", new { AuthToken = authToken, Token = deviceToken, Platform = platform }).EnsureSuccessStatusCode();
+    }
+
+    private static void RegisterDeviceWithFresh(TestingMockProvidersContainer container, string authToken, string deviceToken, bool fresh) {
+        container.WebClient.PostJson("api/device/registerDevice", new { AuthToken = authToken, Token = deviceToken, Platform = "ios", Fresh = fresh }).EnsureSuccessStatusCode();
     }
 
     private static string CreateRequest(TestingMockProvidersContainer container, string authToken, string topic) {

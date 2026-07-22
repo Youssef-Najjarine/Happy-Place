@@ -6,7 +6,7 @@ namespace HappyWorld.HappyPlace;
 public static class HelpOfferManager {
     // Fields
 
-    private static readonly int OfferedRequestTtlDays = 7;
+    private static readonly int AbandonedRequestTtlDays = 7;
 
     // Methods
 
@@ -148,15 +148,9 @@ public static class HelpOfferManager {
 
     private static void SweepExpiredProvisionalGroups() {
         using var dbContext = HappyPlaceDbContext.Create();
-        DateTime offerExpiryCutoff = DateTime.UtcNow.AddDays(-OfferedRequestTtlDays);
-        List<Guid> offeredChatGroupIds = [.. dbContext.HelpOffers
-            .Where(field => field.Status == HelpOfferStatus.Offered && field.CreatedAtUtc < offerExpiryCutoff)
-            .Select(field => field.ChatGroupId)
-            .Distinct()];
-        if (offeredChatGroupIds.Count == 0)
-            return;
+        DateTime abandonmentCutoff = DateTime.UtcNow.AddDays(-AbandonedRequestTtlDays);
         List<Guid> expiredChatGroupIds = [.. dbContext.ChatGroups
-            .Where(field => field.Status == ChatGroupStatus.Provisional && offeredChatGroupIds.Contains(field.Id))
+            .Where(field => field.Status == ChatGroupStatus.Provisional && field.LastSeenAtUtc < abandonmentCutoff)
             .Select(field => field.Id)];
         if (expiredChatGroupIds.Count == 0)
             return;

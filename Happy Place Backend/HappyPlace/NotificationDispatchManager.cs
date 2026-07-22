@@ -12,6 +12,7 @@ public static class NotificationDispatchManager {
     private static readonly int QuietWindowMs = 500;
     private static readonly int MaxWaitMs = 2000;
     private static readonly int MinIntervalMs = 1000;
+    private static readonly int FailedSendRetryMs = 5000;
     private static readonly int ClaimTtlSeconds = 30;
 
     // Properties
@@ -277,19 +278,24 @@ public static class NotificationDispatchManager {
     private static void ProcessChannel(NotificationChannel channel) {
         int count = ComputeCount(channel);
         bool wasLive = channel.IsLive;
+        bool attempted = false;
         bool sent = false;
         if (count <= 0) {
-            if (wasLive)
+            if (wasLive) {
+                attempted = true;
                 sent = SendDismissal(channel) > 0;
+            }
         }
         else if (count != channel.LastSentCount || !wasLive) {
+            attempted = true;
             bool alerting = count > channel.LastSentCount;
             sent = SendCountUpdate(channel, count, alerting) > 0;
         }
-        FinalizeChannel(channel, count, sent);
+        bool scheduleRetry = attempted && !sent && HasRegisteredDevices(channel.RecipientUserAccountId);
+        FinalizeChannel(channel, count, sent, scheduleRetry);
     }
 
-    private static void FinalizeChannel(NotificationChannel channel, int count, bool sent) {
+    private static void FinalizeChannel(NotificationChannel channel, int count, bool sent, bool scheduleRetry) {
         using var dbContext = HappyPlaceDbContext.Create();
         DateTime now = DateTime.UtcNow;
         bool isLive = count > 0;
@@ -307,6 +313,15 @@ public static class NotificationDispatchManager {
                 .SetProperty(field => field.ClaimExpiresAtUtc, (DateTime?)null));
         }
         DateTime? claimedLastEvent = channel.LastEventAtUtc;
+        if (scheduleRetry) {
+            DateTime retryDue = now.AddMilliseconds(FailedSendRetryMs);
+            dbContext.NotificationChannels
+                .Where(field => field.Id == channel.Id && field.LastEventAtUtc == claimedLastEvent)
+                .ExecuteUpdate(setters => setters
+                    .SetProperty(field => field.FirstDirtyAtUtc, retryDue)
+                    .SetProperty(field => field.DueAtUtc, retryDue));
+            return;
+        }
         dbContext.NotificationChannels
             .Where(field => field.Id == channel.Id && field.LastEventAtUtc == claimedLastEvent)
             .ExecuteUpdate(setters => setters
@@ -391,6 +406,11 @@ public static class NotificationDispatchManager {
         });
     }
 
+    private static bool HasRegisteredDevices(Guid recipientUserAccountId) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        return dbContext.DeviceTokens.Any(field => field.UserAccountId == recipientUserAccountId);
+    }
+
     private static int SendToRecipientDevices(Guid recipientUserAccountId, Func<string, PushMessage> buildMessage) {
         using var dbContext = HappyPlaceDbContext.Create();
         List<DeviceToken> deviceTokens = [.. dbContext.DeviceTokens.Where(field => field.UserAccountId == recipientUserAccountId)];
@@ -403,7 +423,8 @@ public static class NotificationDispatchManager {
             catch (PushTokenInvalidException) {
                 dbContext.DeviceTokens.Where(field => field.Id == deviceToken.Id).ExecuteDelete();
             }
-            catch (Exception) {
+            catch (Exception exception) {
+                Console.Error.WriteLine($"Push send failed for a device of recipient {recipientUserAccountId}: {exception.Message}");
             }
         }
         return deliveredCount;

@@ -6,10 +6,12 @@ namespace HappyWorld.HappyPlace;
 public static class HelpAvailabilityManager {
     // Methods
 
-    public static bool SetAvailability(string authToken, bool isAvailable) {
+    public static HelpAvailabilityStatusResult SetAvailability(string authToken, bool isAvailable) {
         Guid? helperUserAccountId = HelpParticipant.ResolveUserAccountId(authToken);
         if (helperUserAccountId == null)
-            return false;
+            return null;
+        if (isAvailable && OwnsOpenRequest(helperUserAccountId.Value))
+            return new HelpAvailabilityStatusResult("seeking", false);
         using var dbContext = HappyPlaceDbContext.Create();
         DateTime now = DateTime.UtcNow;
         HelpAvailability availability = dbContext.HelpAvailabilities.SingleOrDefault(field => field.HelperUserAccountId == helperUserAccountId.Value);
@@ -29,7 +31,19 @@ public static class HelpAvailabilityManager {
             WithdrawOutstandingOffers(helperUserAccountId.Value);
             NotificationDispatchManager.DeactivateWaitingChannel(helperUserAccountId.Value);
         }
-        return true;
+        return new HelpAvailabilityStatusResult("ok", isAvailable);
+    }
+
+    public static void SetUnavailable(Guid helperUserAccountId) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        HelpAvailability availability = dbContext.HelpAvailabilities.SingleOrDefault(field => field.HelperUserAccountId == helperUserAccountId);
+        if (availability != null && availability.IsAvailable) {
+            availability.IsAvailable = false;
+            availability.LastSeenAtUtc = DateTime.UtcNow;
+            TrySaveChanges(dbContext);
+        }
+        WithdrawOutstandingOffers(helperUserAccountId);
+        NotificationDispatchManager.DeactivateWaitingChannel(helperUserAccountId);
     }
 
     public static HelpAvailabilityStatusResult GetAvailability(string authToken) {
@@ -39,6 +53,11 @@ public static class HelpAvailabilityManager {
         using var dbContext = HappyPlaceDbContext.Create();
         HelpAvailability availability = dbContext.HelpAvailabilities.SingleOrDefault(field => field.HelperUserAccountId == helperUserAccountId.Value);
         return new HelpAvailabilityStatusResult("ok", availability != null && availability.IsAvailable);
+    }
+
+    private static bool OwnsOpenRequest(Guid userAccountId) {
+        using var dbContext = HappyPlaceDbContext.Create();
+        return dbContext.ChatGroups.Any(field => field.OwnerUserAccountId == userAccountId && field.Status == ChatGroupStatus.Provisional);
     }
 
     private static void WithdrawOutstandingOffers(Guid helperUserAccountId) {

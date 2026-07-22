@@ -19,6 +19,10 @@ public class InMemoryPushSender : PushSender {
         this._failingTokens.Add(token);
     }
 
+    public void UnfailToken(string token) {
+        this._failingTokens.Remove(token);
+    }
+
     public override void Send(PushMessage message) {
         if (this._invalidTokens.Contains(message.Token))
             throw new PushTokenInvalidException(message.Token);

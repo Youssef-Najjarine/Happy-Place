@@ -7,7 +7,7 @@ public record SetAvailabilityModel(string AuthToken, bool IsAvailable) {
         return UserProfileManager.IsAuthenticated(this.AuthToken);
     }
 
-    public void Apply() {
-        HelpAvailabilityManager.SetAvailability(this.AuthToken, this.IsAvailable);
+    public HelpAvailabilityStatusResult Apply() {
+        return HelpAvailabilityManager.SetAvailability(this.AuthToken, this.IsAvailable);
     }
 }

@@ -30,14 +30,16 @@ public static class NotificationSweeper {
                 try {
                     NotificationDispatchManager.Sweep();
                 }
-                catch (Exception) {
+                catch (Exception exception) {
+                    Console.Error.WriteLine($"Notification sweep failed: {exception.Message}");
                 }
                 if ((DateTime.UtcNow - _lastRetentionSweepAtUtc).TotalMilliseconds >= RetentionIntervalMs) {
                     _lastRetentionSweepAtUtc = DateTime.UtcNow;
                     try {
                         NotificationDispatchManager.RunRetentionSweep();
                     }
-                    catch (Exception) {
+                    catch (Exception exception) {
+                        Console.Error.WriteLine($"Notification retention sweep failed: {exception.Message}");
                     }
                 }
             }
