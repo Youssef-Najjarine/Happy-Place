@@ -3,6 +3,8 @@ import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useSelector } from 'react-redux';
 import tokenStorage from 'src/services/tokenStorage';
 import { useUnreadTotalQuery } from 'src/store/chatGroupsApi';
+import { selectRealtimeConnected } from 'src/store/realtimeSlice';
+import { unreadBadgePollingInterval } from 'src/utils/pollingPolicy';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { shouldRedirectToFinishAccount } from 'src/utils/guestGate';
@@ -199,7 +201,8 @@ export default function BottomTabBar({ state, descriptors, navigation }) {
   const user = useSelector((storeState) => storeState.user);
   const [authToken, setAuthToken] = useState(tokenStorage.peekToken());
   useEffect(() => tokenStorage.subscribe((token) => setAuthToken(token)), []);
-  const { data: unreadTotalData } = useUnreadTotalQuery(authToken, { skip: !authToken, pollingInterval: 15000 });
+  const isRealtimeConnected = useSelector(selectRealtimeConnected);
+  const { data: unreadTotalData } = useUnreadTotalQuery(authToken, { skip: !authToken, pollingInterval: unreadBadgePollingInterval(isRealtimeConnected) });
   const unreadTotal = unreadTotalData && unreadTotalData.status === 'ok' ? unreadTotalData.total : 0;
 
   const handleTabPress = (route, isFocused) => {

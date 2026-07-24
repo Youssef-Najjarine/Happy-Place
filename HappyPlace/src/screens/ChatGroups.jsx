@@ -54,8 +54,10 @@ import {
   useHideChatGroupMutation,
   useSetChatGroupMutedMutation,
 } from 'src/store/chatGroupsApi';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { showLoading, hideLoading } from 'src/store/loadingSlice';
+import { selectRealtimeConnected } from 'src/store/realtimeSlice';
+import { listPollingInterval as computeListPollingInterval } from 'src/utils/pollingPolicy';
 
 const ActiveIndexContext = React.createContext(-1);
 const stylesActive = StyleSheet.create({
@@ -1020,7 +1022,8 @@ export default function ChatGroups() {
     return () => clearTimeout(timer);
   }, [search]);
   const isFocused = useIsFocused();
-  const listPollingInterval = isFocused ? 5000 : 0;
+  const isRealtimeConnected = useSelector(selectRealtimeConnected);
+  const listPollingInterval = computeListPollingInterval(isRealtimeConnected, isFocused);
   const { data: chatGroupsPage, isSuccess: chatGroupsQuerySucceeded, isError: chatGroupsQueryErrored, refetch: refetchChatGroups } = useListChatGroupsPageQuery({ authToken, sortBy, search: debouncedSearch, cursor: null }, { skip: !authToken, pollingInterval: listPollingInterval });
   const [fetchNextChatGroupsPage, { isFetching: isFetchingNextChatGroupsPage }] = useLazyListChatGroupsPageQuery();
   const [displayedGroups, setDisplayedGroups] = useState([]);

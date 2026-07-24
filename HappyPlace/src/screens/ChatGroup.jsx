@@ -71,6 +71,8 @@ function PauseGlyph({ size, color }) {
 import useChatMessages from 'src/hooks/useChatMessages';
 import { selectCachedChatGroup } from 'src/store/chatMessagesApi';
 import { useListMembersQuery, useRenameChatGroupMutation, useSetChatGroupVisibilityMutation, useDeleteChatGroupMutation, useLeaveChatGroupMutation, useApproveMemberMutation, useRejectMemberMutation } from 'src/store/chatGroupsApi';
+import { selectRealtimeConnected } from 'src/store/realtimeSlice';
+import { membersPollingInterval } from 'src/utils/pollingPolicy';
 import { formatMessageTime, localDateKey, localDateKeyForDaysAgo, formatDayHeader } from 'src/utils/chatTime';
 import MicrophoneIcon from 'assets/images/chatGroup/microphone-icon.svg';
 import PlusIcon from 'assets/images/chatGroup/plus-black-icon.svg';
@@ -2629,9 +2631,10 @@ export default function ChatGroup() {
     refreshNow,
   } = useChatMessages({ authToken, chatGroupId, focused });
 
+  const isRealtimeConnected = useSelector(selectRealtimeConnected);
   const membersQuery = useListMembersQuery(
     { authToken, chatGroupId },
-    { skip: !authToken || !chatGroupId, pollingInterval: focused ? 3000 : 0 }
+    { skip: !authToken || !chatGroupId, pollingInterval: membersPollingInterval(isRealtimeConnected, focused) }
   );
   const chatName = groupState?.title ?? cachedGroup?.title ?? '';
   const isPublic = groupState ? !!groupState.isPublic : (cachedGroup ? !!cachedGroup.isPublic : true);

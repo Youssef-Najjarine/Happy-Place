@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { AppState } from 'react-native';
+import { useSelector } from 'react-redux';
 import baseService from 'src/services/baseService';
+import realtimeService from 'src/services/realtimeService';
+import { selectRealtimeConnected } from 'src/store/realtimeSlice';
+import { messagesPollingInterval } from 'src/utils/pollingPolicy';
 import { createClientMessageId, upsertEntries, mergeSenders, mergeMemberSenders, createPendingEntry, markPendingFailed, markPendingRetrying, setPendingMediaId, removePendingById, reconcilePending, orderMessages } from 'src/utils/chatMessageStore';
 import {
     useLazyListMessagesPageQuery,
@@ -13,7 +17,6 @@ import {
     useReportMessageMutation,
 } from 'src/store/chatMessagesApi';
 
-const POLL_INTERVAL_MS = 2000;
 const TYPING_PING_INTERVAL_MS = 3000;
 const MARK_READ_DEBOUNCE_MS = 600;
 
@@ -32,11 +35,14 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
 
     const watermarkRef = useRef(0);
     const pollBusyRef = useRef(false);
+    const pollQueuedRef = useRef(false);
     const loadedRef = useRef(false);
     const typingLastSentAtRef = useRef(0);
     const markReadLastRef = useRef(0);
     const markReadTimerRef = useRef(null);
     const appActiveRef = useRef(true);
+
+    const isRealtimeConnected = useSelector(selectRealtimeConnected);
 
     const [triggerListPage] = useLazyListMessagesPageQuery();
     const [triggerPoll] = useLazyPollMessagesQuery();
@@ -122,20 +128,27 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
     }, []);
 
     const pollOnce = useCallback(async () => {
-        if (pollBusyRef.current || !appActiveRef.current || !loadedRef.current) return;
+        if (pollBusyRef.current) {
+            pollQueuedRef.current = true;
+            return;
+        }
+        if (!appActiveRef.current || !loadedRef.current) return;
         pollBusyRef.current = true;
         try {
-            const response = await triggerPoll({ authToken, chatGroupId, sinceChangeSequence: watermarkRef.current }).unwrap();
-            if (response.status !== 'ok') {
-                setStatus(response.status);
-                return;
-            }
-            watermarkRef.current = response.changeSequence;
-            if (Array.isArray(response.changes) && response.changes.length > 0) {
-                setMessagesById((current) => upsertEntries(current, response.changes));
-                setPendingMessages((current) => reconcilePending(current, response.changes));
-            }
-            applySharedBlocks(response);
+            do {
+                pollQueuedRef.current = false;
+                const response = await triggerPoll({ authToken, chatGroupId, sinceChangeSequence: watermarkRef.current }).unwrap();
+                if (response.status !== 'ok') {
+                    setStatus(response.status);
+                    return;
+                }
+                watermarkRef.current = response.changeSequence;
+                if (Array.isArray(response.changes) && response.changes.length > 0) {
+                    setMessagesById((current) => upsertEntries(current, response.changes));
+                    setPendingMessages((current) => reconcilePending(current, response.changes));
+                }
+                applySharedBlocks(response);
+            } while (pollQueuedRef.current && appActiveRef.current);
         } catch (error) {
         } finally {
             pollBusyRef.current = false;
@@ -145,9 +158,15 @@ export default function useChatMessages({ authToken, chatGroupId, focused }) {
     useEffect(() => {
         if (status !== 'ok' || !focused || !authToken) return undefined;
         pollOnce();
-        const interval = setInterval(pollOnce, POLL_INTERVAL_MS);
-        return () => clearInterval(interval);
-    }, [status, focused, authToken, pollOnce]);
+        const interval = setInterval(pollOnce, messagesPollingInterval(isRealtimeConnected));
+        const unsubscribeRealtime = realtimeService.subscribeToChatGroup(chatGroupId, () => {
+            pollOnce();
+        });
+        return () => {
+            clearInterval(interval);
+            unsubscribeRealtime();
+        };
+    }, [status, focused, authToken, pollOnce, chatGroupId, isRealtimeConnected]);
 
     const orderedMessages = useMemo(() => orderMessages(messagesById, pendingMessages), [messagesById, pendingMessages]);
 

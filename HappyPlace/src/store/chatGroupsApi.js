@@ -216,6 +216,7 @@ export const chatGroupsApi = createApi({
         }),
         unreadTotal: builder.query({
             query: (authToken) => ({ path: 'chatGroup/unreadTotal', body: { AuthToken: authToken } }),
+            providesTags: ['ChatGroupList'],
         }),
         createFriendsGroup: builder.mutation({
             query: (args) => ({ path: 'chatGroup/createWithFriends', body: { AuthToken: args.authToken, Name: args.name, Usernames: args.usernames } }),

@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@microsoft/signalr": "^10.0.0",
     "@notifee/react-native": "^9.1.8",
     "@react-native-camera-roll/camera-roll": "^7.10.2",
     "@react-native-firebase/app": "^24.1.1",
@@ -30,6 +31,7 @@
     "react-native-safe-area-context": "^5.7.0",
     "react-native-screens": "^4.24.0",
     "react-native-svg": "^15.15.4",
+    "react-native-url-polyfill": "^4.0.0",
     "react-native-video": "^6.19.2",
     "react-redux": "^9.2.0",
     "rn-emoji-keyboard": "^1.7.0"

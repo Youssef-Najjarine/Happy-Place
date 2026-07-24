@@ -2,8 +2,10 @@ import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react'
 import { View, TouchableOpacity, StyleSheet, FlatList, Pressable, ActivityIndicator } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation, useRoute, useIsFocused, useFocusEffect } from '@react-navigation/native';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { showLoading, hideLoading } from 'store/loadingSlice';
+import { selectRealtimeConnected } from 'store/realtimeSlice';
+import { listPollingInterval as computeListPollingInterval } from 'src/utils/pollingPolicy';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import {
   HappyColor,
@@ -927,7 +929,8 @@ export default function Friends() {
     headerEllipsisBtn: null,
   });
 
-  const listPollingInterval = isFocused ? 5000 : 0;
+  const isRealtimeConnected = useSelector(selectRealtimeConnected);
+  const listPollingInterval = computeListPollingInterval(isRealtimeConnected, isFocused);
   const {
     data: friendsPage,
     isSuccess: friendsQuerySucceeded,

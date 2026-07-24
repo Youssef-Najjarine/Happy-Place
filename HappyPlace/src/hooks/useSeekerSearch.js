@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import tokenStorage from 'src/services/tokenStorage';
 import authenticationService from 'src/services/authenticationService';
 import helpSessionStorage from 'src/services/helpSessionStorage';
+import { selectRealtimeConnected, selectHelpChangedTick } from 'src/store/realtimeSlice';
+import { helpPollingInterval } from 'src/utils/pollingPolicy';
 import { showToast } from 'src/components/Toast';
 import { usePollRequestQuery, useLazyMyOpenRequestQuery, useCreateRequestMutation, useConnectMutation, useCancelRequestMutation } from 'src/store/helpApi';
 import { useRenameChatGroupMutation } from 'src/store/chatGroupsApi';
 
-const POLL_INTERVAL_MS = 3000;
 const CANCEL_RETRY_BASE_MS = 1500;
 const CANCEL_RETRY_MAX_MS = 15000;
 
@@ -28,6 +30,10 @@ export default function useSeekerSearch() {
     const [triggerMyOpenRequest] = useLazyMyOpenRequestQuery();
     const [renameChatGroup] = useRenameChatGroupMutation();
 
+    const isRealtimeConnected = useSelector(selectRealtimeConnected);
+    const helpChangedTick = useSelector(selectHelpChangedTick);
+    const previousHelpTickRef = useRef(helpChangedTick);
+
     useEffect(() => {
         aliveRef.current = true;
         return () => {
@@ -35,10 +41,17 @@ export default function useSeekerSearch() {
         };
     }, []);
 
-    const { currentData: statusData, error: statusError } = usePollRequestQuery(
+    const { currentData: statusData, error: statusError, refetch: refetchStatus } = usePollRequestQuery(
         { authToken, chatGroupId },
-        { skip: phase !== 'waiting' || !authToken || !chatGroupId, pollingInterval: POLL_INTERVAL_MS }
+        { skip: phase !== 'waiting' || !authToken || !chatGroupId, pollingInterval: helpPollingInterval(isRealtimeConnected) }
     );
+
+    useEffect(() => {
+        if (helpChangedTick === previousHelpTickRef.current) return;
+        previousHelpTickRef.current = helpChangedTick;
+        if (phase !== 'waiting' || !authToken || !chatGroupId) return;
+        refetchStatus();
+    }, [helpChangedTick, phase, authToken, chatGroupId, refetchStatus]);
 
     const reset = useCallback(async () => {
         searchGenRef.current += 1;

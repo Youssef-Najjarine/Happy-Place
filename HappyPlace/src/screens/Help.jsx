@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { View, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
+import { selectRealtimeConnected } from 'src/store/realtimeSlice';
+import { listPollingInterval as computeListPollingInterval } from 'src/utils/pollingPolicy';
 import { useSafeAreaPadding } from 'src/hooks/useSafeAreaPadding';
 import { useResponsiveStyles } from 'src/utils/useResponsiveStyles';
 import { scaleFont, scaleLineHeight, scaleLetterSpacing } from 'src/utils/scaleFonts';
@@ -698,7 +700,8 @@ export default function Help() {
     if (wasListening && !helperListening) setHelpViewRequested(false);
   }, [helperListening]);
   const isFocused = useIsFocused();
-  const helpersPollingInterval = isFocused ? 5000 : 0;
+  const isRealtimeConnected = useSelector(selectRealtimeConnected);
+  const helpersPollingInterval = computeListPollingInterval(isRealtimeConnected, isFocused);
   const { data: availableHelpersData, refetch: refetchAvailableHelpers } = useAvailableHelpersQuery(authToken, { skip: !authToken, pollingInterval: helpersPollingInterval });
   useFocusEffect(
     useCallback(() => {

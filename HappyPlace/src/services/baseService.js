@@ -47,6 +47,9 @@ const baseService = {
             clearTimeout(timeoutId);
         }
     },
+    getBaseUrl: function() {
+        return baseUrl;
+    },
     getMediaUrl: getMediaUrl
 };
 

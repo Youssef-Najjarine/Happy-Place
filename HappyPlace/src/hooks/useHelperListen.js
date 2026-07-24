@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import tokenStorage from 'src/services/tokenStorage';
 import authenticationService from 'src/services/authenticationService';
 import helpSessionStorage from 'src/services/helpSessionStorage';
+import realtimeService from 'src/services/realtimeService';
+import { selectRealtimeConnected, selectHelpChangedTick } from 'src/store/realtimeSlice';
+import { helpPollingInterval } from 'src/utils/pollingPolicy';
 import { showToast } from 'src/components/Toast';
 import { useOpenRequestsQuery, usePollOfferQuery, useSetAvailabilityMutation, useLazyGetAvailabilityQuery } from 'src/store/helpApi';
 
-const LISTEN_INTERVAL_MS = 3000;
-const READY_INTERVAL_MS = 3000;
 const INTENT_RETRY_BASE_MS = 1500;
 const INTENT_RETRY_MAX_MS = 15000;
 
@@ -21,6 +23,10 @@ export default function useHelperListen() {
     const intentSeqRef = useRef(0);
     const intentRef = useRef({ desired: null, running: false });
     const aliveRef = useRef(true);
+
+    const isRealtimeConnected = useSelector(selectRealtimeConnected);
+    const helpChangedTick = useSelector(selectHelpChangedTick);
+    const previousHelpTickRef = useRef(helpChangedTick);
 
     useEffect(() => {
         aliveRef.current = true;
@@ -137,15 +143,28 @@ export default function useHelperListen() {
         };
     }, [applyIntent, triggerGetAvailability]);
 
-    const { data: openRequestsData, error: openRequestsError } = useOpenRequestsQuery(
+    const { data: openRequestsData, error: openRequestsError, refetch: refetchOpenRequests } = useOpenRequestsQuery(
         authToken,
-        { skip: !authToken || !listening, pollingInterval: LISTEN_INTERVAL_MS, refetchOnMountOrArgChange: true }
+        { skip: !authToken || !listening, pollingInterval: helpPollingInterval(isRealtimeConnected), refetchOnMountOrArgChange: true }
     );
 
-    const { data: startedData } = usePollOfferQuery(
+    const { data: startedData, refetch: refetchStartedGroups } = usePollOfferQuery(
         authToken,
-        { skip: !authToken, pollingInterval: READY_INTERVAL_MS, refetchOnMountOrArgChange: true }
+        { skip: !authToken, pollingInterval: helpPollingInterval(isRealtimeConnected), refetchOnMountOrArgChange: true }
     );
+
+    useEffect(() => {
+        if (helpChangedTick === previousHelpTickRef.current) return;
+        previousHelpTickRef.current = helpChangedTick;
+        if (!authToken) return;
+        if (listening) refetchOpenRequests();
+        refetchStartedGroups();
+    }, [helpChangedTick, authToken, listening, refetchOpenRequests, refetchStartedGroups]);
+
+    useEffect(() => {
+        if (!listening) return undefined;
+        return realtimeService.acquireOpenRequestsSubscription();
+    }, [listening]);
 
     const offeredCount = listening && Array.isArray(openRequestsData)
         ? openRequestsData.filter((request) => request.offerStatus === 'offered').length

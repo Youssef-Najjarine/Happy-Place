@@ -23,6 +23,9 @@ import {
   useRejectMemberMutation,
   useRemoveMemberMutation,
 } from 'src/store/chatGroupsApi';
+import { useSelector } from 'react-redux';
+import { selectRealtimeConnected } from 'src/store/realtimeSlice';
+import { membersPollingInterval } from 'src/utils/pollingPolicy';
 import BackArrow from 'assets/images/global/back-arrow-black-icon.svg';
 import EllipsisIcon from 'assets/images/global/three-dots-icon.svg';
 import RemoveIcon from 'assets/images/global/leave-and-remove-chat-icon.svg';
@@ -191,6 +194,10 @@ const phoneStyles = StyleSheet.create({
     borderColor: SoftGray,
     backgroundColor: White,
     zIndex: 2000,
+  },
+  memberDropdownUp: {
+    top: 'auto',
+    bottom: scaleHeight(44)
   },
   dropdownIcon: {
     width: scaleWidth(24),
@@ -395,6 +402,10 @@ const tabletStyles = StyleSheet.create({
     backgroundColor: White,
     zIndex: 2000,
   },
+  memberDropdownUp: {
+    top: 'auto',
+    bottom: scaleHeight(59)
+  },
   dropdownIcon: {
     width: scaleWidth(32.192),
     height: scaleHeight(32.192),
@@ -480,9 +491,10 @@ export default function Members() {
     return () => { cancelled = true; unsubscribe(); };
   }, []);
   const isFocused = useIsFocused();
+  const isRealtimeConnected = useSelector(selectRealtimeConnected);
   const { data: membersData } = useListMembersQuery(
     { authToken, chatGroupId },
-    { skip: !authToken || !chatGroupId, pollingInterval: isFocused ? 3000 : 0 }
+    { skip: !authToken || !chatGroupId, pollingInterval: membersPollingInterval(isRealtimeConnected, isFocused) }
   );
   const [approveMember] = useApproveMemberMutation();
   const [rejectMember] = useRejectMemberMutation();
@@ -577,6 +589,7 @@ export default function Members() {
   const renderMember = useCallback(({ item, index }) => {
     const isActive = activeDropdownIndex === index;
     const canRemove = isOwner && !item.isOwner;
+    const isLastMember = index === members.members.length - 1;
     return (
       <View style={styles.memberCard}>
         <TouchableOpacity
@@ -615,7 +628,7 @@ export default function Members() {
           <Pressable
             ref={memberDropdownRef}
             onLayout={() => measureToRect(memberDropdownRef, 'membersDropdown')}
-            style={styles.memberDropdown}
+            style={[styles.memberDropdown, isLastMember ? styles.memberDropdownUp : null]}
           >
             <TouchableOpacity
                 onPressIn={() => handleRemovePressIn(item.userAccountId)}
@@ -629,7 +642,7 @@ export default function Members() {
         )}
       </View>
     );
-  }, [activeDropdownIndex, styles, closeAllMenus, isOwner, handleEllipsisPress, handleRemovePressIn, measureToRect, handleOpenProfile]);
+  }, [activeDropdownIndex, styles, closeAllMenus, isOwner, members.members.length, handleEllipsisPress, handleRemovePressIn, measureToRect, handleOpenProfile]);
   const renderPending = useCallback(({ item, index }) => {
     return (
       <View style={styles.memberCard}>

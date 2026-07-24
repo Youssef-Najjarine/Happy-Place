@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import tokenStorage from 'src/services/tokenStorage';
+import realtimeService from 'src/services/realtimeService';
+import { selectRealtimeConnected, selectHelpChangedTick } from 'src/store/realtimeSlice';
+import { helpPollingInterval } from 'src/utils/pollingPolicy';
 import { showToast } from 'src/components/Toast';
 import { createOverlayState, applyOverride, settleOverride, removeOverride, hideRequest, unhideRequest, hideStartedGroup, unhideStartedGroup, reconcileWithServer, projectRequests, projectStartedGroups } from 'src/utils/helpOfferOverlay';
 import { useOpenRequestsQuery, usePollOfferQuery, useCreateOfferMutation, useWithdrawOfferMutation, useDeclineOfferMutation, useJoinMutation, useDeclineInviteMutation } from 'src/store/helpApi';
-
-const BROWSE_INTERVAL_MS = 3000;
-const READY_INTERVAL_MS = 3000;
 
 export default function useHelperOffer(helperListening) {
     const navigation = useNavigation();
@@ -21,15 +22,32 @@ export default function useHelperOffer(helperListening) {
     const [joinOffer] = useJoinMutation();
     const [declineInviteRequest] = useDeclineInviteMutation();
 
-    const { data: openRequestsData, error: openRequestsError, fulfilledTimeStamp: openRequestsFulfilledTime } = useOpenRequestsQuery(
+    const isRealtimeConnected = useSelector(selectRealtimeConnected);
+    const helpChangedTick = useSelector(selectHelpChangedTick);
+    const previousHelpTickRef = useRef(helpChangedTick);
+
+    const { data: openRequestsData, error: openRequestsError, fulfilledTimeStamp: openRequestsFulfilledTime, refetch: refetchOpenRequests } = useOpenRequestsQuery(
         authToken,
-        { skip: !authToken || phase === 'idle' || !isFocused, pollingInterval: BROWSE_INTERVAL_MS, refetchOnMountOrArgChange: true }
+        { skip: !authToken || phase === 'idle' || !isFocused, pollingInterval: helpPollingInterval(isRealtimeConnected), refetchOnMountOrArgChange: true }
     );
 
-    const { data: startedData } = usePollOfferQuery(
+    const { data: startedData, refetch: refetchStartedGroups } = usePollOfferQuery(
         authToken,
-        { skip: !authToken || phase === 'idle' || !isFocused, pollingInterval: READY_INTERVAL_MS }
+        { skip: !authToken || phase === 'idle' || !isFocused, pollingInterval: helpPollingInterval(isRealtimeConnected) }
     );
+
+    useEffect(() => {
+        if (helpChangedTick === previousHelpTickRef.current) return;
+        previousHelpTickRef.current = helpChangedTick;
+        if (!authToken || phase === 'idle' || !isFocused) return;
+        refetchOpenRequests();
+        refetchStartedGroups();
+    }, [helpChangedTick, authToken, phase, isFocused, refetchOpenRequests, refetchStartedGroups]);
+
+    useEffect(() => {
+        if (!authToken || phase === 'idle' || !isFocused) return undefined;
+        return realtimeService.acquireOpenRequestsSubscription();
+    }, [authToken, phase, isFocused]);
 
     const resolveToken = useCallback(async () => {
         const existing = await tokenStorage.getToken();

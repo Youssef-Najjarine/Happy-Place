@@ -9,6 +9,7 @@ import store from 'store';
 import navigationRef from 'src/services/navigationService';
 import usePushNotifications from 'src/hooks/usePushNotifications';
 import useUserHydration from 'src/hooks/useUserHydration';
+import useRealtime from 'src/hooks/useRealtime';
 import ErrorBoundary from 'components/ErrorBoundary';
 import LoadingModal from 'components/LoadingModal';
 import ToastHost from 'src/components/Toast';
@@ -47,6 +48,11 @@ function PushNotificationsManager() {
 
 function UserHydrationManager() {
   useUserHydration();
+  return null;
+}
+
+function RealtimeManager() {
+  useRealtime();
   return null;
 }
 
@@ -104,6 +110,7 @@ const App = () => {
           </NavigationContainer>
           <PushNotificationsManager />
           <UserHydrationManager />
+          <RealtimeManager />
           <ToastHost />
         </ErrorBoundary>
       </SafeAreaProvider>
