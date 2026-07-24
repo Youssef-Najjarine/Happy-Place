@@ -43,6 +43,8 @@ public class FriendshipManager {
             return ResolveConcurrentSend(caller.Id, target.Id);
         }
         NotificationDispatchManager.MarkFriendRequestsDirty(target.Id);
+        RealtimePublisher.PublishFriendsChanged(caller.Id);
+        RealtimePublisher.PublishFriendsChanged(target.Id);
         return FriendRequestSendResult.Requested();
     }
 
@@ -62,6 +64,8 @@ public class FriendshipManager {
         if (deletedCount == 0)
             return FriendRequestCancelResult.None();
         NotificationDispatchManager.MarkFriendRequestsDirty(target.Id);
+        RealtimePublisher.PublishFriendsChanged(caller.Id);
+        RealtimePublisher.PublishFriendsChanged(target.Id);
         return FriendRequestCancelResult.Canceled();
     }
 
@@ -84,6 +88,8 @@ public class FriendshipManager {
         if (acceptedCount > 0) {
             NotificationDispatchManager.MarkFriendRequestsDirty(caller.Id);
             NotificationDispatchManager.SendFriendRequestAcceptedPush(target.Id, caller.Id, caller.DisplayName, caller.Username);
+            RealtimePublisher.PublishFriendsChanged(caller.Id);
+            RealtimePublisher.PublishFriendsChanged(target.Id);
             return FriendRequestAcceptResult.Accepted();
         }
         var existingFriendship = FindFriendshipBetween(dbContext, caller.Id, target.Id);
@@ -108,6 +114,8 @@ public class FriendshipManager {
         if (deletedCount == 0)
             return FriendRequestDeclineResult.None();
         NotificationDispatchManager.MarkFriendRequestsDirty(caller.Id);
+        RealtimePublisher.PublishFriendsChanged(caller.Id);
+        RealtimePublisher.PublishFriendsChanged(target.Id);
         return FriendRequestDeclineResult.Declined();
     }
 
@@ -126,7 +134,11 @@ public class FriendshipManager {
         int deletedCount = dbContext.Friendships
             .Where(field => field.Status == FriendshipStatus.Accepted && ((field.RequesterUserAccountId == caller.Id && field.AddresseeUserAccountId == target.Id) || (field.RequesterUserAccountId == target.Id && field.AddresseeUserAccountId == caller.Id)))
             .ExecuteDelete();
-        return deletedCount > 0 ? UnfriendResult.Unfriended() : UnfriendResult.None();
+        if (deletedCount == 0)
+            return UnfriendResult.None();
+        RealtimePublisher.PublishFriendsChanged(caller.Id);
+        RealtimePublisher.PublishFriendsChanged(target.Id);
+        return UnfriendResult.Unfriended();
     }
 
     // Methods - Blocking
@@ -155,6 +167,11 @@ public class FriendshipManager {
         }
         if (existingFriendship != null && existingFriendship.Status == FriendshipStatus.Pending)
             NotificationDispatchManager.MarkFriendRequestsDirty(existingFriendship.AddresseeUserAccountId);
+        bool blockStateChanged = existingFriendship != null || !blockAlreadyExists;
+        if (blockStateChanged) {
+            RealtimePublisher.PublishFriendsChanged(caller.Id);
+            RealtimePublisher.PublishFriendsChanged(target.Id);
+        }
         return BlockUserResult.Blocked();
     }
 
@@ -171,7 +188,11 @@ public class FriendshipManager {
         int deletedCount = dbContext.UserBlocks
             .Where(field => field.BlockerUserAccountId == caller.Id && field.BlockedUserAccountId == target.Id)
             .ExecuteDelete();
-        return deletedCount > 0 ? UnblockUserResult.Unblocked() : UnblockUserResult.None();
+        if (deletedCount == 0)
+            return UnblockUserResult.None();
+        RealtimePublisher.PublishFriendsChanged(caller.Id);
+        RealtimePublisher.PublishFriendsChanged(target.Id);
+        return UnblockUserResult.Unblocked();
     }
 
     public static UserBlockListResult ListBlocked(string authToken) {
@@ -334,12 +355,17 @@ public class FriendshipManager {
     public static void UntangleUserForAccountDeletion(Guid userAccountId) {
         using var dbContext = HappyPlaceDbContext.Create();
         List<Guid> pendingAddresseeUserAccountIds = [.. dbContext.Friendships.Where(field => field.RequesterUserAccountId == userAccountId && field.Status == FriendshipStatus.Pending).Select(field => field.AddresseeUserAccountId)];
+        List<Guid> friendshipCounterpartyUserAccountIds = [.. dbContext.Friendships
+            .Where(field => field.RequesterUserAccountId == userAccountId || field.AddresseeUserAccountId == userAccountId)
+            .Select(field => field.RequesterUserAccountId == userAccountId ? field.AddresseeUserAccountId : field.RequesterUserAccountId)];
         dbContext.Friendships.Where(field => field.RequesterUserAccountId == userAccountId || field.AddresseeUserAccountId == userAccountId).ExecuteDelete();
         dbContext.UserBlocks.Where(field => field.BlockerUserAccountId == userAccountId || field.BlockedUserAccountId == userAccountId).ExecuteDelete();
         dbContext.FriendRequestAudits.Where(field => field.RequesterUserAccountId == userAccountId || field.AddresseeUserAccountId == userAccountId).ExecuteDelete();
         NotificationDispatchManager.RemoveFriendRequestsChannel(userAccountId);
         foreach (Guid pendingAddresseeUserAccountId in pendingAddresseeUserAccountIds)
             NotificationDispatchManager.MarkFriendRequestsDirty(pendingAddresseeUserAccountId);
+        foreach (Guid friendshipCounterpartyUserAccountId in friendshipCounterpartyUserAccountIds)
+            RealtimePublisher.PublishFriendsChanged(friendshipCounterpartyUserAccountId);
     }
 
     // Methods - Private
@@ -416,6 +442,8 @@ public class FriendshipManager {
         if (acceptedCount > 0) {
             NotificationDispatchManager.MarkFriendRequestsDirty(caller.Id);
             NotificationDispatchManager.SendFriendRequestAcceptedPush(existingFriendship.RequesterUserAccountId, caller.Id, caller.DisplayName, caller.Username);
+            RealtimePublisher.PublishFriendsChanged(caller.Id);
+            RealtimePublisher.PublishFriendsChanged(existingFriendship.RequesterUserAccountId);
             return FriendRequestSendResult.Accepted();
         }
         var refreshedFriendship = dbContext.Friendships.SingleOrDefault(field => field.Id == existingFriendship.Id);

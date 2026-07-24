@@ -69,6 +69,8 @@ public static class HelpRequestManager {
         NotificationDispatchManager.RemoveOffersChannel(chatGroupId);
         dbContext.ChatGroups.Where(field => field.Id == chatGroupId).ExecuteDelete();
         NotificationDispatchManager.MarkWaitingDirtyForAllHelpers();
+        RealtimePublisher.PublishHelpOpenRequestsChanged();
+        RealtimePublisher.PublishHelpChanged(seekerUserAccountId.Value);
         return HelpCancelResult.Cancelled();
     }
 
@@ -111,6 +113,10 @@ public static class HelpRequestManager {
             List<Guid> invitedHelperUserAccountIds = [.. dbContext.HelpOffers
                 .Where(field => field.ChatGroupId == chatGroupId && field.Status == HelpOfferStatus.Offered)
                 .Select(field => field.HelperUserAccountId)];
+            Guid? seekerUserAccountId = dbContext.ChatGroups
+                .Where(field => field.Id == chatGroupId)
+                .Select(field => field.OwnerUserAccountId)
+                .SingleOrDefault();
             dbContext.HelpOffers
                 .Where(field => field.ChatGroupId == chatGroupId && field.Status == HelpOfferStatus.Offered)
                 .ExecuteUpdate(setters => setters
@@ -120,6 +126,12 @@ public static class HelpRequestManager {
             SendInvitePushes(invitedHelperUserAccountIds, chatGroupId, chatGroupName);
             NotificationDispatchManager.MarkWaitingDirtyForAllHelpers();
             NotificationDispatchManager.RemoveOffersChannel(chatGroupId);
+            RealtimePublisher.PublishHelpOpenRequestsChanged();
+            List<Guid> helpChangedUserAccountIds = [.. invitedHelperUserAccountIds];
+            if (seekerUserAccountId != null)
+                helpChangedUserAccountIds.Add(seekerUserAccountId.Value);
+            RealtimePublisher.PublishHelpChanged(helpChangedUserAccountIds);
+            RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind);
             return HelpConnectResult.Connected(chatGroupId, chatGroupName);
         }
         catch (Exception) {
@@ -184,6 +196,8 @@ public static class HelpRequestManager {
         try {
             dbContext.SaveChanges();
             NotificationDispatchManager.MarkWaitingDirtyForAllHelpers();
+            RealtimePublisher.PublishHelpOpenRequestsChanged();
+            RealtimePublisher.PublishHelpChanged(seekerUserAccountId);
             return HelpRequestResult.Waiting(chatGroupId, chatGroupName);
         }
         catch (DbUpdateException) {

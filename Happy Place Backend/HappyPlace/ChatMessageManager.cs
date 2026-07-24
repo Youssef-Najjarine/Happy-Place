@@ -104,6 +104,7 @@ public static class ChatMessageManager {
                 .Where(field => field.ChatGroupId == chatGroupId && field.HiddenAtUtc != null)
                 .ExecuteUpdate(setters => setters.SetProperty(field => field.HiddenAtUtc, (DateTime?)null));
         NotificationDispatchManager.MarkMessagesDirty(chatGroupId, senderUserAccountId.Value);
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MessagesKind);
         return ChatMessageSendResult.Sent(BuildEntry(message, [], mediaAsset, BuildSingleReplyContext(dbContext, replyParentMessage)), guestMessagesRemaining);
     }
 
@@ -167,8 +168,10 @@ public static class ChatMessageManager {
             int advanced = dbContext.ChatGroupMembers
                 .Where(field => field.ChatGroupId == chatGroupId && field.UserAccountId == callerUserAccountId.Value && field.Status == ChatGroupMemberStatus.Active && field.LastReadSequence < effectiveSequence)
                 .ExecuteUpdate(setters => setters.SetProperty(field => field.LastReadSequence, effectiveSequence));
-            if (advanced > 0)
+            if (advanced > 0) {
                 NotificationDispatchManager.MarkMessagesReadDirty(chatGroupId, callerUserAccountId.Value);
+                RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MessagesKind);
+            }
         }
         long lastReadSequence = dbContext.ChatGroupMembers
             .Where(field => field.ChatGroupId == chatGroupId && field.UserAccountId == callerUserAccountId.Value)
@@ -192,6 +195,7 @@ public static class ChatMessageManager {
             .ExecuteUpdate(setters => setters.SetProperty(field => field.LastTypingAtUtc, (DateTime?)DateTime.UtcNow));
         if (stamped != 1)
             return ChatMessageTypingResult.NotMember();
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MessagesKind);
         return ChatMessageTypingResult.Ok();
     }
 
@@ -227,6 +231,7 @@ public static class ChatMessageManager {
                 .ExecuteDelete();
             StampMessageChange(dbContext, messageId, changeSequence);
             transaction.Commit();
+            RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MessagesKind);
             return ChatMessageReactResult.Removed();
         }
         ChatMessageReaction existingReaction = dbContext.ChatMessageReactions.SingleOrDefault(field => field.ChatMessageId == messageId && field.UserAccountId == callerUserAccountId.Value);
@@ -247,6 +252,7 @@ public static class ChatMessageManager {
         }
         StampMessageChange(dbContext, messageId, changeSequence);
         transaction.Commit();
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MessagesKind);
         return ChatMessageReactResult.Reacted();
     }
 
@@ -286,6 +292,7 @@ public static class ChatMessageManager {
         }
         dbContext.ChatMessageReactions.Where(field => field.ChatMessageId == messageId).ExecuteDelete();
         transaction.Commit();
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MessagesKind);
         return ChatMessageDeleteOwnResult.Deleted();
     }
 

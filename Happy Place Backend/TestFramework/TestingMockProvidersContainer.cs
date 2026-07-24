@@ -10,6 +10,7 @@ public class TestingMockProvidersContainer : IDisposable {
     private InMemoryEmailSenderProvider _emailProvider;
     private InMemorySmsSenderProvider _smsProvider;
     private InMemoryPushSenderProvider _pushProvider;
+    private InMemoryRealtimeSenderProvider _realtimeProvider;
     private bool _isDisposed;
     private WebClient _webClient;
 
@@ -22,6 +23,7 @@ public class TestingMockProvidersContainer : IDisposable {
         this._emailProvider = new InMemoryEmailSenderProvider();
         this._smsProvider = new InMemorySmsSenderProvider();
         this._pushProvider = new InMemoryPushSenderProvider();
+        this._realtimeProvider = new InMemoryRealtimeSenderProvider();
         ResetDatabase();
     }
 
@@ -34,6 +36,7 @@ public class TestingMockProvidersContainer : IDisposable {
     public InMemoryEmailSenderProvider EmailProvider => this._emailProvider;
     public InMemorySmsSenderProvider SmsProvider => this._smsProvider;
     public InMemoryPushSenderProvider PushProvider => this._pushProvider;
+    public InMemoryRealtimeSenderProvider RealtimeProvider => this._realtimeProvider;
     public WebClient WebClient => this._webClient;
 
     // Methods
@@ -53,6 +56,8 @@ public class TestingMockProvidersContainer : IDisposable {
         this._smsProvider = null;
         this._pushProvider?.Dispose();
         this._pushProvider = null;
+        this._realtimeProvider?.Dispose();
+        this._realtimeProvider = null;
         this._webClient?.Dispose();
         this._webClient = null;
         HappyPlaceDbContext.ResetConnectionString();

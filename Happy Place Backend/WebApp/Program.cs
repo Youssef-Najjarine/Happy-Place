@@ -1,6 +1,9 @@
+using HappyWorld.HappyPlace.Realtime;
+using HappyWorld.HappyPlace.Web.Hubs;
 using HappyWorld.HappyPlace.Web.Json;
 using HappyWorld.HappyPlace.Web.Services;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.SignalR;
 using System.Threading.RateLimiting;
 
 namespace HappyWorld.HappyPlace.WebApp {
@@ -15,6 +18,7 @@ namespace HappyWorld.HappyPlace.WebApp {
             ThreadPool.SetMinThreads(MinWorkerThreads, MinCompletionPortThreads);
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new UtcDateTimeJsonConverter()));
+            builder.Services.AddSignalR();
             builder.Services.AddOpenApi();
             builder.Services.AddResponseCompression(options => {
                 options.EnableForHttps = true;
@@ -51,6 +55,9 @@ namespace HappyWorld.HappyPlace.WebApp {
             }
             app.UseAuthorization();
             app.MapControllers();
+            app.MapHub<RealtimeHub>("/hubs/realtime");
+            SignalRRealtimeSender signalRRealtimeSender = new(app.Services.GetRequiredService<IHubContext<RealtimeHub>>());
+            RealtimeSender.SetInitializer(() => signalRRealtimeSender);
             NotificationSweeper.Start();
             app.Run();
         }

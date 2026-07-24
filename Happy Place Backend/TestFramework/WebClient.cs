@@ -12,6 +12,8 @@ namespace HappyWorld.HappyPlace {
             this._webApplicationFactory = new WebApplicationFactory<Program>();
             this._httpClient = this._webApplicationFactory.CreateClient();
         }
+        // Properties
+        public IServiceProvider Services => this._webApplicationFactory.Services;
         // Methods
         public void Dispose() {
             GC.SuppressFinalize(this);
@@ -42,6 +44,9 @@ namespace HappyWorld.HappyPlace {
                 multipartContent.Add(fileContent, FieldName, FileName);
             }
             return this._httpClient.PostAsync(url, multipartContent).GetAwaiter().GetResult();
+        }
+        public HttpMessageHandler CreateServerHandler() {
+            return this._webApplicationFactory.Server.CreateHandler();
         }
     }
 }

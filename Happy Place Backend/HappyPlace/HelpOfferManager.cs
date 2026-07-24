@@ -22,6 +22,10 @@ public static class HelpOfferManager {
             return HelpOfferResult.RequestClosed();
         UpsertOffer(chatGroupId, helperUserAccountId.Value, HelpOfferStatus.Offered);
         NotificationDispatchManager.MarkOffersDirty(chatGroupId);
+        List<Guid> helpChangedUserAccountIds = [helperUserAccountId.Value];
+        if (chatGroup.OwnerUserAccountId != null)
+            helpChangedUserAccountIds.Add(chatGroup.OwnerUserAccountId.Value);
+        RealtimePublisher.PublishHelpChanged(helpChangedUserAccountIds);
         return HelpOfferResult.Offered();
     }
 
@@ -37,6 +41,10 @@ public static class HelpOfferManager {
             return HelpOfferResult.RequestClosed();
         UpsertOffer(chatGroupId, helperUserAccountId.Value, HelpOfferStatus.Declined);
         NotificationDispatchManager.MarkOffersDirty(chatGroupId);
+        List<Guid> helpChangedUserAccountIds = [helperUserAccountId.Value];
+        if (chatGroup.OwnerUserAccountId != null)
+            helpChangedUserAccountIds.Add(chatGroup.OwnerUserAccountId.Value);
+        RealtimePublisher.PublishHelpChanged(helpChangedUserAccountIds);
         return HelpOfferResult.Declined();
     }
 
@@ -45,10 +53,20 @@ public static class HelpOfferManager {
         if (helperUserAccountId == null)
             return HelpOfferResult.None();
         using var dbContext = HappyPlaceDbContext.Create();
-        dbContext.HelpOffers
+        int deletedCount = dbContext.HelpOffers
             .Where(field => field.ChatGroupId == chatGroupId && field.HelperUserAccountId == helperUserAccountId.Value && field.Status == HelpOfferStatus.Offered)
             .ExecuteDelete();
         NotificationDispatchManager.MarkOffersDirty(chatGroupId);
+        if (deletedCount > 0) {
+            Guid? ownerUserAccountId = dbContext.ChatGroups
+                .Where(field => field.Id == chatGroupId)
+                .Select(field => field.OwnerUserAccountId)
+                .SingleOrDefault();
+            List<Guid> helpChangedUserAccountIds = [helperUserAccountId.Value];
+            if (ownerUserAccountId != null)
+                helpChangedUserAccountIds.Add(ownerUserAccountId.Value);
+            RealtimePublisher.PublishHelpChanged(helpChangedUserAccountIds);
+        }
         return HelpOfferResult.Withdrawn();
     }
 
@@ -81,6 +99,8 @@ public static class HelpOfferManager {
             return HelpJoinResult.Unavailable();
         }
         ClaimOwnershipIfUnowned(dbContext, chatGroupId, userAccountId.Value);
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind);
+        RealtimePublisher.PublishHelpChanged(userAccountId.Value);
         return HelpJoinResult.Joined(chatGroup.Id, chatGroup.Name);
     }
 
@@ -106,6 +126,7 @@ public static class HelpOfferManager {
             return HelpOfferResult.RequestClosed();
         offer.Status = HelpOfferStatus.Declined;
         TrySaveChanges(dbContext);
+        RealtimePublisher.PublishHelpChanged(helperUserAccountId.Value);
         return HelpOfferResult.Declined();
     }
 
@@ -154,10 +175,15 @@ public static class HelpOfferManager {
             .Select(field => field.Id)];
         if (expiredChatGroupIds.Count == 0)
             return;
+        List<Guid> expiredOwnerUserAccountIds = [.. dbContext.ChatGroups
+            .Where(field => expiredChatGroupIds.Contains(field.Id) && field.OwnerUserAccountId != null)
+            .Select(field => field.OwnerUserAccountId.Value)];
         foreach (Guid expiredChatGroupId in expiredChatGroupIds)
             NotificationDispatchManager.RemoveOffersChannel(expiredChatGroupId);
         dbContext.ChatGroups.Where(field => expiredChatGroupIds.Contains(field.Id)).ExecuteDelete();
         NotificationDispatchManager.MarkWaitingDirtyForAllHelpers();
+        RealtimePublisher.PublishHelpOpenRequestsChanged();
+        RealtimePublisher.PublishHelpChanged(expiredOwnerUserAccountIds);
     }
 
     private static void UpsertOffer(Guid chatGroupId, Guid helperUserAccountId, HelpOfferStatus status) {
@@ -185,6 +211,7 @@ public static class HelpOfferManager {
         dbContext.ChatGroupMembers
             .Where(field => field.ChatGroupId == chatGroupId && field.UserAccountId == userAccountId && field.Status == ChatGroupMemberStatus.Active)
             .ExecuteUpdate(setters => setters.SetProperty(field => field.MemberRole, ChatGroupMemberRole.Owner));
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind);
     }
 
     private static void TrySaveChanges(HappyPlaceDbContext dbContext) {

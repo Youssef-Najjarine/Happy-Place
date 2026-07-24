@@ -215,6 +215,7 @@ public static class ChatGroupManager {
         foreach (Guid friendUserAccountId in friendUserAccountIds)
             dbContext.ChatGroupMembers.Add(new ChatGroupMember { Id = Guid.NewGuid(), ChatGroupId = chatGroupId, UserAccountId = friendUserAccountId, MemberRole = ChatGroupMemberRole.Member, Status = ChatGroupMemberStatus.Active, JoinedAtUtc = now });
         dbContext.SaveChanges();
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind);
         return ChatGroupCreateWithFriendsResult.Created(chatGroupId);
     }
 
@@ -247,6 +248,7 @@ public static class ChatGroupManager {
         catch (DbUpdateException) {
             return LoadDirectGroupAfterRace(pairLowId, pairHighId, caller.Id, partner.Id);
         }
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind);
         return ChatGroupOpenDirectResult.Opened(chatGroupId);
     }
 
@@ -259,6 +261,7 @@ public static class ChatGroupManager {
         if (existingGroup.Status != ChatGroupStatus.Active)
             return ChatGroupOpenDirectResult.None();
         EnsureDirectMemberships(dbContext, existingGroup.Id, callerUserAccountId, partnerUserAccountId);
+        RealtimePublisher.PublishChatGroupChanged(existingGroup.Id, RealtimePublisher.MembershipKind);
         return ChatGroupOpenDirectResult.Opened(existingGroup.Id);
     }
 
@@ -356,6 +359,7 @@ public static class ChatGroupManager {
             return ChatGroupRenameResult.None();
         chatGroup.Name = normalizedName;
         TrySaveChanges(dbContext);
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MessagesKind);
         return ChatGroupRenameResult.Renamed(normalizedName);
     }
 
@@ -369,6 +373,7 @@ public static class ChatGroupManager {
             return ChatGroupVisibilityResult.None();
         chatGroup.IsPublic = isPublic;
         TrySaveChanges(dbContext);
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MessagesKind);
         return ChatGroupVisibilityResult.Updated(isPublic);
     }
 
@@ -380,6 +385,9 @@ public static class ChatGroupManager {
         ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId);
         if (!IsOwnedActiveGroup(chatGroup, userAccountId.Value))
             return ChatGroupDeleteResult.None();
+        List<Guid> formerMemberUserAccountIds = [.. dbContext.ChatGroupMembers
+            .Where(field => field.ChatGroupId == chatGroupId)
+            .Select(field => field.UserAccountId)];
         NotificationDispatchManager.RemoveJoinRequestsChannel(chatGroupId);
         NotificationDispatchManager.RemoveMessagesChannels(chatGroupId);
         using var transaction = dbContext.Database.BeginTransaction();
@@ -392,6 +400,7 @@ public static class ChatGroupManager {
         }
         ClearSoftDeletedGroupRows(dbContext, chatGroupId);
         transaction.Commit();
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind, formerMemberUserAccountIds);
         return ChatGroupDeleteResult.Deleted();
     }
 
@@ -415,6 +424,8 @@ public static class ChatGroupManager {
                 dbContext.ChatGroupMembers.Where(field => field.Id == membership.Id).ExecuteDelete();
                 ReleaseConnectedOffer(dbContext, chatGroupId, userAccountId.Value);
                 NotificationDispatchManager.RemoveMessagesChannel(chatGroupId, userAccountId.Value);
+                List<Guid> extraRecipientUserAccountIds = [userAccountId.Value];
+                RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind, extraRecipientUserAccountIds);
                 return ChatGroupLeaveResult.Left();
             }
             ChatGroupLeaveResult ownerResult = TryOwnerLeave(dbContext, chatGroupId, userAccountId.Value, membership.Id, disposition);
@@ -446,6 +457,8 @@ public static class ChatGroupManager {
             return ChatGroupJoinRequestResult.None();
         }
         NotificationDispatchManager.MarkJoinRequestsDirty(chatGroupId);
+        List<Guid> extraRecipientUserAccountIds = [userAccountId.Value];
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind, extraRecipientUserAccountIds);
         return ChatGroupJoinRequestResult.Requested();
     }
 
@@ -460,6 +473,8 @@ public static class ChatGroupManager {
         if (deletedCount == 0)
             return ChatGroupCancelRequestResult.NotRequested();
         NotificationDispatchManager.MarkJoinRequestsDirty(chatGroupId);
+        List<Guid> extraRecipientUserAccountIds = [userAccountId.Value];
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind, extraRecipientUserAccountIds);
         return ChatGroupCancelRequestResult.Cancelled();
     }
 
@@ -479,6 +494,7 @@ public static class ChatGroupManager {
         if (approvedCount > 0) {
             NotificationDispatchManager.MarkJoinRequestsDirty(chatGroupId);
             NotificationDispatchManager.SendJoinApprovedPush(memberUserAccountId, chatGroupId, chatGroup.Name);
+            RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind);
             return ChatGroupApproveResult.Approved();
         }
         bool alreadyActiveMember = dbContext.ChatGroupMembers.Any(field => field.ChatGroupId == chatGroupId && field.UserAccountId == memberUserAccountId && field.Status == ChatGroupMemberStatus.Active);
@@ -501,6 +517,8 @@ public static class ChatGroupManager {
         if (rejectedCount == 0)
             return ChatGroupRejectResult.NotPending();
         NotificationDispatchManager.MarkJoinRequestsDirty(chatGroupId);
+        List<Guid> extraRecipientUserAccountIds = [memberUserAccountId];
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind, extraRecipientUserAccountIds);
         return ChatGroupRejectResult.Rejected();
     }
 
@@ -523,6 +541,8 @@ public static class ChatGroupManager {
             .Where(field => field.ChatGroupId == chatGroupId && field.HelperUserAccountId == memberUserAccountId && field.Status == HelpOfferStatus.Connected)
             .ExecuteUpdate(setters => setters.SetProperty(field => field.Status, HelpOfferStatus.Released));
         NotificationDispatchManager.RemoveMessagesChannel(chatGroupId, memberUserAccountId);
+        List<Guid> extraRecipientUserAccountIds = [memberUserAccountId];
+        RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind, extraRecipientUserAccountIds);
         return ChatGroupRemoveResult.Removed();
     }
 
@@ -536,31 +556,46 @@ public static class ChatGroupManager {
         dbContext.ChatGroupMembers
             .Where(field => field.UserAccountId == userAccountId && field.Status == ChatGroupMemberStatus.Pending)
             .ExecuteDelete();
-        foreach (Guid pendingGroupId in pendingGroupIds)
+        foreach (Guid pendingGroupId in pendingGroupIds) {
             NotificationDispatchManager.MarkJoinRequestsDirty(pendingGroupId);
+            RealtimePublisher.PublishChatGroupChanged(pendingGroupId, RealtimePublisher.MembershipKind);
+        }
         List<Guid> offeredGroupIds = [.. dbContext.HelpOffers
             .Where(field => field.HelperUserAccountId == userAccountId && field.Status == HelpOfferStatus.Offered)
             .Select(field => field.ChatGroupId)];
+        List<Guid> offeredGroupOwnerUserAccountIds = [.. dbContext.ChatGroups
+            .Where(field => offeredGroupIds.Contains(field.Id) && field.OwnerUserAccountId != null)
+            .Select(field => field.OwnerUserAccountId.Value)];
         dbContext.HelpOffers.Where(field => field.HelperUserAccountId == userAccountId).ExecuteDelete();
         foreach (Guid offeredGroupId in offeredGroupIds)
             NotificationDispatchManager.MarkOffersDirty(offeredGroupId);
+        RealtimePublisher.PublishHelpChanged(offeredGroupOwnerUserAccountIds);
         dbContext.ChatMessageReactions.Where(field => field.UserAccountId == userAccountId).ExecuteDelete();
-        List<Guid> directGroupIds = [.. dbContext.ChatGroups
+        var directGroups = dbContext.ChatGroups
             .Where(field => (field.DirectPairLowId == userAccountId || field.DirectPairHighId == userAccountId) && field.Status != ChatGroupStatus.Deleted)
-            .Select(field => field.Id)];
-        foreach (Guid directGroupId in directGroupIds) {
-            NotificationDispatchManager.RemoveMessagesChannels(directGroupId);
+            .Select(field => new { field.Id, field.DirectPairLowId, field.DirectPairHighId })
+            .ToList();
+        foreach (var directGroup in directGroups) {
+            NotificationDispatchManager.RemoveMessagesChannels(directGroup.Id);
             dbContext.ChatGroups
-                .Where(field => field.Id == directGroupId && field.Status != ChatGroupStatus.Deleted)
+                .Where(field => field.Id == directGroup.Id && field.Status != ChatGroupStatus.Deleted)
                 .ExecuteUpdate(setters => setters.SetProperty(field => field.Status, ChatGroupStatus.Deleted));
-            ClearSoftDeletedGroupRows(dbContext, directGroupId);
+            ClearSoftDeletedGroupRows(dbContext, directGroup.Id);
+            Guid directPartnerUserAccountId = directGroup.DirectPairLowId.Value == userAccountId ? directGroup.DirectPairHighId.Value : directGroup.DirectPairLowId.Value;
+            List<Guid> extraRecipientUserAccountIds = [directPartnerUserAccountId];
+            RealtimePublisher.PublishChatGroupChanged(directGroup.Id, RealtimePublisher.MembershipKind, extraRecipientUserAccountIds);
         }
         List<Guid> ownedGroupIds = [.. dbContext.ChatGroups
             .Where(field => field.OwnerUserAccountId == userAccountId && field.Status != ChatGroupStatus.Deleted)
             .Select(field => field.Id)];
         foreach (Guid ownedGroupId in ownedGroupIds)
             UntangleOwnedGroup(ownedGroupId, userAccountId);
+        List<Guid> remainingMembershipGroupIds = [.. dbContext.ChatGroupMembers
+            .Where(field => field.UserAccountId == userAccountId)
+            .Select(field => field.ChatGroupId)];
         dbContext.ChatGroupMembers.Where(field => field.UserAccountId == userAccountId).ExecuteDelete();
+        foreach (Guid remainingMembershipGroupId in remainingMembershipGroupIds)
+            RealtimePublisher.PublishChatGroupChanged(remainingMembershipGroupId, RealtimePublisher.MembershipKind);
         dbContext.ChatGroups
             .Where(field => field.OwnerUserAccountId == userAccountId)
             .ExecuteUpdate(setters => setters.SetProperty(field => field.OwnerUserAccountId, (Guid?)null));
@@ -598,11 +633,16 @@ public static class ChatGroupManager {
                 transaction.Commit();
                 NotificationDispatchManager.SyncJoinRequestsOwner(chatGroupId);
                 NotificationDispatchManager.RemoveMessagesChannel(chatGroupId, ownerUserAccountId);
+                List<Guid> extraRecipientUserAccountIds = [ownerUserAccountId];
+                RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind, extraRecipientUserAccountIds);
                 return ChatGroupLeaveResult.Transferred();
             }
             if (disposition == ChatGroupLeaveDisposition.Delete) {
                 NotificationDispatchManager.RemoveJoinRequestsChannel(chatGroupId);
                 NotificationDispatchManager.RemoveMessagesChannels(chatGroupId);
+                List<Guid> remainingMemberUserAccountIds = [.. dbContext.ChatGroupMembers
+                    .Where(field => field.ChatGroupId == chatGroupId)
+                    .Select(field => field.UserAccountId)];
                 int softDeleted = dbContext.ChatGroups
                     .Where(field => field.Id == chatGroupId && field.Status == ChatGroupStatus.Active && !dbContext.ChatGroupMembers.Any(member => member.ChatGroupId == chatGroupId && member.Status == ChatGroupMemberStatus.Active))
                     .ExecuteUpdate(setters => setters.SetProperty(field => field.Status, ChatGroupStatus.Deleted));
@@ -612,6 +652,8 @@ public static class ChatGroupManager {
                 }
                 ClearSoftDeletedGroupRows(dbContext, chatGroupId);
                 transaction.Commit();
+                List<Guid> extraRecipientUserAccountIds = [ownerUserAccountId, .. remainingMemberUserAccountIds];
+                RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind, extraRecipientUserAccountIds);
                 return ChatGroupLeaveResult.Deleted();
             }
             if (disposition == ChatGroupLeaveDisposition.MakePublic) {
@@ -624,12 +666,17 @@ public static class ChatGroupManager {
                     transaction.Rollback();
                     return null;
                 }
+                List<Guid> pendingMemberUserAccountIds = [.. dbContext.ChatGroupMembers
+                    .Where(field => field.ChatGroupId == chatGroupId && field.Status == ChatGroupMemberStatus.Pending)
+                    .Select(field => field.UserAccountId)];
                 dbContext.ChatGroupMembers
                     .Where(field => field.ChatGroupId == chatGroupId && field.Status == ChatGroupMemberStatus.Pending)
                     .ExecuteDelete();
                 transaction.Commit();
                 NotificationDispatchManager.RemoveJoinRequestsChannel(chatGroupId);
                 NotificationDispatchManager.RemoveMessagesChannels(chatGroupId);
+                List<Guid> extraRecipientUserAccountIds = [ownerUserAccountId, .. pendingMemberUserAccountIds];
+                RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind, extraRecipientUserAccountIds);
                 return ChatGroupLeaveResult.MadePublic();
             }
             transaction.Rollback();
@@ -686,6 +733,7 @@ public static class ChatGroupManager {
                 }
                 transaction.Commit();
                 NotificationDispatchManager.SyncJoinRequestsOwner(chatGroupId);
+                RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind);
                 return true;
             }
             ChatGroup chatGroup = dbContext.ChatGroups.SingleOrDefault(field => field.Id == chatGroupId);
@@ -704,10 +752,14 @@ public static class ChatGroupManager {
                 }
                 transaction.Commit();
                 NotificationDispatchManager.MarkWaitingDirtyForAllHelpers();
+                RealtimePublisher.PublishHelpOpenRequestsChanged();
                 return true;
             }
             NotificationDispatchManager.RemoveJoinRequestsChannel(chatGroupId);
             NotificationDispatchManager.RemoveMessagesChannels(chatGroupId);
+            List<Guid> remainingMemberUserAccountIds = [.. dbContext.ChatGroupMembers
+                .Where(field => field.ChatGroupId == chatGroupId)
+                .Select(field => field.UserAccountId)];
             int softDeleted = dbContext.ChatGroups
                 .Where(field => field.Id == chatGroupId && field.Status == ChatGroupStatus.Active && !dbContext.ChatGroupMembers.Any(member => member.ChatGroupId == chatGroupId && member.Status == ChatGroupMemberStatus.Active))
                 .ExecuteUpdate(setters => setters.SetProperty(field => field.Status, ChatGroupStatus.Deleted));
@@ -717,6 +769,7 @@ public static class ChatGroupManager {
             }
             ClearSoftDeletedGroupRows(dbContext, chatGroupId);
             transaction.Commit();
+            RealtimePublisher.PublishChatGroupChanged(chatGroupId, RealtimePublisher.MembershipKind, remainingMemberUserAccountIds);
             return true;
         }
         catch (Exception) {
